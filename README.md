@@ -63,11 +63,8 @@ NEXT_PUBLIC_SUPABASE_URL=https://tu-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...tu-anon-key-aqui...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...tu-service-role-key-aqui...
 
-# Database URL (Connection string)
+# Database URL (Connection string directo)
 DATABASE_URL=postgresql://postgres:tu-contraseña@db.tu-project-ref.supabase.co:5432/postgres
-
-# Direct URL (Para pooler de conexión en producción)
-DIRECT_URL=postgresql://postgres:tu-contraseña@db.tu-project-ref.supabase.co:6543/postgres
 
 # NextAuth
 NEXTAUTH_SECRET=tu-nextauth-secret-generado-aqui
@@ -152,8 +149,7 @@ npm start
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-   - `DATABASE_URL`
-   - `DIRECT_URL` (Usa el pooler de Supabase: puerto 6543)
+   - `DATABASE_URL` (Connection string directo de Supabase)
    - `NEXTAUTH_SECRET`
    - `NEXTAUTH_URL` (https://tu-dominio.vercel.app)
 

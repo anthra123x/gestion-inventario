@@ -3,10 +3,5 @@
   "devCommand": "next dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "build": {
-    "env": {
-      "PRISMA_GENERATE_DATAPROXY": "false"
-    }
-  }
+  "outputDirectory": ".next"
 }
