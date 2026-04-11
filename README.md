@@ -148,7 +148,7 @@ npm start
 ### 2. Deploy automático
 
 1. Conecta tu repositorio a [Vercel](https://vercel.com)
-2. Configura las variables de entorno en el dashboard de Vercel:
+2. Configura las variables de entorno en el dashboard de Vercel (Settings > Environment Variables):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
