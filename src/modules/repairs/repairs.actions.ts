@@ -102,8 +102,9 @@ export async function createRepair(formData: FormData) {
   })
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: 'Datos inválidos',
+      error: errorMessages || 'Datos inválidos',
     }
   }
 
