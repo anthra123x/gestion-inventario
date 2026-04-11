@@ -1,36 +1,245 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tecnicell - Sistema de Gestión
 
-## Getting Started
+Sistema completo de inventario y gestión para negocios de reparación de dispositivos, venta de accesorios y repuestos.
 
-First, run the development server:
+## Características
+
+### Core Modules
+- **Autenticación y Roles**: Sistema seguro con roles Admin/Empleado
+- **Inventario**: CRUD completo, control de stock, alertas de bajo stock
+- **Ventas**: Registro automático, múltiples métodos de pago, descuento de inventario
+- **Reparaciones**: Sistema de órdenes de trabajo con flujo de estados completo
+- **Clientes**: Gestión completa con historial de compras y reparaciones
+- **Dashboard**: Métricas en tiempo real con gráficas
+- **Reportes**: Exportación a PDF y Excel con filtros avanzados
+
+### Features Avanzadas
+- Búsqueda global instantánea
+- Notificaciones toast
+- UI moderna y responsive
+- Tipado estricto con TypeScript
+- Validaciones con Zod
+
+## Stack Tecnológico
+
+- **Frontend**: Next.js 16 (App Router) + TypeScript + TailwindCSS + Shadcn UI
+- **Backend**: Server Actions
+- **Base de Datos**: Supabase (PostgreSQL)
+- **ORM**: Prisma
+- **Auth**: Supabase Auth
+- **Charts**: Recharts
+- **Deploy**: Vercel
+
+## Requisitos Previos
+
+1. Node.js 18+
+2. Cuenta en Supabase
+3. Cuenta en Vercel (para deploy)
+
+## Instalación y Configuración
+
+### 1. Clonar el proyecto
+
+```bash
+git clone <repository-url>
+cd sistema-inventario-tecnicell
+```
+
+### 2. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 3. Configurar Supabase
+
+1. Crea un nuevo proyecto en [Supabase](https://supabase.com)
+2. Ve a Settings > API y copia las credenciales
+3. Crea el archivo `.env.local`:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://tu-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...tu-anon-key-aqui...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...tu-service-role-key-aqui...
+
+# Database URL (Connection string)
+DATABASE_URL=postgresql://postgres:tu-contraseña@db.tu-project-ref.supabase.co:5432/postgres
+
+# Direct URL (Para pooler de conexión en producción)
+DIRECT_URL=postgresql://postgres:tu-contraseña@db.tu-project-ref.supabase.co:6543/postgres
+
+# NextAuth
+NEXTAUTH_SECRET=tu-nextauth-secret-generado-aqui
+NEXTAUTH_URL=http://localhost:3000
+```
+
+### 4. Configurar la Base de Datos
+
+```bash
+# Generar el cliente de Prisma
+npx prisma generate
+
+# Crear las tablas
+npx prisma db push
+
+# (Opcional) Ver la base de datos
+npx prisma studio
+```
+
+### 5. Ejecutar la aplicación
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Uso del Sistema
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Primeros Pasos
 
-## Learn More
+1. **Crear cuenta de usuario**: Ve a `/register`
+2. **Iniciar sesión**: Usa tus credenciales en `/login`
+3. **Acceder al dashboard**: Serás redirigido automáticamente
 
-To learn more about Next.js, take a look at the following resources:
+### Módulos Principales
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+#### Inventario (`/inventory`)
+- Agregar productos con stock inicial
+- Configurar categorías y precios
+- Monitorear niveles de stock
+- Registrar movimientos de entrada/salida
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### Ventas (`/sales`)
+- Registrar ventas con múltiples productos
+- Seleccionar método de pago
+- El inventario se descuenta automáticamente
+- Ver historial completo
 
-## Deploy on Vercel
+#### Reparaciones (`/repairs`)
+- Crear órdenes de trabajo
+- Asignar repuestos (descuenta inventario)
+- Seguir flujo: Recibido -> En Progreso -> Listo -> Entregado
+- Agregar notas internas y para clientes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+#### Clientes (`/clients`)
+- Gestión completa de clientes
+- Historial de compras y reparaciones
+- Estadísticas por cliente
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+#### Reportes (`/reports`)
+- Generar reportes por fecha y filtros
+- Exportar a PDF y Excel
+- Análisis de ventas, inventario, reparaciones y clientes
+
+## Deploy en Vercel
+
+### 1. Preparar el proyecto
+
+```bash
+# Construir para producción
+npm run build
+
+# Verificar que todo funciona
+npm start
+```
+
+### 2. Deploy automático
+
+1. Conecta tu repositorio a [Vercel](https://vercel.com)
+2. Configura las variables de entorno en el dashboard de Vercel:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `DATABASE_URL`
+   - `DIRECT_URL` (Usa el pooler de Supabase: puerto 6543)
+   - `NEXTAUTH_SECRET`
+   - `NEXTAUTH_URL` (https://tu-dominio.vercel.app)
+
+3. Haz deploy automático con cada push a main
+
+### 3. Post-deploy
+
+1. Ejecuta migraciones en producción:
+   ```bash
+   npx prisma db push
+   ```
+
+2. Crea el primer usuario administrador
+
+## Estructura del Proyecto
+
+```
+src/
+|-- app/                 # App Router (Next.js 14)
+|   |-- (auth)/         # Rutas de autenticación
+|   |-- dashboard/      # Dashboard principal
+|   |-- inventory/      # Módulo de inventario
+|   |-- sales/          # Módulo de ventas
+|   |-- repairs/        # Módulo de reparaciones
+|   |-- clients/        # Módulo de clientes
+|   |-- reports/        # Módulo de reportes
+|   |-- layout.tsx      # Layout principal
+|   `-- page.tsx        # Página de inicio
+|-- components/         # Componentes reutilizables
+|   |-- ui/            # Componentes Shadcn UI
+|   |-- forms/         # Formularios
+|   |-- layout/        # Layout components
+|   `-- charts/        # Componentes de gráficas
+|-- modules/           # Lógica de negocio
+|   |-- auth/          # Autenticación
+|   |-- inventory/     # Inventario
+|   |-- sales/         # Ventas
+|   |-- repairs/       # Reparaciones
+|   |-- clients/       # Clientes
+|   |-- reports/       # Reportes
+|   `-- dashboard/     # Dashboard
+|-- lib/               # Utilidades
+|   |-- prisma.ts      # Cliente Prisma
+|   |-- supabase.ts    # Cliente Supabase
+|   |-- types.ts       # Tipos TypeScript
+|   |-- validations.ts # Validaciones Zod
+|   `-- utils.ts       # Utilidades varias
+|-- hooks/             # Hooks personalizados
+|   `-- use-global-search.ts
+`-- services/          # Servicios externos
+```
+
+## Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run dev
+
+# Construcción
+npm run build
+npm start
+
+# Base de datos
+npm run db:push      # Crear/actualizar tablas
+npm run db:migrate   # Ejecutar migraciones
+npm run db:studio    # Ver base de datos
+
+# Lint
+npm run lint
+```
+
+## Contribución
+
+1. Fork el proyecto
+2. Crea una feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
+4. Push al branch (`git push origin feature/amazing-feature`)
+5. Abre un Pull Request
+
+## Soporte
+
+Para soporte técnico o preguntas:
+- Revisa la documentación
+- Abre un issue en el repositorio
+- Contacta al equipo de desarrollo
+
+## Licencia
+
+Este proyecto es propiedad de Tecnicell. Todos los derechos reservados.

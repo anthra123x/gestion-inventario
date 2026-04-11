@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+enum ProductCategory {
+  ACCESSORY
+  REPAIR_PART
+  DEVICE
+  OTHER
+}
+
+enum RepairStatus {
+  RECEIVED
+  IN_PROGRESS
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  MERCADO_PAGO
+}
+
+enum MovementType {
+  ENTRY
+  EXIT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole @default(EMPLOYEE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sales         Sale[]
+  repairs       Repair[]
+  inventoryMovements InventoryMovement[]
+
+  @@map("users")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sales   Sale[]
+  repairs Repair[]
+
+  @@index([phone])
+  @@map("clients")
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  category      ProductCategory
+  stock         Int             @default(0)
+  minStock      Int             @default(5)
+  purchasePrice Float           @default(0)
+  salePrice     Float           @default(0)
+  supplier      String?
+  barcode       String?         @unique
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  saleItems         SaleItem[]
+  repairParts       RepairPart[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([category])
+  @@index([stock])
+  @@map("products")
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  clientId      String?
+  total         Float
+  paymentMethod PaymentMethod
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  client     Client?     @relation(fields: [clientId], references: [id])
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id])
+  saleItems  SaleItem[]
+
+  @@index([clientId])
+  @@index([createdAt])
+  @@index([paymentMethod])
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String @id @default(cuid())
+  saleId    String
+  productId String
+  quantity   Int
+  unitPrice Float
+  total     Float
+
+  // Relations
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
+}
+
+model Repair {
+  id             String       @id @default(cuid())
+  clientId       String
+  device         String
+  problem        String
+  diagnosis      String?
+  status         RepairStatus @default(RECEIVED)
+  cost           Float        @default(0)
+  notes          String?
+  internalNotes  String?
+  dateReceived   DateTime     @default(now())
+  dateDelivered  DateTime?
+  estimatedDate  DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  client      Client       @relation(fields: [clientId], references: [id])
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+  repairParts RepairPart[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("repairs")
+}
+
+model RepairPart {
+  id         String @id @default(cuid())
+  repairId   String
+  productId  String
+  quantity   Int
+  unitCost   Float
+  total      Float
+
+  // Relations
+  repair  Repair  @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("repair_parts")
+}
+
+model InventoryMovement {
+  id          String        @id @default(cuid())
+  productId   String
+  type        MovementType
+  quantity    Int
+  reason      String?
+  referenceId String?       // ID de venta, reparación, etc.
+  referenceType String?     // 'sale', 'repair', 'adjustment', etc.
+  createdAt   DateTime      @default(now())
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id])
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
