@@ -17,7 +17,7 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 min-h-screen">
       <ProductForm onSubmit={handleSubmit} />
     </div>
   )

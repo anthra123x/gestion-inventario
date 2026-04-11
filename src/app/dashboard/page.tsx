@@ -84,7 +84,7 @@ export default function DashboardPage() {
   const recentRepairs = stats.recentRepairs || []
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 min-h-screen space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-gray-600">Resumen general del negocio</p>

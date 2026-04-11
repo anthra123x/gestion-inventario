@@ -28,7 +28,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 min-h-screen">
       <ProductForm product={product} onSubmit={handleSubmit} />
     </div>
   )

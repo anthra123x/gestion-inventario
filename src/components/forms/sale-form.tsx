@@ -241,11 +241,11 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                         <TableBody>
                           {filteredProducts.map((product) => (
                             <TableRow key={product.id}>
-                              <TableCell>
-                                <div>
+                              <TableCell className="max-w-[200px]">
+                                <div className="truncate" title={product.name}>
                                   <div className="font-medium">{product.name}</div>
                                   {product.barcode && (
-                                    <div className="text-sm text-gray-500">SKU: {product.barcode}</div>
+                                    <div className="text-sm text-gray-500 truncate">SKU: {product.barcode}</div>
                                   )}
                                 </div>
                               </TableCell>

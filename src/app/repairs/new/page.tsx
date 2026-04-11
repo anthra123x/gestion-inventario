@@ -64,7 +64,7 @@ export default function NewRepairPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 min-h-screen space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Nueva Reparación</h1>
         <p className="text-gray-600">Crear una nueva orden de trabajo</p>
@@ -137,63 +137,37 @@ export default function NewRepairPage() {
                   />
                 </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="brand">Marca</Label>
-                <Input
-                  id="brand"
-                  name="brand"
-                  placeholder="Ej: Apple, Samsung"
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="problem">Problema Reportado</Label>
+                  <Textarea
+                    id="problem"
+                    name="problem"
+                    placeholder="Describe el problema del dispositivo"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="model">Modelo</Label>
-                <Input
-                  id="model"
-                  name="model"
-                  placeholder="Ej: A2111, SM-G991B"
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cost">Costo Estimado (COP)</Label>
+                  <Input
+                    id="cost"
+                    name="cost"
+                    type="number"
+                    step="100"
+                    placeholder="Ej: 50000"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="problem">Problema Reportado</Label>
-                <Textarea
-                  id="problem"
-                  name="problem"
-                  placeholder="Describe el problema del dispositivo"
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedDate">Fecha Estimada de Entrega</Label>
+                  <Input
+                    id="estimatedDate"
+                    name="estimatedDate"
+                    type="date"
+                  />
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cost">Costo Estimado (COP)</Label>
-                <Input
-                  id="cost"
-                  name="cost"
-                  type="number"
-                  step="100"
-                  placeholder="Ej: 50000"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Estado</Label>
-                <Select name="status" defaultValue="RECEIVED">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="RECEIVED">Recibido</SelectItem>
-                    <SelectItem value="IN_PROGRESS">En Progreso</SelectItem>
-                    <SelectItem value="READY">Listo</SelectItem>
-                    <SelectItem value="DELIVERED">Entregado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             </div>
 
             <div className="space-y-2">
