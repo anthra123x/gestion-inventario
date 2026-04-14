@@ -94,7 +94,7 @@ export async function createRepair(formData: FormData) {
     device: formData.get('device'),
     problem: formData.get('problem'),
     diagnosis: formData.get('diagnosis') || null,
-    cost: parseFloat(formData.get('cost') as string) || 0,
+    cost: isNaN(parseFloat(formData.get('cost') as string)) ? 0 : parseFloat(formData.get('cost') as string),
     notes: formData.get('clientNotes') || null,
     internalNotes: formData.get('internalNotes') || null,
     estimatedDate: formData.get('estimatedDate') as string || null,
