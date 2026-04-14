@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Trash2, Search } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Trash2, Search, Loader2 } from 'lucide-react'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 import { getClients } from '@/modules/clients/clients.actions'
 import { Product, Client, PaymentMethod } from '@prisma/client'
@@ -40,6 +41,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   const [productSearch, setProductSearch] = useState('')
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(false)
 
   const {
     register,
@@ -65,6 +67,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   }, [])
 
   async function loadInitialData() {
+    setIsLoadingData(true)
     try {
       const [productsData, clientsData] = await Promise.all([
         getProducts(),
@@ -73,7 +76,11 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
       setProducts(productsData)
       setClients(clientsData)
     } catch (error) {
-      console.error('Error loading initial data:', error)
+      toast.error('Error al cargar datos', {
+        description: 'No se pudieron cargar los productos y clientes. Por favor intenta nuevamente.',
+      })
+    } finally {
+      setIsLoadingData(false)
     }
   }
 
@@ -86,13 +93,31 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   function addToCart() {
     if (!selectedProduct) return
 
+    // Validar stock
+    if (quantity > selectedProduct.stock) {
+      toast.error('Stock insuficiente', {
+        description: `Solo hay ${selectedProduct.stock} unidades disponibles.`,
+      })
+      return
+    }
+
     const existingItemIndex = items.findIndex(item => item.productId === selectedProduct.id)
-    
+
     if (existingItemIndex >= 0) {
+      const newQuantity = items[existingItemIndex].quantity + quantity
+      if (newQuantity > selectedProduct.stock) {
+        toast.error('Stock insuficiente', {
+          description: `El total (${newQuantity}) excede el stock disponible (${selectedProduct.stock}).`,
+        })
+        return
+      }
       const updatedItems = [...items]
-      updatedItems[existingItemIndex].quantity += quantity
-      updatedItems[existingItemIndex].total = updatedItems[existingItemIndex].quantity * selectedProduct.salePrice
+      updatedItems[existingItemIndex].quantity = newQuantity
+      updatedItems[existingItemIndex].total = newQuantity * selectedProduct.salePrice
       setItems(updatedItems)
+      toast.success('Cantidad actualizada', {
+        description: `${selectedProduct.name} actualizado a ${newQuantity} unidades.`,
+      })
     } else {
       setItems([...items, {
         productId: selectedProduct.id,
@@ -101,6 +126,9 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
         total: quantity * selectedProduct.salePrice,
         product: selectedProduct,
       }])
+      toast.success('Producto agregado', {
+        description: `${selectedProduct.name} agregado al carrito.`,
+      })
     }
 
     setSelectedProduct(null)
@@ -115,7 +143,17 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
 
   function updateQuantity(index: number, newQuantity: number) {
     if (newQuantity < 1) return
-    
+
+    const item = items[index]
+    const maxStock = item.product?.stock || 0
+
+    if (newQuantity > maxStock) {
+      toast.error('Stock insuficiente', {
+        description: `Solo hay ${maxStock} unidades disponibles.`,
+      })
+      return
+    }
+
     const updatedItems = [...items]
     updatedItems[index].quantity = newQuantity
     updatedItems[index].total = newQuantity * updatedItems[index].unitPrice
@@ -136,13 +174,21 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
     const result = await onSubmit(formData)
 
     if (result?.error) {
-      console.error(result.error)
+      toast.error('Error al registrar venta', {
+        description: result.error,
+      })
     } else {
+      toast.success('Venta registrada exitosamente', {
+        description: 'La venta ha sido guardada en el sistema.',
+      })
       // Reset form on success
       setItems([])
       setSelectedProduct(null)
       setQuantity(1)
       setProductSearch('')
+      setValue('clientId', '')
+      setValue('paymentMethod', 'CASH')
+      setValue('notes', '')
     }
 
     setIsSubmitting(false)
@@ -201,47 +247,60 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <Label>Productos</Label>
-              <button
+              <Button
                 type="button"
                 onClick={() => setIsProductDialogOpen(true)}
-                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                disabled={isLoadingData}
               >
-                <Plus className="mr-2 h-4 w-4" />
+                {isLoadingData ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
                 Agregar Producto
-              </button>
-              <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-                <DialogContent className="max-w-4xl">
-                  <DialogHeader>
-                    <DialogTitle>Seleccionar Producto</DialogTitle>
-                    <DialogDescription>
-                      Busca y selecciona el producto que deseas agregar
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                      <Input
-                        placeholder="Buscar productos..."
-                        value={productSearch}
-                        onChange={(e) => setProductSearch(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    
-                    <div className="max-h-60 overflow-y-auto">
-                      <Table>
-                        <TableHeader>
+              </Button>
+            </div>
+
+            <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Seleccionar Producto</DialogTitle>
+                  <DialogDescription>
+                    Busca y selecciona el producto que deseas agregar
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input
+                      placeholder="Buscar productos..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  <div className="max-h-[400px] overflow-y-auto rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40%]">Producto</TableHead>
+                          <TableHead className="w-[20%]">Precio</TableHead>
+                          <TableHead className="w-[15%]">Stock</TableHead>
+                          <TableHead className="w-[25%]">Acción</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredProducts.length === 0 ? (
                           <TableRow>
-                            <TableHead>Producto</TableHead>
-                            <TableHead>Precio</TableHead>
-                            <TableHead>Stock</TableHead>
-                            <TableHead>Acción</TableHead>
+                            <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                              No se encontraron productos
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredProducts.map((product) => (
-                            <TableRow key={product.id}>
-                              <TableCell className="max-w-[200px]">
+                        ) : (
+                          filteredProducts.map((product) => (
+                            <TableRow key={product.id} className="hover:bg-muted/50">
+                              <TableCell className="max-w-[300px]">
                                 <div className="truncate" title={product.name}>
                                   <div className="font-medium">{product.name}</div>
                                   {product.barcode && (
@@ -249,9 +308,14 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>${product.salePrice.toLocaleString('es-CO')} COP</TableCell>
+                              <TableCell className="text-right font-medium">
+                                ${product.salePrice.toLocaleString('es-CO')}
+                              </TableCell>
                               <TableCell>
-                                <Badge variant={product.stock > product.minStock ? 'default' : 'destructive'}>
+                                <Badge
+                                  variant={product.stock > product.minStock ? 'default' : 'destructive'}
+                                  className="w-fit"
+                                >
                                   {product.stock}
                                 </Badge>
                               </TableCell>
@@ -261,27 +325,30 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                                   size="sm"
                                   onClick={() => setSelectedProduct(product)}
                                   disabled={product.stock === 0}
+                                  className="w-full"
                                 >
                                   {product.stock === 0 ? 'Agotado' : 'Seleccionar'}
                                 </Button>
                               </TableCell>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
 
-                    {selectedProduct && (
-                      <div className="border-t pt-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{selectedProduct.name}</p>
-                            <p className="text-sm text-gray-500">
-                              Precio: ${selectedProduct.salePrice.toLocaleString('es-CO')} COP |
-                              Stock: {selectedProduct.stock}
-                            </p>
+                  {selectedProduct && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-medium text-lg">{selectedProduct.name}</p>
+                          <div className="text-sm text-gray-500 space-y-1">
+                            <p>Precio: ${selectedProduct.salePrice.toLocaleString('es-CO')} COP</p>
+                            <p>Stock disponible: {selectedProduct.stock} unidades</p>
                           </div>
-                          <div className="flex items-center space-x-2">
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <Label htmlFor="quantity">Cantidad:</Label>
                             <Input
                               id="quantity"
@@ -289,85 +356,90 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                               min={1}
                               max={selectedProduct.stock}
                               value={quantity}
-                              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                              className="w-20"
+                              onChange={(e) => setQuantity(Math.min(parseInt(e.target.value) || 1, selectedProduct.stock))}
+                              className="w-24"
                             />
-                            <Button type="button" onClick={addToCart}>
-                              Agregar
-                            </Button>
                           </div>
+                          <Button type="button" onClick={addToCart} size="lg">
+                            Agregar al Carrito
+                          </Button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Cart Items */}
-            {items.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resumen de Venta</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Producto</TableHead>
-                        <TableHead>Precio Unit.</TableHead>
-                        <TableHead>Cantidad</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Acción</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{item.product?.name}</div>
-                              {item.product?.barcode && (
-                                <div className="text-sm text-gray-500">SKU: {item.product.barcode}</div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>${item.unitPrice.toLocaleString('es-CO')} COP</TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={item.product?.stock || 0}
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(index, parseInt(e.target.value) || 1)}
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>${item.total.toLocaleString('es-CO')} COP</TableCell>
-                          <TableCell>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeFromCart(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  
-                  <div className="mt-4 text-right">
-                    <div className="text-2xl font-bold">
-                      Total: ${total.toLocaleString('es-CO')} COP
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
+
+          {/* Cart Items */}
+          {items.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen de Venta</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">Producto</TableHead>
+                      <TableHead className="w-[15%]">Precio Unit.</TableHead>
+                      <TableHead className="w-[15%]">Cantidad</TableHead>
+                      <TableHead className="w-[20%]">Total</TableHead>
+                      <TableHead className="w-[10%]">Acción</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item, index) => (
+                      <TableRow key={index} className="hover:bg-muted/50">
+                        <TableCell className="max-w-[300px]">
+                          <div className="truncate" title={item.product?.name}>
+                            <div className="font-medium">{item.product?.name}</div>
+                            {item.product?.barcode && (
+                              <div className="text-sm text-gray-500 truncate">SKU: {item.product.barcode}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ${item.unitPrice.toLocaleString('es-CO')}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={item.product?.stock || 0}
+                            value={item.quantity}
+                            onChange={(e) => updateQuantity(index, parseInt(e.target.value) || 1)}
+                            className="w-20"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ${item.total.toLocaleString('es-CO')}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeFromCart(index)}
+                            className="w-full"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                <div className="mt-4 flex justify-end">
+                  <div className="text-2xl font-bold">
+                    Total: ${total.toLocaleString('es-CO')} COP
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">
