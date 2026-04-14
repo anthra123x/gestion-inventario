@@ -97,7 +97,7 @@ export async function createRepair(formData: FormData) {
     cost: parseFloat(formData.get('cost') as string) || 0,
     notes: formData.get('clientNotes') || null,
     internalNotes: formData.get('internalNotes') || null,
-    estimatedDate: formData.get('estimatedDate') ? new Date(formData.get('estimatedDate') as string) : null,
+    estimatedDate: formData.get('estimatedDate') as string || null,
     parts,
   })
 
@@ -146,7 +146,7 @@ export async function createRepair(formData: FormData) {
         cost: total,
         notes,
         internalNotes,
-        estimatedDate,
+        estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
         repairParts: parts && parts.length > 0 ? {
           create: parts.map(part => ({
             productId: part.productId,

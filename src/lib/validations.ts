@@ -23,14 +23,14 @@ export const UpdateUserSchema = z.object({
 // Product schemas
 export const CreateProductSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   category: ProductCategorySchema,
-  stock: z.number().int().min(0, 'El stock debe ser un número positivo'),
-  minStock: z.number().int().min(0, 'El stock mínimo debe ser un número positivo'),
-  purchasePrice: z.number().min(0, 'El precio de compra debe ser positivo'),
-  salePrice: z.number().min(0, 'El precio de venta debe ser positivo'),
-  supplier: z.string().optional(),
-  barcode: z.string().optional()
+  stock: z.coerce.number().int().min(0, 'El stock debe ser un número positivo'),
+  minStock: z.coerce.number().int().min(0, 'El stock mínimo debe ser un número positivo'),
+  purchasePrice: z.coerce.number().min(0, 'El precio de compra debe ser positivo'),
+  salePrice: z.coerce.number().min(0, 'El precio de venta debe ser positivo'),
+  supplier: z.string().optional().nullable(),
+  barcode: z.string().optional().nullable()
 })
 
 export const UpdateProductSchema = CreateProductSchema.partial()
@@ -69,26 +69,26 @@ export const CreateRepairSchema = z.object({
   clientId: z.string(),
   device: z.string().min(2, 'El dispositivo debe tener al menos 2 caracteres'),
   problem: z.string().min(5, 'Describe el problema con al menos 5 caracteres'),
-  diagnosis: z.string().optional(),
-  cost: z.number().min(0, 'El costo debe ser positivo').default(0),
-  notes: z.string().optional(),
-  internalNotes: z.string().optional(),
-  estimatedDate: z.date().optional(),
+  diagnosis: z.string().optional().nullable(),
+  cost: z.coerce.number().min(0, 'El costo debe ser positivo').default(0),
+  notes: z.string().optional().nullable(),
+  internalNotes: z.string().optional().nullable(),
+  estimatedDate: z.string().optional().nullable(),
   parts: z.array(z.object({
     productId: z.string(),
-    quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
-    unitCost: z.number().min(0, 'El costo debe ser positivo')
+    quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+    unitCost: z.coerce.number().min(0, 'El costo debe ser positivo')
   })).optional()
 })
 
 export const UpdateRepairSchema = z.object({
   status: RepairStatusSchema.optional(),
-  diagnosis: z.string().optional(),
-  cost: z.number().min(0, 'El costo debe ser positivo').optional(),
-  notes: z.string().optional(),
-  internalNotes: z.string().optional(),
-  estimatedDate: z.date().optional(),
-  dateDelivered: z.date().optional()
+  diagnosis: z.string().optional().nullable(),
+  cost: z.coerce.number().min(0, 'El costo debe ser positivo').optional(),
+  notes: z.string().optional().nullable(),
+  internalNotes: z.string().optional().nullable(),
+  estimatedDate: z.string().optional().nullable(),
+  dateDelivered: z.string().optional().nullable()
 })
 
 // Auth schemas

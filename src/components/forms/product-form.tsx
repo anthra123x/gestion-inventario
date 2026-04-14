@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { toast } from 'sonner'
 import { Product, ProductCategory } from '@prisma/client'
 
 interface ProductFormProps {
@@ -20,7 +21,8 @@ interface ProductFormProps {
 
 export function ProductForm({ product, onSubmit, isLoading = false }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+  const [error, setError] = useState<string | null>(null)
+
   const {
     register,
     handleSubmit,
@@ -54,24 +56,67 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
 
   const selectedCategory = watch('category')
 
+  // Formatear precio para visualización
+  const formatPrice = (value: number) => {
+    return new Intl.NumberFormat('es-CO').format(value)
+  }
+
+  // Manejar cambio en input de precio
+  const handlePriceChange = (value: string, fieldName: 'purchasePrice' | 'salePrice') => {
+    // Remover formateo y convertir a número
+    const numericValue = parseFloat(value.replace(/\./g, '').replace(/,/g, ''))
+    setValue(fieldName, numericValue || 0)
+  }
+
   async function handleFormSubmit(data: any) {
     setIsSubmitting(true)
-    
-    const formData = new FormData()
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined && data[key] !== '') {
-        formData.append(key, data[key].toString())
-      }
-    })
+    setError(null)
 
-    const result = await onSubmit(formData)
-    
-    if (result?.error) {
-      // Handle error (you might want to show this in the UI)
-      console.error(result.error)
+    try {
+      // Normalizar datos antes de enviar
+      const normalizedData = {
+        ...data,
+        description: data.description || null,
+        supplier: data.supplier || null,
+        barcode: data.barcode || null,
+        // Asegurar que los números sean válidos
+        stock: Number(data.stock) || 0,
+        minStock: Number(data.minStock) || 0,
+        purchasePrice: Number(data.purchasePrice) || 0,
+        salePrice: Number(data.salePrice) || 0,
+      }
+
+      const formData = new FormData()
+      Object.keys(normalizedData).forEach(key => {
+        const value = normalizedData[key]
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, value.toString())
+        }
+      })
+
+      const result = await onSubmit(formData)
+
+      if (result?.error) {
+        setError(result.error)
+        toast.error('Error al guardar producto', {
+          description: result.error,
+        })
+        console.error('Error del backend:', result.error)
+      } else {
+        toast.success('Producto guardado exitosamente', {
+          description: product ? 'El producto ha sido actualizado' : 'El producto ha sido creado',
+        })
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+      setError(errorMessage)
+      toast.error('Error al guardar producto', {
+        description: errorMessage,
+      })
+      console.error('Error en handleFormSubmit:', err)
+    } finally {
+      setIsSubmitting(false)
     }
-    
-    setIsSubmitting(false)
   }
 
   return (
@@ -83,6 +128,11 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -174,12 +224,11 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               <Label htmlFor="purchasePrice">Precio de Compra *</Label>
               <Input
                 id="purchasePrice"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('purchasePrice', { valueAsNumber: true })}
-                placeholder="0.00"
+                type="text"
+                {...register('purchasePrice')}
+                placeholder="0"
                 disabled={isSubmitting || isLoading}
+                onChange={(e) => handlePriceChange(e.target.value, 'purchasePrice')}
               />
               {errors.purchasePrice && (
                 <p className="text-sm text-red-500">{errors.purchasePrice.message?.toString()}</p>
@@ -190,12 +239,11 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               <Label htmlFor="salePrice">Precio de Venta *</Label>
               <Input
                 id="salePrice"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('salePrice', { valueAsNumber: true })}
-                placeholder="0.00"
+                type="text"
+                {...register('salePrice')}
+                placeholder="0"
                 disabled={isSubmitting || isLoading}
+                onChange={(e) => handlePriceChange(e.target.value, 'salePrice')}
               />
               {errors.salePrice && (
                 <p className="text-sm text-red-500">{errors.salePrice.message?.toString()}</p>

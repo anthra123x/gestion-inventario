@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from 'sonner'
 import { createRepair } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 
@@ -20,8 +21,14 @@ export default function NewRepairPage() {
 
   useEffect(() => {
     async function loadProducts() {
-      const productsData = await getProducts()
-      setProducts(productsData)
+      try {
+        const productsData = await getProducts()
+        setProducts(productsData)
+      } catch (err) {
+        toast.error('Error al cargar productos', {
+          description: 'No se pudieron cargar los productos disponibles',
+        })
+      }
     }
     loadProducts()
   }, [])
@@ -31,18 +38,51 @@ export default function NewRepairPage() {
     setIsLoading(true)
     setError('')
 
-    const formData = new FormData(e.currentTarget)
-    
-    // Add selected products
-    formData.append('parts', JSON.stringify(selectedProducts))
+    try {
+      const formData = new FormData(e.currentTarget)
 
-    const result = await createRepair(formData)
+      // Normalizar datos opcionales - convertir strings vacíos a null
+      const diagnosis = formData.get('diagnosis') as string
+      if (diagnosis === '') formData.set('diagnosis', '')
 
-    if (result?.error) {
-      setError(result.error)
+      const cost = formData.get('cost') as string
+      formData.set('cost', (Number(cost) || 0).toString())
+
+      const notes = formData.get('clientNotes') as string
+      if (notes === '') formData.set('clientNotes', '')
+
+      const internalNotes = formData.get('internalNotes') as string
+      if (internalNotes === '') formData.set('internalNotes', '')
+
+      const estimatedDate = formData.get('estimatedDate') as string
+      if (estimatedDate === '') formData.delete('estimatedDate')
+
+      // Add selected products
+      formData.append('parts', JSON.stringify(selectedProducts))
+
+      const result = await createRepair(formData)
+
+      if (result?.error) {
+        setError(result.error)
+        toast.error('Error al crear reparación', {
+          description: result.error,
+        })
+        console.error('Error del backend:', result.error)
+        setIsLoading(false)
+      } else {
+        toast.success('Reparación creada exitosamente', {
+          description: 'La orden de trabajo ha sido creada',
+        })
+        router.push('/repairs')
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+      setError(errorMessage)
+      toast.error('Error al crear reparación', {
+        description: errorMessage,
+      })
+      console.error('Error en handleSubmit:', err)
       setIsLoading(false)
-    } else {
-      router.push('/repairs')
     }
   }
 
