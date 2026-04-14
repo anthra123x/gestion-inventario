@@ -64,8 +64,9 @@ export async function createProduct(formData: FormData) {
   })
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: 'Datos inválidos',
+      error: errorMessages || 'Datos inválidos',
     }
   }
 
@@ -112,8 +113,9 @@ export async function updateProduct(id: string, formData: FormData) {
   })
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: 'Datos inválidos',
+      error: errorMessages || 'Datos inválidos',
     }
   }
 
@@ -162,8 +164,9 @@ export async function addInventoryMovement(formData: FormData) {
   })
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: 'Datos inválidos',
+      error: errorMessages || 'Datos inválidos',
     }
   }
 
