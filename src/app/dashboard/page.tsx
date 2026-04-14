@@ -149,11 +149,11 @@ export default function DashboardPage() {
               {recentSales.map((sale: any) => (
                 <div key={sale.id} className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">{sale.client}</p>
-                    <p className="text-xs text-gray-500">{sale.date}</p>
+                    <p className="text-sm font-medium">{sale.client?.name || 'Cliente ocasional'}</p>
+                    <p className="text-xs text-gray-500">{new Date(sale.createdAt).toLocaleDateString('es-CO')}</p>
                   </div>
                   <div className="text-sm font-medium text-green-600">
-                    {sale.total}
+                    ${sale.total?.toLocaleString('es-CO') || '0'} COP
                   </div>
                 </div>
               ))}
@@ -175,15 +175,18 @@ export default function DashboardPage() {
               {recentRepairs.map((repair: any) => (
                 <div key={repair.id} className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">{repair.client}</p>
+                    <p className="text-sm font-medium">{repair.client?.name || 'Cliente'}</p>
                     <p className="text-xs text-gray-500">{repair.device}</p>
                   </div>
                   <div className={`text-xs px-2 py-1 rounded-full ${
-                    repair.status === 'Listo' ? 'bg-green-100 text-green-800' :
-                    repair.status === 'En progreso' ? 'bg-blue-100 text-blue-800' :
+                    repair.status === 'READY' ? 'bg-green-100 text-green-800' :
+                    repair.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {repair.status}
+                    {repair.status === 'READY' ? 'Listo' :
+                     repair.status === 'IN_PROGRESS' ? 'En progreso' :
+                     repair.status === 'RECEIVED' ? 'Recibido' :
+                     repair.status}
                   </div>
                 </div>
               ))}
