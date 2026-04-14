@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Settings, Shield, Trash2, UserPlus } from 'lucide-react'
-import { getUsers, updateUserRole, deleteUser } from '@/modules/auth/auth.actions'
+import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
+import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([])
@@ -16,6 +17,8 @@ export default function AdminPage() {
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserName, setNewUserName] = useState('')
   const [newUserRole, setNewUserRole] = useState('EMPLOYEE')
+  const [settings, setSettings] = useState<any>(null)
+  const [settingsLoading, setSettingsLoading] = useState(true)
 
   useEffect(() => {
     async function loadUsers() {
@@ -29,6 +32,18 @@ export default function AdminPage() {
       }
     }
     loadUsers()
+
+    async function loadSettings() {
+      try {
+        const data = await getSystemSettings()
+        setSettings(data)
+      } catch (error) {
+        console.error('Error loading settings:', error)
+      } finally {
+        setSettingsLoading(false)
+      }
+    }
+    loadSettings()
   }, [])
 
   async function handleUpdateRole(userId: string, role: string) {
@@ -51,8 +66,49 @@ export default function AdminPage() {
 
   async function handleCreateUser(e: React.FormEvent) {
     e.preventDefault()
-    // TODO: Implementar creación de usuario
-    alert('Funcionalidad de crear usuario pendiente de implementación')
+
+    const formData = new FormData()
+    formData.append('email', newUserEmail)
+    formData.append('name', newUserName)
+    formData.append('role', newUserRole)
+
+    const result = await createUserByAdmin(formData)
+
+    if (result.success) {
+      alert(result.success)
+      setNewUserEmail('')
+      setNewUserName('')
+      setNewUserRole('EMPLOYEE')
+      const updated = await getUsers()
+      setUsers(updated)
+    } else {
+      alert(result.error)
+    }
+  }
+
+  async function handleUpdateSettings(e: React.FormEvent) {
+    e.preventDefault()
+
+    const formData = new FormData()
+    formData.append('companyName', settings.companyName || '')
+    formData.append('companyAddress', settings.companyAddress || '')
+    formData.append('companyPhone', settings.companyPhone || '')
+    formData.append('companyEmail', settings.companyEmail || '')
+    formData.append('defaultMinStock', String(settings.defaultMinStock || 5))
+    formData.append('lowStockAlert', String(settings.lowStockAlert || true))
+    formData.append('currency', settings.currency || 'COP')
+    formData.append('taxRate', String(settings.taxRate || 0))
+    formData.append('receiptFooter', settings.receiptFooter || '')
+
+    const result = await updateSystemSettings(formData)
+
+    if (result.success) {
+      alert(result.success)
+      const updated = await getSystemSettings()
+      setSettings(updated)
+    } else {
+      alert(result.error)
+    }
   }
 
   if (loading) {
@@ -191,9 +247,106 @@ export default function AdminPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
-              Funcionalidad en desarrollo
-            </p>
+            {settingsLoading ? (
+              <p className="text-sm text-gray-600">Cargando configuración...</p>
+            ) : (
+              <form onSubmit={handleUpdateSettings} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Nombre de la Empresa</Label>
+                  <Input
+                    id="companyName"
+                    value={settings?.companyName || ''}
+                    onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="companyAddress">Dirección</Label>
+                  <Input
+                    id="companyAddress"
+                    value={settings?.companyAddress || ''}
+                    onChange={(e) => setSettings({ ...settings, companyAddress: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="companyPhone">Teléfono</Label>
+                  <Input
+                    id="companyPhone"
+                    value={settings?.companyPhone || ''}
+                    onChange={(e) => setSettings({ ...settings, companyPhone: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="companyEmail">Email</Label>
+                  <Input
+                    id="companyEmail"
+                    type="email"
+                    value={settings?.companyEmail || ''}
+                    onChange={(e) => setSettings({ ...settings, companyEmail: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="defaultMinStock">Stock Mínimo Predeterminado</Label>
+                  <Input
+                    id="defaultMinStock"
+                    type="number"
+                    value={settings?.defaultMinStock || 5}
+                    onChange={(e) => setSettings({ ...settings, defaultMinStock: Number(e.target.value) })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Moneda</Label>
+                  <Select value={settings?.currency || 'COP'} onValueChange={(value) => setSettings({ ...settings, currency: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="COP">COP - Peso Colombiano</SelectItem>
+                      <SelectItem value="USD">USD - Dólar Estadounidense</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="lowStockAlert"
+                    checked={settings?.lowStockAlert || false}
+                    onChange={(e) => setSettings({ ...settings, lowStockAlert: e.target.checked })}
+                  />
+                  <Label htmlFor="lowStockAlert">Alerta de stock bajo</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="taxRate">Tasa de Impuesto (%)</Label>
+                  <Input
+                    id="taxRate"
+                    type="number"
+                    step="0.01"
+                    value={settings?.taxRate || 0}
+                    onChange={(e) => setSettings({ ...settings, taxRate: Number(e.target.value) })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receiptFooter">Pie de Página de Recibo</Label>
+                  <Input
+                    id="receiptFooter"
+                    value={settings?.receiptFooter || ''}
+                    onChange={(e) => setSettings({ ...settings, receiptFooter: e.target.value })}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full">
+                  Guardar Configuración
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
 
@@ -208,9 +361,32 @@ export default function AdminPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
-              Funcionalidad en desarrollo
-            </p>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2">Configuración Actual</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Autenticación: Supabase Auth</li>
+                  <li>• Roles: ADMIN, EMPLOYEE</li>
+                  <li>• Encriptación: SSL/TLS</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-semibold text-yellow-900 mb-2">Recomendaciones</h4>
+                <ul className="text-sm text-yellow-800 space-y-1">
+                  <li>• Cambiar contraseñas periódicamente</li>
+                  <li>• No compartir credenciales</li>
+                  <li>• Usar contraseñas fuertes</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-900 mb-2">Estado del Sistema</h4>
+                <p className="text-sm text-green-800">
+                  El sistema está configurado con las mejores prácticas de seguridad básicas.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

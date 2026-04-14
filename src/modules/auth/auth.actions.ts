@@ -192,3 +192,65 @@ export async function deleteUser(userId: string) {
     success: 'Usuario eliminado exitosamente',
   }
 }
+
+export async function createUserByAdmin(formData: FormData) {
+  const email = formData.get('email') as string
+  const name = formData.get('name') as string
+  const role = formData.get('role') as UserRole
+
+  if (!email || !name || !role) {
+    return {
+      error: 'Todos los campos son requeridos',
+    }
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    })
+
+    if (existingUser) {
+      return {
+        error: 'El usuario ya existe',
+      }
+    }
+
+    // Create user in Supabase Auth with a temporary password
+    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password: tempPassword,
+      options: {
+        data: {
+          name,
+        },
+      },
+    })
+
+    if (authError) {
+      return {
+        error: authError.message,
+      }
+    }
+
+    // Create user in our database with the specified role
+    await prisma.user.create({
+      data: {
+        email,
+        name,
+        role,
+      },
+    })
+
+    revalidatePath('/admin')
+    return {
+      success: `Usuario creado exitosamente. Contraseña temporal: ${tempPassword}`,
+    }
+  } catch (error) {
+    console.error('Create user error:', error)
+    return {
+      error: 'Error al crear usuario',
+    }
+  }
+}
