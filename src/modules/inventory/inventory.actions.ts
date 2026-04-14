@@ -51,19 +51,38 @@ export async function getProductById(id: string) {
 }
 
 export async function createProduct(formData: FormData) {
-  const validatedFields = CreateProductSchema.safeParse({
+  console.log('=== CREATE PRODUCT - DATA RECIBIDA ===')
+  const rawData = {
     name: formData.get('name'),
     description: formData.get('description'),
     category: formData.get('category'),
-    stock: parseInt(formData.get('stock') as string),
-    minStock: parseInt(formData.get('minStock') as string),
-    purchasePrice: parseFloat(formData.get('purchasePrice') as string),
-    salePrice: parseFloat(formData.get('salePrice') as string),
+    stock: formData.get('stock'),
+    minStock: formData.get('minStock'),
+    purchasePrice: formData.get('purchasePrice'),
+    salePrice: formData.get('salePrice'),
     supplier: formData.get('supplier'),
     barcode: formData.get('barcode'),
-  })
+  }
+  console.log('Raw data:', rawData)
+
+  // Normalizar datos antes de validar
+  const normalizedData = {
+    name: formData.get('name'),
+    description: formData.get('description') || null,
+    category: formData.get('category'),
+    stock: Number(formData.get('stock')) || 0,
+    minStock: Number(formData.get('minStock')) || 0,
+    purchasePrice: Number(formData.get('purchasePrice')) || 0,
+    salePrice: Number(formData.get('salePrice')) || 0,
+    supplier: formData.get('supplier') || null,
+    barcode: formData.get('barcode') || null,
+  }
+  console.log('Normalized data:', normalizedData)
+
+  const validatedFields = CreateProductSchema.safeParse(normalizedData)
 
   if (!validatedFields.success) {
+    console.error('VALIDATION ERROR:', validatedFields.error.issues)
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
@@ -71,12 +90,15 @@ export async function createProduct(formData: FormData) {
   }
 
   try {
+    console.log('Datos validados, intentando crear producto en DB...')
     const product = await prisma.product.create({
       data: validatedFields.data,
     })
+    console.log('Producto creado exitosamente:', product.id)
 
     // Create initial inventory movement if stock > 0
     if (validatedFields.data.stock > 0) {
+      console.log('Creando movimiento de inventario inicial...')
       await prisma.inventoryMovement.create({
         data: {
           productId: product.id,
@@ -85,6 +107,7 @@ export async function createProduct(formData: FormData) {
           reason: 'Stock inicial',
         },
       })
+      console.log('Movimiento de inventario creado')
     }
 
     revalidatePath('/inventory')
@@ -93,26 +116,57 @@ export async function createProduct(formData: FormData) {
       product,
     }
   } catch (error) {
+    console.error('=== ERROR REAL DE PRISMA ===')
+    console.error('Error:', error)
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
+
+    // Devolver error específico
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      }
+    }
+
     return {
-      error: 'Error al crear el producto',
+      error: 'Error desconocido al crear el producto',
     }
   }
 }
 
 export async function updateProduct(id: string, formData: FormData) {
-  const validatedFields = UpdateProductSchema.safeParse({
+  console.log('=== UPDATE PRODUCT - DATA RECIBIDA ===')
+  const rawData = {
     name: formData.get('name'),
     description: formData.get('description'),
     category: formData.get('category'),
-    stock: formData.get('stock') ? parseInt(formData.get('stock') as string) : undefined,
-    minStock: formData.get('minStock') ? parseInt(formData.get('minStock') as string) : undefined,
-    purchasePrice: formData.get('purchasePrice') ? parseFloat(formData.get('purchasePrice') as string) : undefined,
-    salePrice: formData.get('salePrice') ? parseFloat(formData.get('salePrice') as string) : undefined,
+    stock: formData.get('stock'),
+    minStock: formData.get('minStock'),
+    purchasePrice: formData.get('purchasePrice'),
+    salePrice: formData.get('salePrice'),
     supplier: formData.get('supplier'),
     barcode: formData.get('barcode'),
-  })
+  }
+  console.log('Raw data:', rawData)
+
+  // Normalizar datos antes de validar
+  const normalizedData = {
+    name: formData.get('name'),
+    description: formData.get('description') || null,
+    category: formData.get('category'),
+    stock: formData.get('stock') ? Number(formData.get('stock')) : undefined,
+    minStock: formData.get('minStock') ? Number(formData.get('minStock')) : undefined,
+    purchasePrice: formData.get('purchasePrice') ? Number(formData.get('purchasePrice')) : undefined,
+    salePrice: formData.get('salePrice') ? Number(formData.get('salePrice')) : undefined,
+    supplier: formData.get('supplier') || null,
+    barcode: formData.get('barcode') || null,
+  }
+  console.log('Normalized data:', normalizedData)
+
+  const validatedFields = UpdateProductSchema.safeParse(normalizedData)
 
   if (!validatedFields.success) {
+    console.error('VALIDATION ERROR:', validatedFields.error.issues)
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
@@ -120,10 +174,12 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   try {
+    console.log('Datos validados, intentando actualizar producto en DB...')
     const product = await prisma.product.update({
       where: { id },
       data: validatedFields.data,
     })
+    console.log('Producto actualizado exitosamente:', product.id)
 
     revalidatePath('/inventory')
     revalidatePath(`/inventory/${id}`)
@@ -132,8 +188,19 @@ export async function updateProduct(id: string, formData: FormData) {
       product,
     }
   } catch (error) {
+    console.error('=== ERROR REAL DE PRISMA ===')
+    console.error('Error:', error)
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+
+    // Devolver error específico
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      }
+    }
+
     return {
-      error: 'Error al actualizar el producto',
+      error: 'Error desconocido al actualizar el producto',
     }
   }
 }
