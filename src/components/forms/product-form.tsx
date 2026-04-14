@@ -175,17 +175,18 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="barcode">Código de Barras</Label>
+              <Label htmlFor="barcode">Código de Barras (opcional)</Label>
               <Input
                 id="barcode"
                 {...register('barcode')}
                 placeholder="Ej: 1234567890123"
                 disabled={isSubmitting || isLoading}
               />
+              <p className="text-xs text-gray-500">Debe ser único si se proporciona</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="supplier">Proveedor</Label>
+              <Label htmlFor="supplier">Proveedor (opcional)</Label>
               <Input
                 id="supplier"
                 {...register('supplier')}
@@ -256,7 +257,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">Descripción (opcional)</Label>
             <Textarea
               id="description"
               {...register('description')}

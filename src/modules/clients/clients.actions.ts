@@ -86,8 +86,9 @@ export async function createClient(formData: FormData) {
   })
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: 'Datos inválidos',
+      error: errorMessages || 'Datos inválidos',
     }
   }
 
@@ -101,9 +102,22 @@ export async function createClient(formData: FormData) {
       success: 'Cliente creado exitosamente',
       client,
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Manejar error de unique constraint específicamente
+    if (error.code === 'P2002') {
+      const target = error.meta?.target
+      if (target && target.includes('phone')) {
+        return {
+          error: 'El teléfono ya está registrado en otro cliente.',
+        }
+      }
+      return {
+        error: 'Ya existe un registro con estos datos únicos.',
+      }
+    }
+
     return {
-      error: 'Error al crear el cliente',
+      error: error instanceof Error ? error.message : 'Error al crear el cliente',
     }
   }
 }
@@ -120,8 +134,9 @@ export async function updateClient(id: string, formData: FormData) {
   })
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: 'Datos inválidos',
+      error: errorMessages || 'Datos inválidos',
     }
   }
 
@@ -137,9 +152,22 @@ export async function updateClient(id: string, formData: FormData) {
       success: 'Cliente actualizado exitosamente',
       client,
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Manejar error de unique constraint específicamente
+    if (error.code === 'P2002') {
+      const target = error.meta?.target
+      if (target && target.includes('phone')) {
+        return {
+          error: 'El teléfono ya está registrado en otro cliente.',
+        }
+      }
+      return {
+        error: 'Ya existe un registro con estos datos únicos.',
+      }
+    }
+
     return {
-      error: 'Error al actualizar el cliente',
+      error: error instanceof Error ? error.message : 'Error al actualizar el cliente',
     }
   }
 }

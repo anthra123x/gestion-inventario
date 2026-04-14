@@ -115,11 +115,25 @@ export async function createProduct(formData: FormData) {
       success: 'Producto creado exitosamente',
       product,
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('=== ERROR REAL DE PRISMA ===')
     console.error('Error:', error)
     console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
+
+    // Manejar error de unique constraint específicamente
+    if (error.code === 'P2002') {
+      // P2002: Unique constraint failed
+      const target = error.meta?.target
+      if (target && target.includes('barcode')) {
+        return {
+          error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
+        }
+      }
+      return {
+        error: 'Ya existe un registro con estos datos únicos.',
+      }
+    }
 
     // Devolver error específico
     if (error instanceof Error) {
@@ -187,10 +201,24 @@ export async function updateProduct(id: string, formData: FormData) {
       success: 'Producto actualizado exitosamente',
       product,
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('=== ERROR REAL DE PRISMA ===')
     console.error('Error:', error)
     console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+
+    // Manejar error de unique constraint específicamente
+    if (error.code === 'P2002') {
+      // P2002: Unique constraint failed
+      const target = error.meta?.target
+      if (target && target.includes('barcode')) {
+        return {
+          error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
+        }
+      }
+      return {
+        error: 'Ya existe un registro con estos datos únicos.',
+      }
+    }
 
     // Devolver error específico
     if (error instanceof Error) {
