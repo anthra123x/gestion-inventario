@@ -58,13 +58,32 @@ export async function getRepairById(id: string) {
 }
 
 export async function createRepair(formData: FormData) {
+  console.log('=== CREATE REPAIR - DATA RECIBIDA ===')
   const partsJson = formData.get('parts') as string
-  const parts = partsJson ? JSON.parse(partsJson) : []
+  const rawParts = partsJson ? JSON.parse(partsJson) : []
+
+  // Normalizar parts para evitar NaN
+  const parts = rawParts.map((part: any) => ({
+    productId: part.productId,
+    quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
+    unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
+  }))
 
   const clientName = formData.get('clientName') as string
   const clientPhone = formData.get('clientPhone') as string
   const clientEmail = formData.get('clientEmail') as string
   const clientAddress = formData.get('clientAddress') as string
+
+  console.log('Raw data:', {
+    device: formData.get('device'),
+    problem: formData.get('problem'),
+    diagnosis: formData.get('diagnosis'),
+    cost: formData.get('cost'),
+    clientNotes: formData.get('clientNotes'),
+    internalNotes: formData.get('internalNotes'),
+    estimatedDate: formData.get('estimatedDate'),
+    parts,
+  })
 
   // Always create or find client by phone
   let finalClientId: string
@@ -89,12 +108,15 @@ export async function createRepair(formData: FormData) {
     finalClientId = newClient.id
   }
 
+  const costValue = parseFloat(formData.get('cost') as string)
+  console.log('Cost parsed:', costValue, 'isNaN:', isNaN(costValue))
+
   const validatedFields = CreateRepairSchema.safeParse({
     clientId: finalClientId,
     device: formData.get('device'),
     problem: formData.get('problem'),
     diagnosis: formData.get('diagnosis') || null,
-    cost: isNaN(parseFloat(formData.get('cost') as string)) ? 0 : parseFloat(formData.get('cost') as string),
+    cost: isNaN(costValue) ? 0 : costValue,
     notes: formData.get('clientNotes') || null,
     internalNotes: formData.get('internalNotes') || null,
     estimatedDate: formData.get('estimatedDate') as string || null,
