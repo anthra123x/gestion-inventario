@@ -84,74 +84,75 @@ export async function createSale(formData: FormData) {
     // Calculate total
     const total = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
 
-    // Check stock availability
-    for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
+    // Use transaction for atomicity
+    const sale = await prisma.$transaction(async (tx) => {
+      // Check stock availability with lock
+      for (const item of items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        })
+
+        if (!product) {
+          throw new Error(`Producto con ID ${item.productId} no encontrado`)
+        }
+
+        if (product.stock < item.quantity) {
+          throw new Error(`Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}`)
+        }
+      }
+
+      // Create sale
+      const newSale = await tx.sale.create({
+        data: {
+          clientId,
+          total,
+          paymentMethod,
+          notes,
+          saleItems: {
+            create: items.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.unitPrice * item.quantity,
+            })),
+          },
+        },
+        include: {
+          saleItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
       })
 
-      if (!product) {
-        return {
-          error: `Producto con ID ${item.productId} no encontrado`,
-        }
-      }
+      // Update stock and create inventory movements
+      for (const item of items) {
+        // Update product stock
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        })
 
-      if (product.stock < item.quantity) {
-        return {
-          error: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}`,
-        }
-      }
-    }
-
-    // Create sale
-    const sale = await prisma.sale.create({
-      data: {
-        clientId,
-        total,
-        paymentMethod,
-        notes,
-        saleItems: {
-          create: items.map(item => ({
+        // Create inventory movement
+        await tx.inventoryMovement.create({
+          data: {
             productId: item.productId,
+            type: 'EXIT',
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.unitPrice * item.quantity,
-          })),
-        },
-      },
-      include: {
-        saleItems: {
-          include: {
-            product: true,
+            reason: `Venta #${newSale.id}`,
+            referenceId: newSale.id,
+            referenceType: 'sale',
           },
-        },
-      },
+        })
+      }
+
+      return newSale
     })
-
-    // Update stock and create inventory movements
-    for (const item of items) {
-      // Update product stock
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity,
-          },
-        },
-      })
-
-      // Create inventory movement
-      await prisma.inventoryMovement.create({
-        data: {
-          productId: item.productId,
-          type: 'EXIT',
-          quantity: item.quantity,
-          reason: `Venta #${sale.id}`,
-          referenceId: sale.id,
-          referenceType: 'sale',
-        },
-      })
-    }
 
     revalidatePath('/sales')
     revalidatePath('/dashboard')
@@ -159,10 +160,10 @@ export async function createSale(formData: FormData) {
       success: 'Venta registrada exitosamente',
       sale,
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating sale:', error)
     return {
-      error: 'Error al registrar la venta',
+      error: error.message || 'Error al registrar la venta',
     }
   }
 }

@@ -130,19 +130,43 @@ export async function logout() {
 }
 
 export async function getCurrentUser() {
-  // For now, we'll return null as we can't access Supabase session in server actions
-  // This is a limitation of the current setup
-  return null
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      return null
+    }
+
+    // Get user from our database to get role
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    })
+
+    if (!dbUser) {
+      return null
+    }
+
+    return dbUser
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
+  }
 }
 
 export async function requireAuth() {
-  // Temporarily disabled since getCurrentUser doesn't work in server actions
-  return {
-    id: '1',
-    email: 'admin@tecnicell.com',
-    name: 'Admin',
-    role: 'ADMIN' as UserRole,
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect('/login')
   }
+
+  return user
 }
 
 export async function requireAdmin() {

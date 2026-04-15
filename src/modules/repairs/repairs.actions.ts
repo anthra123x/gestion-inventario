@@ -137,93 +137,94 @@ export async function createRepair(formData: FormData) {
     const partsTotal = (parts || []).reduce((sum, part) => sum + (part.unitCost * part.quantity), 0)
     const total = cost + partsTotal
 
-    // Check stock availability for parts
-    if (parts && parts.length > 0) {
-      for (const part of parts) {
-        const product = await prisma.product.findUnique({
-          where: { id: part.productId },
-        })
+    // Use transaction for atomicity
+    const repair = await prisma.$transaction(async (tx) => {
+      // Check stock availability for parts
+      if (parts && parts.length > 0) {
+        for (const part of parts) {
+          const product = await tx.product.findUnique({
+            where: { id: part.productId },
+          })
 
-        if (!product) {
-          return {
-            error: `Producto con ID ${part.productId} no encontrado`,
+          if (!product) {
+            throw new Error(`Producto con ID ${part.productId} no encontrado`)
           }
-        }
 
-        if (product.stock < part.quantity) {
-          return {
-            error: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${part.quantity}`,
+          if (product.stock < part.quantity) {
+            throw new Error(`Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${part.quantity}`)
           }
         }
       }
-    }
 
-    // Create repair
-    const repair = await prisma.repair.create({
-      data: {
-        clientId,
-        device,
-        problem,
-        diagnosis,
-        cost: total,
-        notes,
-        internalNotes,
-        estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
-        repairParts: parts && parts.length > 0 ? {
-          create: parts.map(part => ({
-            productId: part.productId,
-            quantity: part.quantity,
-            unitCost: part.unitCost,
-            total: part.unitCost * part.quantity,
-          })),
-        } : undefined,
-      },
-      include: {
-        repairParts: {
-          include: {
-            product: true,
-          },
+      // Create repair
+      const newRepair = await tx.repair.create({
+        data: {
+          clientId,
+          device,
+          problem,
+          diagnosis,
+          cost: total,
+          notes,
+          internalNotes,
+          estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
+          repairParts: parts && parts.length > 0 ? {
+            create: parts.map(part => ({
+              productId: part.productId,
+              quantity: part.quantity,
+              unitCost: part.unitCost,
+              total: part.unitCost * part.quantity,
+            })),
+          } : undefined,
         },
-      },
-    })
-
-    // Update stock and create inventory movements for parts
-    if (parts && parts.length > 0) {
-      for (const part of parts) {
-        // Update product stock
-        await prisma.product.update({
-          where: { id: part.productId },
-          data: {
-            stock: {
-              decrement: part.quantity,
+        include: {
+          repairParts: {
+            include: {
+              product: true,
             },
           },
-        })
+        },
+      })
 
-        // Create inventory movement
-        await prisma.inventoryMovement.create({
-          data: {
-            productId: part.productId,
-            type: 'EXIT',
-            quantity: part.quantity,
-            reason: `Reparación #${repair.id}`,
-            referenceId: repair.id,
-            referenceType: 'repair',
-          },
-        })
+      // Update stock and create inventory movements for parts
+      if (parts && parts.length > 0) {
+        for (const part of parts) {
+          // Update product stock
+          await tx.product.update({
+            where: { id: part.productId },
+            data: {
+              stock: {
+                decrement: part.quantity,
+              },
+            },
+          })
+
+          // Create inventory movement
+          await tx.inventoryMovement.create({
+            data: {
+              productId: part.productId,
+              type: 'EXIT',
+              quantity: part.quantity,
+              reason: `Reparación #${newRepair.id}`,
+              referenceId: newRepair.id,
+              referenceType: 'repair',
+            },
+          })
+        }
       }
-    }
+
+      return newRepair
+    })
 
     revalidatePath('/repairs')
     revalidatePath('/dashboard')
     return {
-      success: 'Reparación registrada exitosamente',
+      success: 'Reparación creada exitosamente',
       repair,
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating repair:', error)
     return {
-      error: 'Error al registrar la reparación',
+      error: error.message || 'Error al crear la reparación',
     }
   }
 }
