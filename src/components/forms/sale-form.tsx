@@ -237,7 +237,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                   <SelectItem value="CASH">Efectivo</SelectItem>
                   <SelectItem value="CARD">Tarjeta</SelectItem>
                   <SelectItem value="TRANSFER">Transferencia</SelectItem>
-                  <SelectItem value="MERCADO_PAGO">Mercado Pago</SelectItem>
                 </SelectContent>
               </Select>
             </div>

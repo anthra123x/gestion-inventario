@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const UserRoleSchema = z.enum(['ADMIN', 'EMPLOYEE'])
 export const ProductCategorySchema = z.enum(['ACCESSORY', 'REPAIR_PART', 'DEVICE', 'OTHER'])
 export const RepairStatusSchema = z.enum(['RECEIVED', 'IN_PROGRESS', 'READY', 'DELIVERED', 'CANCELLED'])
-export const PaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER', 'MERCADO_PAGO'])
+export const PaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER'])
 export const MovementTypeSchema = z.enum(['ENTRY', 'EXIT'])
 
 // User schemas

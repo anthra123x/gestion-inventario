@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as XLSX from 'xlsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Users, Settings, Shield, Trash2, UserPlus, Database, Download, AlertTri
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
 import { exportData, cleanupProducts, cleanupSales, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
+import { exportProductsToExcel, exportSalesToExcel, exportRepairsToExcel, exportClientsToExcel } from '@/modules/export/export.actions'
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([])
@@ -200,6 +202,36 @@ export default function AdminPage() {
       alert('Error durante la limpieza')
     } finally {
       setCleanupLoading(false)
+    }
+  }
+
+  async function handleExportExcel(type: string) {
+    let result
+    switch (type) {
+      case 'products':
+        result = await exportProductsToExcel()
+        break
+      case 'sales':
+        result = await exportSalesToExcel()
+        break
+      case 'repairs':
+        result = await exportRepairsToExcel()
+        break
+      case 'clients':
+        result = await exportClientsToExcel()
+        break
+      default:
+        result = { error: 'Tipo de exportación no válido' }
+    }
+
+    if (result.success && result.data && result.filename) {
+      const worksheet = XLSX.utils.json_to_sheet(result.data)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos')
+      XLSX.writeFile(workbook, result.filename)
+      alert('Archivo Excel exportado exitosamente')
+    } else {
+      alert(result.error || 'Error al exportar')
     }
   }
 
@@ -478,6 +510,54 @@ export default function AdminPage() {
                   El sistema está configurado con las mejores prácticas de seguridad básicas.
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Exportación de Datos
+            </CardTitle>
+            <CardDescription>
+              Exporta datos del sistema a Excel
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Button
+                onClick={() => handleExportExcel('products')}
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Productos
+              </Button>
+              <Button
+                onClick={() => handleExportExcel('sales')}
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Ventas
+              </Button>
+              <Button
+                onClick={() => handleExportExcel('repairs')}
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Reparaciones
+              </Button>
+              <Button
+                onClick={() => handleExportExcel('clients')}
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Clientes
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -60,24 +60,24 @@ export default function SalesPage() {
     return filtered
   }
 
-  function getPaymentMethodLabel(method: PaymentMethod) {
-    const labels = {
+  function getPaymentMethodLabel(method: string) {
+    const labels: Record<string, string> = {
       CASH: 'Efectivo',
       CARD: 'Tarjeta',
       TRANSFER: 'Transferencia',
-      MERCADO_PAGO: 'Mercado Pago'
+      MERCADO_PAGO: 'Mercado Pago (antiguo)',
     }
-    return labels[method]
+    return labels[method] || method
   }
 
-  function getPaymentMethodColor(method: PaymentMethod) {
-    const colors = {
+  function getPaymentMethodColor(method: string) {
+    const colors: Record<string, string> = {
       CASH: 'default',
       CARD: 'secondary',
       TRANSFER: 'outline',
-      MERCADO_PAGO: 'default'
+      MERCADO_PAGO: 'destructive',
     }
-    return colors[method]
+    return colors[method] || 'default'
   }
 
   const filteredSales = filterSales()
@@ -190,7 +190,6 @@ export default function SalesPage() {
                 <SelectItem value="CASH">Efectivo</SelectItem>
                 <SelectItem value="CARD">Tarjeta</SelectItem>
                 <SelectItem value="TRANSFER">Transferencia</SelectItem>
-                <SelectItem value="MERCADO_PAGO">Mercado Pago</SelectItem>
               </SelectContent>
             </Select>
           </div>

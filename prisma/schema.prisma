@@ -35,7 +35,6 @@ enum PaymentMethod {
   CASH
   CARD
   TRANSFER
-  MERCADO_PAGO
 }
 
 enum MovementType {
