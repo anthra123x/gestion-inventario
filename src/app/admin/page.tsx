@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Settings, Shield, Trash2, UserPlus } from 'lucide-react'
+import { Users, Settings, Shield, Trash2, UserPlus, Database, Download, AlertTriangle } from 'lucide-react'
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
+import { exportData, cleanupProducts, cleanupSales, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([])
@@ -19,6 +21,9 @@ export default function AdminPage() {
   const [newUserRole, setNewUserRole] = useState('EMPLOYEE')
   const [settings, setSettings] = useState<any>(null)
   const [settingsLoading, setSettingsLoading] = useState(true)
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
+  const [cleanupType, setCleanupType] = useState<string | null>(null)
+  const [cleanupLoading, setCleanupLoading] = useState(false)
 
   useEffect(() => {
     async function loadUsers() {
@@ -111,6 +116,93 @@ export default function AdminPage() {
     }
   }
 
+  async function handleExportData() {
+    const result = await exportData()
+    if (result.success && result.data) {
+      const dataStr = JSON.stringify(result.data, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `backup_tecnicell_${new Date().toISOString().split('T')[0]}.json`
+      link.click()
+      URL.revokeObjectURL(url)
+      alert('Backup exportado exitosamente')
+    } else {
+      alert(result.error || 'Error al exportar backup')
+    }
+  }
+
+  function openCleanupDialog(type: string) {
+    setCleanupType(type)
+    setCleanupDialogOpen(true)
+  }
+
+  async function handleCleanup() {
+    if (!cleanupType) return
+
+    setCleanupLoading(true)
+
+    try {
+      // Primero exportar backup
+      const backupResult = await exportData()
+      if (!backupResult.success) {
+        alert('Error al generar backup. No se puede continuar con la limpieza.')
+        setCleanupLoading(false)
+        return
+      }
+
+      // Descargar backup automáticamente
+      if (backupResult.data) {
+        const dataStr = JSON.stringify(backupResult.data, null, 2)
+        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        const url = URL.createObjectURL(dataBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `backup_before_cleanup_${new Date().toISOString().split('T')[0]}.json`
+        link.click()
+        URL.revokeObjectURL(url)
+      }
+
+      // Confirmación adicional después de backup
+      if (!confirm('Backup generado y descargado. ¿Estás seguro de continuar con la limpieza? Esta acción NO se puede deshacer.')) {
+        setCleanupLoading(false)
+        return
+      }
+
+      let result
+      switch (cleanupType) {
+        case 'products':
+          result = await cleanupProducts()
+          break
+        case 'sales':
+          result = await cleanupSales()
+          break
+        case 'repairs':
+          result = await cleanupRepairs()
+          break
+        case 'all':
+          result = await cleanupAll()
+          break
+        default:
+          result = { error: 'Tipo de limpieza no válido' }
+      }
+
+      if (result.success) {
+        alert(result.success)
+        setCleanupDialogOpen(false)
+        setCleanupType(null)
+      } else {
+        alert(result.error)
+      }
+    } catch (error) {
+      console.error('Error during cleanup:', error)
+      alert('Error durante la limpieza')
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
+
   if (loading) {
     return <div>Cargando...</div>
   }
@@ -122,7 +214,7 @@ export default function AdminPage() {
         <p className="text-gray-600">Configuración y gestión del sistema</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -389,7 +481,110 @@ export default function AdminPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Limpieza del Sistema
+            </CardTitle>
+            <CardDescription>
+              Gestión de datos y limpieza del sistema (Solo Administradores)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2">Backup de Datos</h4>
+                <p className="text-sm text-blue-800 mb-3">
+                  Exporta todos los datos del sistema antes de realizar cualquier limpieza.
+                </p>
+                <Button onClick={handleExportData} variant="outline" className="w-full">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar Backup
+                </Button>
+              </div>
+
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Zona de Peligro - Limpieza de Datos
+                </h4>
+                <p className="text-sm text-red-800 mb-3">
+                  Estas acciones eliminarán datos permanentemente. Se generará un backup automáticamente antes de ejecutar.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => openCleanupDialog('products')}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Limpiar Productos
+                  </Button>
+                  <Button
+                    onClick={() => openCleanupDialog('sales')}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Limpiar Ventas
+                  </Button>
+                  <Button
+                    onClick={() => openCleanupDialog('repairs')}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Limpiar Reparaciones
+                  </Button>
+                  <Button
+                    onClick={() => openCleanupDialog('all')}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Limpiar TODO
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <Dialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirmar Limpieza
+            </DialogTitle>
+            <DialogDescription>
+              Esta acción generará un backup automático y luego eliminará los datos seleccionados.
+              <br /><br />
+              <strong>Tipo de limpieza:</strong> {cleanupType === 'products' ? 'Productos' : cleanupType === 'sales' ? 'Ventas' : cleanupType === 'repairs' ? 'Reparaciones' : 'TODO'}
+              <br /><br />
+              ¿Estás seguro de continuar?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCleanupDialogOpen(false)
+                setCleanupType(null)
+              }}
+              disabled={cleanupLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCleanup}
+              disabled={cleanupLoading}
+            >
+              {cleanupLoading ? 'Generando backup y limpiando...' : 'Confirmar Limpieza'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

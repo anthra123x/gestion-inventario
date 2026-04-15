@@ -234,18 +234,83 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
+  console.log('=== DELETE PRODUCT - ID:', id)
+
   try {
+    // Verificar si el producto tiene relaciones antes de eliminar
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        saleItems: true,
+        repairParts: true,
+        inventoryMovements: true,
+      },
+    })
+
+    if (!product) {
+      console.error('Producto no encontrado:', id)
+      return {
+        error: 'Producto no encontrado',
+      }
+    }
+
+    console.log('Producto encontrado:', product.name)
+    console.log('Relaciones:')
+    console.log('  - SaleItems:', product.saleItems.length)
+    console.log('  - RepairParts:', product.repairParts.length)
+    console.log('  - InventoryMovements:', product.inventoryMovements.length)
+
+    // Si tiene relaciones con ventas o reparaciones, NO permitir eliminación directa
+    if (product.saleItems.length > 0 || product.repairParts.length > 0) {
+      console.log('Producto tiene relaciones con ventas/reparaciones - NO SE PUEDE ELIMINAR DIRECTAMENTE')
+      return {
+        error: 'No se puede eliminar este producto porque está relacionado con ventas o reparaciones. Usa la función de "Limpieza del Sistema" en el panel de administración.',
+      }
+    }
+
+    // Eliminar movimientos de inventario asociados
+    if (product.inventoryMovements.length > 0) {
+      console.log('Eliminando movimientos de inventario...')
+      await prisma.inventoryMovement.deleteMany({
+        where: { productId: id },
+      })
+      console.log('Movimientos de inventario eliminados')
+    }
+
+    // Eliminar el producto
+    console.log('Eliminando producto...')
     await prisma.product.delete({
       where: { id },
     })
+    console.log('Producto eliminado exitosamente')
 
     revalidatePath('/inventory')
     return {
       success: 'Producto eliminado exitosamente',
     }
-  } catch (error) {
+  } catch (error: any) {
+    console.error('=== ERROR AL ELIMINAR PRODUCTO ===')
+    console.error('Error:', error)
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error code:', error.code)
+    console.error('Error meta:', error.meta)
+
+    // Manejar error de foreign key
+    if (error.code === 'P2003') {
+      return {
+        error: 'No se puede eliminar el producto porque está relacionado con ventas o reparaciones. Usa la función de limpieza del sistema.',
+      }
+    }
+
+    // Manejar error de registro no encontrado
+    if (error.code === 'P2025') {
+      return {
+        error: 'Producto no encontrado',
+      }
+    }
+
     return {
-      error: 'Error al eliminar el producto',
+      error: error instanceof Error ? error.message : 'Error al eliminar el producto',
     }
   }
 }

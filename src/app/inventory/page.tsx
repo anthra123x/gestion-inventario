@@ -61,12 +61,21 @@ export default function InventoryPage() {
 
   async function handleDeleteProduct(product: Product) {
     try {
-      await deleteProduct(product.id)
-      await loadProducts()
-      setDeleteDialogOpen(false)
-      setProductToDelete(null)
+      const result = await deleteProduct(product.id)
+
+      if (result?.error) {
+        alert(result.error)
+        return
+      }
+
+      if (result?.success) {
+        await loadProducts()
+        setDeleteDialogOpen(false)
+        setProductToDelete(null)
+      }
     } catch (error) {
       console.error('Error deleting product:', error)
+      alert('Error al eliminar el producto. Por favor intenta nuevamente.')
     }
   }
 
