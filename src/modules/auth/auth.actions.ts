@@ -49,20 +49,12 @@ export async function login(formData: FormData) {
 }
 
 export async function ensureUserExists(email: string, name: string) {
-  console.log('=== ENSURE USER EXISTS START ===')
-  console.log('Email:', email)
-  console.log('Name:', name)
-
   try {
-    console.log('Checking if user exists in DB...')
     const existingUser = await prisma.user.findUnique({
       where: { email },
     })
 
-    console.log('Existing user:', existingUser)
-
     if (!existingUser) {
-      console.log('User not found, creating...')
       await prisma.user.create({
         data: {
           email,
@@ -70,19 +62,11 @@ export async function ensureUserExists(email: string, name: string) {
           role: 'EMPLOYEE' as UserRole,
         },
       })
-      console.log('User created in DB:', email)
-    } else {
-      console.log('User already exists:', existingUser.email)
     }
 
-    console.log('=== ENSURE USER EXISTS SUCCESS ===')
     return { success: true }
   } catch (error: any) {
-    console.error('=== ENSURE USER EXISTS ERROR ===')
-    console.error('Error:', error)
-    console.error('Error message:', error?.message)
-    console.error('Error code:', error?.code)
-    console.error('Error meta:', error?.meta)
+    console.error('Error ensuring user exists:', error)
     return { error: 'Error al verificar usuario' }
   }
 }
