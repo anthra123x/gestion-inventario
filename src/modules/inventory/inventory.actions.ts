@@ -8,6 +8,7 @@ import { validateProductData, validateNonNegative, validatePriceMargin } from '@
 
 export async function getProducts(search?: string, category?: ProductCategory) {
   const where = {
+    deletedAt: null,
     ...(search && {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
@@ -295,29 +296,13 @@ export async function deleteProduct(id: string) {
     console.log('  - RepairParts:', product.repairParts.length)
     console.log('  - InventoryMovements:', product.inventoryMovements.length)
 
-    // Si tiene relaciones con ventas o reparaciones, NO permitir eliminación directa
-    if (product.saleItems.length > 0 || product.repairParts.length > 0) {
-      console.log('Producto tiene relaciones con ventas/reparaciones - NO SE PUEDE ELIMINAR DIRECTAMENTE')
-      return {
-        error: 'No se puede eliminar este producto porque está relacionado con ventas o reparaciones. Usa la función de "Limpieza del Sistema" en el panel de administración.',
-      }
-    }
-
-    // Eliminar movimientos de inventario asociados
-    if (product.inventoryMovements.length > 0) {
-      console.log('Eliminando movimientos de inventario...')
-      await prisma.inventoryMovement.deleteMany({
-        where: { productId: id },
-      })
-      console.log('Movimientos de inventario eliminados')
-    }
-
-    // Eliminar el producto
-    console.log('Eliminando producto...')
-    await prisma.product.delete({
+    // Soft delete - marcar como eliminado en lugar de borrar permanentemente
+    console.log('Marcando producto como eliminado (soft delete)...')
+    await prisma.product.update({
       where: { id },
+      data: { deletedAt: new Date() },
     })
-    console.log('Producto eliminado exitosamente')
+    console.log('Producto marcado como eliminado exitosamente')
 
     revalidatePath('/inventory')
     return {

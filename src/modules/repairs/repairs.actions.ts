@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateRepairSchema, UpdateRepairSchema } from '@/lib/validations'
+import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
 import { RepairStatus } from '@prisma/client'
 
 export async function getRepairs(search?: string, status?: RepairStatus) {
@@ -127,6 +128,24 @@ export async function createRepair(formData: FormData) {
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
+    }
+  }
+
+  // Validate business logic
+  try {
+    validateNonNegative(validatedFields.data.cost, 'Costo')
+    if (validatedFields.data.parts && validatedFields.data.parts.length > 0) {
+      for (const part of validatedFields.data.parts) {
+        validateRepairPartData({
+          quantity: part.quantity,
+          unitCost: part.unitCost,
+          total: part.unitCost * part.quantity,
+        })
+      }
+    }
+  } catch (validationError: any) {
+    return {
+      error: validationError.message,
     }
   }
 

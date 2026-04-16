@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateSaleSchema } from '@/lib/validations'
+import { validateSaleItemData, validateNonNegative } from '@/lib/validations-data'
 import { PaymentMethod } from '@prisma/client'
 
 export async function getSales(search?: string, startDate?: Date, endDate?: Date) {
@@ -75,6 +76,21 @@ export async function createSale(formData: FormData) {
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
+    }
+  }
+
+  // Validate business logic
+  try {
+    for (const item of validatedFields.data.items) {
+      validateSaleItemData({
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.unitPrice * item.quantity,
+      })
+    }
+  } catch (validationError: any) {
+    return {
+      error: validationError.message,
     }
   }
 
