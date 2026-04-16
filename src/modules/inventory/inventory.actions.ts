@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateProductSchema, UpdateProductSchema, InventoryMovementSchema } from '@/lib/validations'
 import { ProductCategory } from '@prisma/client'
+import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
 
 export async function getProducts(search?: string, category?: ProductCategory) {
   const where = {
@@ -86,6 +87,19 @@ export async function createProduct(formData: FormData) {
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
+    }
+  }
+
+  // Validate business logic
+  try {
+    validateProductData({
+      stock: validatedFields.data.stock,
+      purchasePrice: validatedFields.data.purchasePrice,
+      salePrice: validatedFields.data.salePrice,
+    })
+  } catch (validationError: any) {
+    return {
+      error: validationError.message,
     }
   }
 
@@ -184,6 +198,27 @@ export async function updateProduct(id: string, formData: FormData) {
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
+    }
+  }
+
+  // Validate business logic (only if values are provided)
+  try {
+    if (validatedFields.data.stock !== undefined) {
+      validateNonNegative(validatedFields.data.stock, 'Stock')
+    }
+    if (validatedFields.data.purchasePrice !== undefined) {
+      validateNonNegative(validatedFields.data.purchasePrice, 'Precio de compra')
+    }
+    if (validatedFields.data.salePrice !== undefined) {
+      validateNonNegative(validatedFields.data.salePrice, 'Precio de venta')
+    }
+    // Validate price margin if both prices are provided
+    if (validatedFields.data.purchasePrice !== undefined && validatedFields.data.salePrice !== undefined) {
+      validatePriceMargin(validatedFields.data.purchasePrice, validatedFields.data.salePrice)
+    }
+  } catch (validationError: any) {
+    return {
+      error: validationError.message,
     }
   }
 
