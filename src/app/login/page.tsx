@@ -27,23 +27,16 @@ export default function LoginPage() {
     try {
       const supabase = createClientSupabase()
 
-      console.log('=== CLIENT LOGIN START ===')
-      console.log('Email:', email)
-
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (authError) {
-        console.log('AUTH ERROR:', authError.message)
         setError('Credenciales incorrectas')
         setIsLoading(false)
         return
       }
-
-      console.log('AUTH SUCCESS:', data.session ? 'Session created' : 'No session')
-      console.log('USER DATA:', data.user?.email, data.user?.user_metadata?.name)
 
       // Ensure user exists in our database
       if (data.user) {

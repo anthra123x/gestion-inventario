@@ -30,9 +30,6 @@ export default function RegisterPage() {
     try {
       const supabase = createClientSupabase()
 
-      console.log('=== CLIENT REGISTER START ===')
-      console.log('Email:', email, 'Name:', name)
-
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -44,13 +41,10 @@ export default function RegisterPage() {
       })
 
       if (authError) {
-        console.log('AUTH ERROR:', authError.message)
         setError(authError.message)
         setIsLoading(false)
         return
       }
-
-      console.log('AUTH SUCCESS:', data.user ? 'User created' : 'No user')
 
       // Ensure user exists in our database
       if (data.user) {
