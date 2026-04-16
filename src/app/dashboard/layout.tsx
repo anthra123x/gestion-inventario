@@ -1,21 +1,20 @@
 import { DashboardLayout as DashboardLayoutComponent } from '@/components/layout/dashboard-layout'
-import { UserRole } from '@prisma/client'
-
-// Temporarily using a mock user since getCurrentUser doesn't work in server actions
-const mockUser = {
-  id: '1',
-  email: 'admin@tecnicell.com',
-  name: 'Admin',
-  role: 'ADMIN' as UserRole,
-}
+import { getCurrentUser } from '@/modules/auth/auth.actions'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
   return (
-    <DashboardLayoutComponent user={mockUser}>
+    <DashboardLayoutComponent user={user}>
       {children}
     </DashboardLayoutComponent>
   )
