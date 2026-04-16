@@ -1,6 +1,6 @@
 'use server'
 
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-server'
 import { prisma } from '@/lib/prisma'
 import { LoginSchema, RegisterSchema } from '@/lib/validations'
 import { redirect } from 'next/navigation'
