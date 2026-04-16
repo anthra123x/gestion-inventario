@@ -33,7 +33,8 @@ export default function LoginPage() {
       })
 
       if (authError) {
-        setError('Credenciales incorrectas')
+        console.error('AUTH ERROR:', authError)
+        setError(authError.message || 'Credenciales incorrectas')
         setIsLoading(false)
         return
       }
@@ -46,9 +47,9 @@ export default function LoginPage() {
       // Redirect to dashboard
       router.push('/dashboard')
       router.refresh()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err)
-      setError('Error al iniciar sesión')
+      setError(err?.message || 'Error al iniciar sesión')
       setIsLoading(false)
     }
   }
