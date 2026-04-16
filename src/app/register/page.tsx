@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { register } from '@/modules/auth/auth.actions'
+import { createClientSupabase } from '@/lib/supabase'
+import { ensureUserExists } from '@/modules/auth/auth.actions'
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -22,17 +23,49 @@ export default function RegisterPage() {
     setSuccess('')
 
     const formData = new FormData(e.currentTarget)
-    const result = await register(formData)
+    const name = formData.get('name') as string
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
-    if (result?.error) {
-      setError(result.error)
-    } else if (result?.success) {
-      setSuccess(result.success)
+    try {
+      const supabase = createClientSupabase()
+
+      console.log('=== CLIENT REGISTER START ===')
+      console.log('Email:', email, 'Name:', name)
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      })
+
+      if (authError) {
+        console.log('AUTH ERROR:', authError.message)
+        setError(authError.message)
+        setIsLoading(false)
+        return
+      }
+
+      console.log('AUTH SUCCESS:', data.user ? 'User created' : 'No user')
+
+      // Ensure user exists in our database
+      if (data.user) {
+        await ensureUserExists(data.user.email || '', name)
+      }
+
+      setSuccess('Cuenta creada exitosamente. Redirigiendo al login...')
       setTimeout(() => {
         router.push('/login')
       }, 2000)
+    } catch (err) {
+      console.error('Register error:', err)
+      setError('Error al crear cuenta')
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   return (

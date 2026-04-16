@@ -8,6 +8,10 @@ import { revalidatePath } from 'next/cache'
 import { UserRole } from '@prisma/client'
 
 export async function login(formData: FormData) {
+  // This server action is no longer used for main login
+  // Auth is now handled client-side to properly set cookies
+  // This is kept for backward compatibility
+
   const validatedFields = LoginSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -19,7 +23,7 @@ export async function login(formData: FormData) {
     }
   }
 
-  const { email, password } = validatedFields.data
+  const { email } = validatedFields.data
 
   try {
     // Check if user exists in our database
@@ -33,20 +37,6 @@ export async function login(formData: FormData) {
       }
     }
 
-    // For simplicity, we'll use Supabase Auth for password verification
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      return {
-        error: 'Credenciales incorrectas',
-      }
-    }
-
-    revalidatePath('/dashboard')
-
     return {
       success: true,
     }
@@ -58,7 +48,35 @@ export async function login(formData: FormData) {
   }
 }
 
+export async function ensureUserExists(email: string, name: string) {
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    })
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email,
+          name,
+          role: 'EMPLOYEE' as UserRole,
+        },
+      })
+      console.log('User created in DB:', email)
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error ensuring user exists:', error)
+    return { error: 'Error al verificar usuario' }
+  }
+}
+
 export async function register(formData: FormData) {
+  // This server action is no longer used for main register
+  // Auth is now handled client-side to properly set cookies
+  // This is kept for backward compatibility
+
   const validatedFields = RegisterSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -71,7 +89,7 @@ export async function register(formData: FormData) {
     }
   }
 
-  const { email, password, name } = validatedFields.data
+  const { email, name } = validatedFields.data
 
   try {
     // Check if user already exists in our database
@@ -82,23 +100,6 @@ export async function register(formData: FormData) {
     if (existingUser) {
       return {
         error: 'El usuario ya existe',
-      }
-    }
-
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-        },
-      },
-    })
-
-    if (authError) {
-      return {
-        error: authError.message,
       }
     }
 

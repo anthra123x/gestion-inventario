@@ -33,6 +33,13 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
+  console.log('=== MIDDLEWARE ===')
+  console.log('Path:', req.nextUrl.pathname)
+  console.log('Session:', session ? 'EXISTS' : 'NULL')
+  if (session) {
+    console.log('User email:', session.user?.email)
+  }
+
   // Protected routes
   const protectedRoutes = ['/dashboard', '/inventory', '/sales', '/repairs', '/admin', '/reports']
   const isProtectedRoute = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))
@@ -42,16 +49,19 @@ export async function middleware(req: NextRequest) {
 
   // Redirect to login if trying to access protected route without session
   if (isProtectedRoute && !session) {
+    console.log('REDIRECT TO LOGIN: Protected route without session')
     const redirectUrl = new URL('/login', req.url)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Redirect to dashboard if trying to access auth route with session
   if (isAuthRoute && session) {
+    console.log('REDIRECT TO DASHBOARD: Auth route with session')
     const redirectUrl = new URL('/dashboard', req.url)
     return NextResponse.redirect(redirectUrl)
   }
 
+  console.log('PASS THROUGH')
   return res
 }
 

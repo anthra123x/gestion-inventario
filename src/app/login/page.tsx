@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { login } from '@/modules/auth/auth.actions'
+import { createClientSupabase } from '@/lib/supabase'
+import { ensureUserExists } from '@/modules/auth/auth.actions'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -20,13 +21,42 @@ export default function LoginPage() {
     setError('')
 
     const formData = new FormData(e.currentTarget)
-    const result = await login(formData)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
-    if (result?.error) {
-      setError(result.error)
-      setIsLoading(false)
-    } else {
+    try {
+      const supabase = createClientSupabase()
+
+      console.log('=== CLIENT LOGIN START ===')
+      console.log('Email:', email)
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (authError) {
+        console.log('AUTH ERROR:', authError.message)
+        setError('Credenciales incorrectas')
+        setIsLoading(false)
+        return
+      }
+
+      console.log('AUTH SUCCESS:', data.session ? 'Session created' : 'No session')
+      console.log('USER DATA:', data.user?.email, data.user?.user_metadata?.name)
+
+      // Ensure user exists in our database
+      if (data.user) {
+        await ensureUserExists(data.user.email || '', data.user.user_metadata?.name || data.user.email || '')
+      }
+
+      // Redirect to dashboard
       router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Error al iniciar sesión')
+      setIsLoading(false)
     }
   }
 
