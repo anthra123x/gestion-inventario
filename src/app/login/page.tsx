@@ -25,30 +25,56 @@ export default function LoginPage() {
     const password = formData.get('password') as string
 
     try {
+      console.log('=== LOGIN ATTEMPT ===')
+      console.log('Email:', email)
+
       const supabase = createClientSupabase()
 
+      console.log('Calling Supabase signInWithPassword...')
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log('Supabase response:', { data, authError })
+
       if (authError) {
         console.error('AUTH ERROR:', authError)
+        console.error('Error name:', authError.name)
+        console.error('Error message:', authError.message)
+        console.error('Error status:', authError.status)
         setError(authError.message || 'Credenciales incorrectas')
         setIsLoading(false)
         return
       }
 
-      // Ensure user exists in our database
+      console.log('AUTH SUCCESS')
+      console.log('User:', data.user)
+      console.log('Session:', data.session)
+
+      // Ensure user exists in our database (non-blocking)
       if (data.user) {
-        await ensureUserExists(data.user.email || '', data.user.user_metadata?.name || data.user.email || '')
+        console.log('Ensuring user exists in DB...')
+        try {
+          const ensureResult = await ensureUserExists(data.user.email || '', data.user.user_metadata?.name || data.user.email || '')
+          console.log('Ensure result:', ensureResult)
+        } catch (ensureError) {
+          console.error('Ensure user error (non-blocking):', ensureError)
+          // Continue anyway - user should already exist
+        }
       }
+
+      console.log('Redirecting to dashboard...')
 
       // Redirect to dashboard
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
-      console.error('Login error:', err)
+      console.error('=== LOGIN CATCH ERROR ===')
+      console.error('Error:', err)
+      console.error('Error name:', err?.name)
+      console.error('Error message:', err?.message)
+      console.error('Error stack:', err?.stack)
       setError(err?.message || 'Error al iniciar sesión')
       setIsLoading(false)
     }
