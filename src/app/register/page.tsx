@@ -53,7 +53,7 @@ export default function RegisterPage() {
 
       setSuccess('Cuenta creada exitosamente. Redirigiendo al login...')
       setTimeout(() => {
-        router.push('/login')
+        window.location.href = '/login'
       }, 2000)
     } catch (err) {
       console.error('Register error:', err)

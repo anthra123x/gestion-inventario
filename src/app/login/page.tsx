@@ -66,9 +66,8 @@ export default function LoginPage() {
 
       console.log('Redirecting to dashboard...')
 
-      // Redirect to dashboard
-      router.push('/dashboard')
-      router.refresh()
+      // Redirect to dashboard using window.location for immediate redirect
+      window.location.href = '/dashboard'
     } catch (err: any) {
       console.error('=== LOGIN CATCH ERROR ===')
       console.error('Error:', err)
