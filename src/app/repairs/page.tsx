@@ -243,7 +243,8 @@ export default function RepairsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
@@ -322,6 +323,7 @@ export default function RepairsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
           
           {filteredRepairs.length === 0 && (
             <div className="text-center py-8">

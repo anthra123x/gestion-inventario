@@ -205,7 +205,8 @@ export default function SalesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
@@ -261,6 +262,7 @@ export default function SalesPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
           
           {filteredSales.length === 0 && (
             <div className="text-center py-8">

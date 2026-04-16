@@ -214,7 +214,8 @@ export default function InventoryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Producto</TableHead>
@@ -304,6 +305,7 @@ export default function InventoryPage() {
               })}
             </TableBody>
           </Table>
+          </div>
           
           {filteredProducts.length === 0 && (
             <div className="text-center py-8">

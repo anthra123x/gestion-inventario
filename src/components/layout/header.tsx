@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Search, LogOut, User } from 'lucide-react'
+import { Bell, Search, LogOut, User, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -20,9 +20,10 @@ interface HeaderProps {
     email: string
     role: 'ADMIN' | 'EMPLOYEE'
   }
+  onMenuClick?: () => void
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter()
 
   function handleLogout() {
@@ -30,27 +31,35 @@ export function Header({ user }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-6">
-      <div className="flex items-center space-x-4">
-        <div className="relative">
+    <header className="flex h-16 items-center justify-between border-b bg-white px-4 lg:px-6">
+      <div className="flex items-center space-x-2 lg:space-x-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMenuClick}
+          className="lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <div className="relative flex-1 lg:flex-none">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             id="global-search"
             type="search"
-            placeholder="Buscar productos, clientes, reparaciones... (Alt+Q)"
-            className="w-96 pl-10"
+            placeholder="Buscar... (Alt+Q)"
+            className="w-full lg:w-96 pl-10"
           />
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon">
+      <div className="flex items-center space-x-2 lg:space-x-4">
+        <Button variant="ghost" size="icon" className="hidden lg:flex">
           <Bell className="h-5 w-5" />
         </Button>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center space-x-3 cursor-pointer">
-            <div className="text-right">
+          <DropdownMenuTrigger className="flex items-center space-x-2 lg:space-x-3 cursor-pointer">
+            <div className="text-right hidden sm:block">
               <div className="text-sm font-medium">{user.name}</div>
               <div className="text-xs text-gray-500 capitalize">{user.role.toLowerCase()}</div>
             </div>
