@@ -22,17 +22,6 @@ export async function getProducts(search?: string, category?: ProductCategory) {
   return await prisma.product.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    include: {
-      inventoryMovements: {
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: {
-            select: { name: true }
-          }
-        }
-      }
-    }
   })
 }
 

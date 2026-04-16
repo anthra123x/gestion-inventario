@@ -22,11 +22,22 @@ export async function getRepairs(search?: string, status?: RepairStatus) {
 
   return await prisma.repair.findMany({
     where,
-    include: {
-      client: true,
-      repairParts: {
-        include: {
-          product: true,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      device: true,
+      problem: true,
+      diagnosis: true,
+      status: true,
+      cost: true,
+      notes: true,
+      estimatedDate: true,
+      createdAt: true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
         },
       },
       user: {
@@ -35,7 +46,6 @@ export async function getRepairs(search?: string, status?: RepairStatus) {
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
   })
 }
 

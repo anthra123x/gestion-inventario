@@ -25,11 +25,18 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
 
   return await prisma.sale.findMany({
     where,
-    include: {
-      client: true,
-      saleItems: {
-        include: {
-          product: true,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      total: true,
+      paymentMethod: true,
+      notes: true,
+      createdAt: true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
         },
       },
       user: {
@@ -38,7 +45,6 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
   })
 }
 
