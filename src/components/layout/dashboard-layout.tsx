@@ -2,6 +2,7 @@
 
 import { Sidebar } from './sidebar'
 import { Header } from './header'
+import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -13,6 +14,8 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
+  useKeyboardShortcuts()
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar userRole={user.role} />
