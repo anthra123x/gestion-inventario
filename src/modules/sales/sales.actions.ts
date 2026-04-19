@@ -6,6 +6,13 @@ import { CreateSaleSchema } from '@/lib/validations'
 import { validateSaleItemData, validateNonNegative } from '@/lib/validations-data'
 import { PaymentMethod } from '@prisma/client'
 
+/**
+ * Obtiene lista de ventas con filtros opcionales
+ * @param search - Texto para buscar en cliente, teléfono o notas
+ * @param startDate - Fecha inicial para filtrar por fecha de venta
+ * @param endDate - Fecha final para filtrar por fecha de venta
+ * @returns Lista de ventas con información de cliente y usuario
+ */
 export async function getSales(search?: string, startDate?: Date, endDate?: Date) {
   const where = {
     ...(search && {
@@ -69,6 +76,11 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
   return salesWithItemCount
 }
 
+/**
+ * Obtiene una venta por ID con todos sus detalles
+ * @param id - ID de la venta
+ * @returns Venta con items, productos, cliente y usuario
+ */
 export async function getSaleById(id: string) {
   return await prisma.sale.findUnique({
     where: { id },
@@ -88,6 +100,11 @@ export async function getSaleById(id: string) {
   })
 }
 
+/**
+ * Crea una nueva venta con validaciones y transacciones
+ * @param formData - Datos del formulario de venta
+ * @returns Resultado de la operación con venta creada o error
+ */
 export async function createSale(formData: FormData) {
   const itemsJson = formData.get('items') as string
   const items = JSON.parse(itemsJson)
@@ -219,6 +236,12 @@ export async function createSale(formData: FormData) {
   }
 }
 
+/**
+ * Obtiene estadísticas de ventas para el dashboard
+ * @param startDate - Fecha inicial para filtrar estadísticas
+ * @param endDate - Fecha final para filtrar estadísticas
+ * @returns Estadísticas de ventas incluyendo total, revenue, top productos
+ */
 export async function getSalesStats(startDate?: Date, endDate?: Date) {
   const where = {
     ...(startDate && endDate && {

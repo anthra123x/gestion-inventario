@@ -6,6 +6,12 @@ import { CreateProductSchema, UpdateProductSchema, InventoryMovementSchema } fro
 import { ProductCategory } from '@prisma/client'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
 
+/**
+ * Obtiene lista de productos con filtros opcionales
+ * @param search - Texto para buscar en nombre, descripción o barcode
+ * @param category - Categoría para filtrar productos
+ * @returns Lista de productos activos (no eliminados)
+ */
 export async function getProducts(search?: string, category?: ProductCategory) {
   const where = {
     deletedAt: null,
@@ -25,6 +31,11 @@ export async function getProducts(search?: string, category?: ProductCategory) {
   })
 }
 
+/**
+ * Obtiene un producto por ID con sus movimientos de inventario
+ * @param id - ID del producto
+ * @returns Producto con movimientos de inventario ordenados por fecha
+ */
 export async function getProductById(id: string) {
   return await prisma.product.findUnique({
     where: { id },
@@ -41,6 +52,11 @@ export async function getProductById(id: string) {
   })
 }
 
+/**
+ * Crea un nuevo producto con validaciones
+ * @param formData - Datos del formulario de producto
+ * @returns Resultado de la operación con producto creado o error
+ */
 export async function createProduct(formData: FormData) {
   const rawData = {
     name: formData.get('name'),
@@ -145,8 +161,13 @@ export async function createProduct(formData: FormData) {
   }
 }
 
+/**
+ * Actualiza un producto existente con validaciones
+ * @param id - ID del producto a actualizar
+ * @param formData - Datos del formulario de producto
+ * @returns Resultado de la operación con producto actualizado o error
+ */
 export async function updateProduct(id: string, formData: FormData) {
-  console.log('=== UPDATE PRODUCT - DATA RECIBIDA ===')
   const rawData = {
     name: formData.get('name'),
     description: formData.get('description'),
@@ -247,6 +268,11 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 }
 
+/**
+ * Elimina un producto usando soft delete (marca como eliminado)
+ * @param id - ID del producto a eliminar
+ * @returns Resultado de la operación
+ */
 export async function deleteProduct(id: string) {
   try {
     // Verificar si el producto tiene relaciones antes de eliminar
