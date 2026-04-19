@@ -259,7 +259,7 @@ export default function SalesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/sales/${sale.id}`}>
+                    <Link href={`/sales/${sale.id}/print`}>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
