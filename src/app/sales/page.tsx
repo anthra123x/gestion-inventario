@@ -241,7 +241,7 @@ export default function SalesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {sale.saleItems.length} producto{sale.saleItems.length !== 1 ? 's' : ''}
+                      {sale._count?.saleItems || 0} producto{(sale._count?.saleItems || 0) !== 1 ? 's' : ''}
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">${sale.total.toFixed(2)}</TableCell>

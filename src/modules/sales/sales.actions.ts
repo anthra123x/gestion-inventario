@@ -25,7 +25,7 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
     }),
   }
 
-  return await prisma.sale.findMany({
+  const sales = await prisma.sale.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     select: {
@@ -52,6 +52,21 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
       },
     },
   })
+
+  // Agregar conteo de items para cada venta
+  const salesWithItemCount = await Promise.all(
+    sales.map(async (sale) => {
+      const itemCount = await prisma.saleItem.count({
+        where: { saleId: sale.id }
+      })
+      return {
+        ...sale,
+        _count: { saleItems: itemCount }
+      }
+    })
+  )
+
+  return salesWithItemCount
 }
 
 export async function getSaleById(id: string) {
