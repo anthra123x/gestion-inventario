@@ -42,7 +42,6 @@ export async function getProductById(id: string) {
 }
 
 export async function createProduct(formData: FormData) {
-  console.log('=== CREATE PRODUCT - DATA RECIBIDA ===')
   const rawData = {
     name: formData.get('name'),
     description: formData.get('description'),
@@ -54,7 +53,6 @@ export async function createProduct(formData: FormData) {
     supplier: formData.get('supplier'),
     barcode: formData.get('barcode'),
   }
-  console.log('Raw data:', rawData)
 
   // Normalizar datos antes de validar
   const normalizedData = {
@@ -68,7 +66,6 @@ export async function createProduct(formData: FormData) {
     supplier: formData.get('supplier') || null,
     barcode: formData.get('barcode') || null,
   }
-  console.log('Normalized data:', normalizedData)
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
 
@@ -94,15 +91,12 @@ export async function createProduct(formData: FormData) {
   }
 
   try {
-    console.log('Datos validados, intentando crear producto en DB...')
     const product = await prisma.product.create({
       data: validatedFields.data,
     })
-    console.log('Producto creado exitosamente:', product.id)
 
     // Create initial inventory movement if stock > 0
     if (validatedFields.data.stock > 0) {
-      console.log('Creando movimiento de inventario inicial...')
       await prisma.inventoryMovement.create({
         data: {
           productId: product.id,
@@ -111,7 +105,6 @@ export async function createProduct(formData: FormData) {
           reason: 'Stock inicial',
         },
       })
-      console.log('Movimiento de inventario creado')
     }
 
     revalidatePath('/inventory')
@@ -165,7 +158,6 @@ export async function updateProduct(id: string, formData: FormData) {
     supplier: formData.get('supplier'),
     barcode: formData.get('barcode'),
   }
-  console.log('Raw data:', rawData)
 
   // Normalizar datos antes de validar
   const normalizedData = {
@@ -179,7 +171,6 @@ export async function updateProduct(id: string, formData: FormData) {
     supplier: formData.get('supplier') || null,
     barcode: formData.get('barcode') || null,
   }
-  console.log('Normalized data:', normalizedData)
 
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
 
@@ -213,12 +204,10 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   try {
-    console.log('Datos validados, intentando actualizar producto en DB...')
     const product = await prisma.product.update({
       where: { id },
       data: validatedFields.data,
     })
-    console.log('Producto actualizado exitosamente:', product.id)
 
     revalidatePath('/inventory')
     revalidatePath(`/inventory/${id}`)
@@ -259,8 +248,6 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
-  console.log('=== DELETE PRODUCT - ID:', id)
-
   try {
     // Verificar si el producto tiene relaciones antes de eliminar
     const product = await prisma.product.findUnique({
@@ -273,25 +260,16 @@ export async function deleteProduct(id: string) {
     })
 
     if (!product) {
-      console.error('Producto no encontrado:', id)
       return {
         error: 'Producto no encontrado',
       }
     }
 
-    console.log('Producto encontrado:', product.name)
-    console.log('Relaciones:')
-    console.log('  - SaleItems:', product.saleItems.length)
-    console.log('  - RepairParts:', product.repairParts.length)
-    console.log('  - InventoryMovements:', product.inventoryMovements.length)
-
     // Soft delete - marcar como eliminado en lugar de borrar permanentemente
-    console.log('Marcando producto como eliminado (soft delete)...')
     await prisma.product.update({
       where: { id },
       data: { deletedAt: new Date() },
     })
-    console.log('Producto marcado como eliminado exitosamente')
 
     revalidatePath('/inventory')
     return {

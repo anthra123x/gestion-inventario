@@ -86,26 +86,18 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         salePrice: Number(data.salePrice) || 0,
       }
 
-      console.log('Datos normalizados desde frontend:', normalizedData)
-
       const formData = new FormData()
-      Object.keys(normalizedData).forEach(key => {
-        const value = normalizedData[key]
-        if (value !== undefined && value !== null && value !== '') {
-          formData.append(key, value.toString())
-        }
+      Object.entries(normalizedData).forEach(([key, value]) => {
+        formData.append(key, String(value))
       })
 
-      console.log('Enviando FormData al backend...')
       const result = await onSubmit(formData)
-      console.log('Respuesta del backend:', result)
 
       if (result?.error) {
         setError(result.error)
         toast.error('Error al guardar producto', {
           description: result.error,
         })
-        console.error('Error del backend:', result.error)
       } else if (result?.success) {
         toast.success('Producto guardado exitosamente', {
           description: product ? 'El producto ha sido actualizado' : 'El producto ha sido creado',
