@@ -228,6 +228,13 @@ export default function SalesPage() {
                         <div className="font-medium">{sale.client.name}</div>
                         <div className="text-sm text-gray-500">{sale.client.phone}</div>
                       </div>
+                    ) : sale.clientName ? (
+                      <div>
+                        <div className="font-medium">{sale.clientName}</div>
+                        {sale.clientPhone && (
+                          <div className="text-sm text-gray-500">{sale.clientPhone}</div>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-gray-500">Cliente ocasional</span>
                     )}

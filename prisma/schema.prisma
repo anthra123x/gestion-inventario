@@ -109,6 +109,10 @@ model Product {
 model Sale {
   id            String        @id @default(cuid())
   clientId      String?
+  clientName    String?
+  clientPhone   String?
+  clientEmail   String?
+  clientAddress String?
   total         Float
   paymentMethod PaymentMethod
   notes         String?

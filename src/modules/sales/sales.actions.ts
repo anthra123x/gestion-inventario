@@ -12,6 +12,8 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
       OR: [
         { client: { name: { contains: search, mode: 'insensitive' as const } } },
         { client: { phone: { contains: search, mode: 'insensitive' as const } } },
+        { clientName: { contains: search, mode: 'insensitive' as const } },
+        { clientPhone: { contains: search, mode: 'insensitive' as const } },
         { notes: { contains: search, mode: 'insensitive' as const } },
       ],
     }),
@@ -32,6 +34,10 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
       paymentMethod: true,
       notes: true,
       createdAt: true,
+      clientName: true,
+      clientPhone: true,
+      clientEmail: true,
+      clientAddress: true,
       client: {
         select: {
           id: true,
@@ -73,6 +79,10 @@ export async function createSale(formData: FormData) {
 
   const validatedFields = CreateSaleSchema.safeParse({
     clientId: formData.get('clientId') || null,
+    clientName: formData.get('clientName') || null,
+    clientPhone: formData.get('clientPhone') || null,
+    clientEmail: formData.get('clientEmail') || null,
+    clientAddress: formData.get('clientAddress') || null,
     items,
     paymentMethod: formData.get('paymentMethod') as PaymentMethod,
     notes: formData.get('notes') || null,
@@ -101,7 +111,7 @@ export async function createSale(formData: FormData) {
   }
 
   try {
-    const { clientId, items, paymentMethod, notes } = validatedFields.data
+    const { clientId, clientName, clientPhone, clientEmail, clientAddress, items, paymentMethod, notes } = validatedFields.data
 
     // Calculate total
     const total = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
@@ -123,10 +133,14 @@ export async function createSale(formData: FormData) {
         }
       }
 
-      // Create sale
+      // Create sale with client data
       const newSale = await tx.sale.create({
         data: {
           clientId,
+          clientName,
+          clientPhone,
+          clientEmail,
+          clientAddress,
           total,
           paymentMethod,
           notes,

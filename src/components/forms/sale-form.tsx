@@ -14,10 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { Plus, Trash2, Search, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Search, Loader2, User, Phone, Mail, MapPin } from 'lucide-react'
 import { getProducts } from '@/modules/inventory/inventory.actions'
-import { getClients } from '@/modules/clients/clients.actions'
-import { Product, Client, PaymentMethod } from '@prisma/client'
+import { Product, PaymentMethod } from '@prisma/client'
+
+function formatCOP(value: number): string {
+  return value.toLocaleString('es-CO')
+}
 
 interface SaleItem {
   productId: string
@@ -35,7 +38,6 @@ interface SaleFormProps {
 export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   const [items, setItems] = useState<SaleItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [clients, setClients] = useState<Client[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [productSearch, setProductSearch] = useState('')
@@ -52,15 +54,21 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   } = useForm({
     resolver: zodResolver(CreateSaleSchema),
     defaultValues: {
-      clientId: '',
       paymentMethod: 'CASH' as PaymentMethod,
       notes: '',
+      clientName: '',
+      clientPhone: '',
+      clientEmail: '',
+      clientAddress: '',
     }
   })
 
-  const selectedClientId = watch('clientId')
   const paymentMethod = watch('paymentMethod')
   const notes = watch('notes')
+  const clientName = watch('clientName')
+  const clientPhone = watch('clientPhone')
+  const clientEmail = watch('clientEmail')
+  const clientAddress = watch('clientAddress')
 
   useEffect(() => {
     loadInitialData()
@@ -69,15 +77,11 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   async function loadInitialData() {
     setIsLoadingData(true)
     try {
-      const [productsData, clientsData] = await Promise.all([
-        getProducts(),
-        getClients(),
-      ])
+      const productsData = await getProducts()
       setProducts(productsData)
-      setClients(clientsData)
     } catch (error) {
       toast.error('Error al cargar datos', {
-        description: 'No se pudieron cargar los productos y clientes. Por favor intenta nuevamente.',
+        description: 'No se pudieron cargar los productos. Por favor intenta nuevamente.',
       })
     } finally {
       setIsLoadingData(false)
@@ -166,7 +170,11 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
     setIsSubmitting(true)
 
     const formData = new FormData()
-    formData.append('clientId', selectedClientId || '')
+    formData.append('clientId', '')
+    formData.append('clientName', clientName || '')
+    formData.append('clientPhone', clientPhone || '')
+    formData.append('clientEmail', clientEmail || '')
+    formData.append('clientAddress', clientAddress || '')
     formData.append('paymentMethod', paymentMethod || 'CASH')
     formData.append('notes', notes || '')
     formData.append('items', JSON.stringify(items))
@@ -178,7 +186,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
         description: result.error,
       })
     } else {
-      toast.success('Venta registrada exitosamente', {
+      toast.success('Factura generada exitosamente', {
         description: 'La venta ha sido guardada en el sistema.',
       })
       // Reset form on success
@@ -186,9 +194,12 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
       setSelectedProduct(null)
       setQuantity(1)
       setProductSearch('')
-      setValue('clientId', '')
       setValue('paymentMethod', 'CASH')
       setValue('notes', '')
+      setValue('clientName', '')
+      setValue('clientPhone', '')
+      setValue('clientEmail', '')
+      setValue('clientAddress', '')
     }
 
     setIsSubmitting(false)
@@ -204,42 +215,76 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Nueva Venta</CardTitle>
+          <CardTitle>Generar Factura</CardTitle>
           <CardDescription>Registra una nueva venta en el sistema</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Client Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="clientId">Cliente</Label>
-              <Select value={selectedClientId} onValueChange={(value: string | null) => value && setValue('clientId', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un cliente (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Cliente ocasional</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name} - {client.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Client Data */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="h-5 w-5" />
+              <h3 className="font-semibold">Datos del Cliente</h3>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientName">Nombre *</Label>
+                <Input
+                  id="clientName"
+                  {...register('clientName')}
+                  placeholder="Nombre del cliente"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientPhone">Teléfono</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    id="clientPhone"
+                    {...register('clientPhone')}
+                    placeholder="Teléfono (opcional)"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientEmail">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    id="clientEmail"
+                    {...register('clientEmail')}
+                    placeholder="Email (opcional)"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientAddress">Dirección</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    id="clientAddress"
+                    {...register('clientAddress')}
+                    placeholder="Dirección (opcional)"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Método de Pago</Label>
-              <Select value={paymentMethod} onValueChange={(value) => setValue('paymentMethod', value as PaymentMethod)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona método de pago" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Efectivo</SelectItem>
-                  <SelectItem value="CARD">Tarjeta</SelectItem>
-                  <SelectItem value="TRANSFER">Transferencia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Método de Pago</Label>
+            <Select value={paymentMethod} onValueChange={(value) => setValue('paymentMethod', value as PaymentMethod)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona método de pago" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CASH">Efectivo</SelectItem>
+                <SelectItem value="TRANSFER">Transferencia</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Product Selection */}
@@ -308,7 +353,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-medium">
-                                ${product.salePrice.toLocaleString('es-CO')}
+                                ${formatCOP(product.salePrice)}
                               </TableCell>
                               <TableCell>
                                 <Badge
@@ -342,7 +387,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                         <div className="flex-1">
                           <p className="font-medium text-lg">{selectedProduct.name}</p>
                           <div className="text-sm text-gray-500 space-y-1">
-                            <p>Precio: ${selectedProduct.salePrice.toLocaleString('es-CO')} COP</p>
+                            <p>Precio: ${formatCOP(selectedProduct.salePrice)} COP</p>
                             <p>Stock disponible: {selectedProduct.stock} unidades</p>
                           </div>
                         </div>
@@ -400,7 +445,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          ${item.unitPrice.toLocaleString('es-CO')}
+                          ${formatCOP(item.unitPrice)}
                         </TableCell>
                         <TableCell>
                           <Input
@@ -413,7 +458,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                           />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          ${item.total.toLocaleString('es-CO')}
+                          ${formatCOP(item.total)}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -433,7 +478,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
 
                 <div className="mt-4 flex justify-end">
                   <div className="text-2xl font-bold">
-                    Total: ${total.toLocaleString('es-CO')} COP
+                    Total: ${formatCOP(total)} COP
                   </div>
                 </div>
               </CardContent>
@@ -466,7 +511,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
               onClick={handleFormSubmit}
               disabled={items.length === 0 || isSubmitting || isLoading}
             >
-              {isSubmitting ? 'Procesando...' : 'Registrar Venta'}
+              {isSubmitting ? 'Procesando...' : 'Generar Factura'}
             </Button>
           </div>
         </CardContent>
