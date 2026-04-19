@@ -3,14 +3,15 @@ import { updateProduct, getProductById } from '@/modules/inventory/inventory.act
 import { notFound } from 'next/navigation'
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductById(params.id)
-  
+  const { id } = await params
+  const product = await getProductById(id)
+
   if (!product) {
     notFound()
   }
@@ -18,7 +19,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   async function handleSubmit(formData: FormData) {
     'use server'
 
-    const result = await updateProduct(params.id, formData)
+    const result = await updateProduct(id, formData)
 
     if (result?.error) {
       return { error: result.error }
