@@ -115,79 +115,83 @@ export default function SaleDetailPage() {
 
         {/* Invoice */}
         <Card className="print:shadow-none print:border print:border-gray-300">
-          <CardHeader className="print:px-4 print:py-2">
+          <CardHeader className="print:px-4 print:py-2 print:border-b print:border-gray-300">
             <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-2xl">Factura #{sale.id.slice(-6).toUpperCase()}</CardTitle>
-                <CardDescription>
+              <div className="print:w-1/2">
+                <CardTitle className="text-2xl print:text-xl">Factura #{sale.id.slice(-6).toUpperCase()}</CardTitle>
+                <CardDescription className="print:text-sm">
                   Fecha: {new Date(sale.createdAt).toLocaleDateString('es-CO')} at {new Date(sale.createdAt).toLocaleTimeString('es-CO')}
                 </CardDescription>
               </div>
-              <Badge variant={getPaymentMethodColor(sale.paymentMethod) as any}>
-                {getPaymentMethodLabel(sale.paymentMethod)}
-              </Badge>
+              <div className="print:w-1/2 print:text-right">
+                <Badge variant={getPaymentMethodColor(sale.paymentMethod) as any} className="print:inline-block print:border print:border-gray-300">
+                  {getPaymentMethodLabel(sale.paymentMethod)}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6 print:px-4 print:py-2">
+          <CardContent className="space-y-6 print:px-4 print:py-4">
             {/* Client Info */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Datos del Cliente</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 print:border print:border-gray-300 print:p-4 print:rounded">
+              <h3 className="font-semibold text-lg print:text-base print:border-b print:border-gray-300 print:pb-2">Datos del Cliente</h3>
+              <div className="grid grid-cols-2 gap-4 print:grid-cols-4 print:gap-2">
                 <div>
-                  <p className="text-sm text-gray-500">Nombre</p>
-                  <p className="font-medium">{clientData.name}</p>
+                  <p className="text-sm text-gray-500 print:text-xs">Nombre</p>
+                  <p className="font-medium print:text-sm">{clientData.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Teléfono</p>
-                  <p className="font-medium">{clientData.phone || '-'}</p>
+                  <p className="text-sm text-gray-500 print:text-xs">Teléfono</p>
+                  <p className="font-medium print:text-sm">{clientData.phone || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{clientData.email || '-'}</p>
+                  <p className="text-sm text-gray-500 print:text-xs">Email</p>
+                  <p className="font-medium print:text-sm">{clientData.email || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Dirección</p>
-                  <p className="font-medium">{clientData.address || '-'}</p>
+                  <p className="text-sm text-gray-500 print:text-xs">Dirección</p>
+                  <p className="font-medium print:text-sm">{clientData.address || '-'}</p>
                 </div>
               </div>
             </div>
 
             {/* Items */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Productos</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Producto</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Precio Unit.</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sale.saleItems.map((item: any) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{item.product.name}</div>
-                          {item.product.barcode && (
-                            <div className="text-sm text-gray-500">SKU: {item.product.barcode}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">${formatCOP(item.unitPrice)}</TableCell>
-                      <TableCell className="text-right font-medium">${formatCOP(item.total)}</TableCell>
+              <h3 className="font-semibold text-lg print:text-base print:border-b print:border-gray-300 print:pb-2">Productos</h3>
+              <div className="print:border print:border-gray-300 print:rounded print:overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="print:bg-gray-100">
+                      <TableHead className="print:text-sm">Producto</TableHead>
+                      <TableHead className="text-right print:text-sm">Cantidad</TableHead>
+                      <TableHead className="text-right print:text-sm">Precio Unit.</TableHead>
+                      <TableHead className="text-right print:text-sm">Total</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {sale.saleItems.map((item: any) => (
+                      <TableRow key={item.id} className="print:border-b print:border-gray-300">
+                        <TableCell className="print:text-sm">
+                          <div>
+                            <div className="font-medium">{item.product.name}</div>
+                            {item.product.barcode && (
+                              <div className="text-sm text-gray-500 print:text-xs">SKU: {item.product.barcode}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right print:text-sm">{item.quantity}</TableCell>
+                        <TableCell className="text-right print:text-sm">${formatCOP(item.unitPrice)}</TableCell>
+                        <TableCell className="text-right font-medium print:text-sm">${formatCOP(item.total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             {/* Total */}
-            <div className="flex justify-end">
-              <div className="space-y-2 text-right">
-                <div className="text-3xl font-bold">
+            <div className="flex justify-end print:border-t print:border-gray-300 print:pt-4">
+              <div className="space-y-2 text-right print:w-1/2">
+                <div className="text-3xl font-bold print:text-2xl">
                   Total: ${formatCOP(sale.total)} COP
                 </div>
               </div>
@@ -195,16 +199,16 @@ export default function SaleDetailPage() {
 
             {/* Notes */}
             {sale.notes && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Notas</h3>
-                <p className="text-gray-600">{sale.notes}</p>
+              <div className="space-y-2 print:border print:border-gray-300 print:p-4 print:rounded">
+                <h3 className="font-semibold text-lg print:text-base">Notas</h3>
+                <p className="text-gray-600 print:text-sm">{sale.notes}</p>
               </div>
             )}
 
             {/* Footer */}
-            <div className="border-t pt-4 text-sm text-gray-500 print:mt-8">
-              <p>Generado por Tecnicell - Sistema de Gestión</p>
-              <p>Factura generada el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}</p>
+            <div className="border-t pt-4 text-sm text-gray-500 print:mt-8 print:border-t print:border-gray-300 print:pt-4">
+              <p className="print:text-xs">Generado por Tecnicell - Sistema de Gestión</p>
+              <p className="print:text-xs">Factura generada el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}</p>
             </div>
           </CardContent>
         </Card>
@@ -212,28 +216,75 @@ export default function SaleDetailPage() {
 
       <style jsx global>{`
         @media print {
+          @page {
+            margin: 0.5cm;
+            size: A4;
+          }
+          
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
           .no-print {
             display: none !important;
           }
-          body {
-            background: white !important;
-          }
+          
           .print\\:shadow-none {
             box-shadow: none !important;
           }
+          
           .print\\:border {
             border: 1px solid #e5e7eb !important;
           }
+          
           .print\\:px-4 {
             padding-left: 1rem !important;
             padding-right: 1rem !important;
           }
+          
           .print\\:py-2 {
             padding-top: 0.5rem !important;
             padding-bottom: 0.5rem !important;
           }
+          
           .print\\:mt-8 {
             margin-top: 2rem !important;
+          }
+          
+          /* Ocultar elementos de navegación del navegador no es posible desde CSS,
+             pero podemos optimizar el contenido para impresión */
+          
+          .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          .space-y-6 > * + * {
+            margin-top: 1rem !important;
+          }
+          
+          /* Mejorar tabla para impresión */
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+          
+          th, td {
+            border: 1px solid #e5e7eb !important;
+            padding: 0.5rem !important;
+          }
+          
+          th {
+            background-color: #f9fafb !important;
+            font-weight: 600 !important;
           }
         }
       `}</style>
