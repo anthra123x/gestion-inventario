@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Settings, Shield, Trash2, UserPlus, Database, Download, AlertTriangle } from 'lucide-react'
+import { Users, Settings, Trash2, UserPlus, Database, Download, AlertTriangle, Building2 } from 'lucide-react'
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
 import { exportData, cleanupProducts, cleanupSales, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
@@ -240,13 +240,13 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Panel de Administración</h1>
-        <p className="text-gray-600">Configuración y gestión del sistema</p>
+    <div className="space-y-8 pb-8">
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight">Panel de Administración</h1>
+        <p className="text-gray-600 text-lg">Configuración y gestión del sistema</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -477,46 +477,6 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Seguridad
-            </CardTitle>
-            <CardDescription>
-              Configuración de seguridad y permisos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-blue-900 mb-2">Configuración Actual</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Autenticación: Supabase Auth</li>
-                  <li>• Roles: ADMIN, EMPLOYEE</li>
-                  <li>• Encriptación: SSL/TLS</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <h4 className="font-semibold text-yellow-900 mb-2">Recomendaciones</h4>
-                <ul className="text-sm text-yellow-800 space-y-1">
-                  <li>• Cambiar contraseñas periódicamente</li>
-                  <li>• No compartir credenciales</li>
-                  <li>• Usar contraseñas fuertes</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">Estado del Sistema</h4>
-                <p className="text-sm text-green-800">
-                  El sistema está configurado con las mejores prácticas de seguridad básicas.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
               <Download className="h-5 w-5" />
               Exportación de Datos
             </CardTitle>
@@ -562,33 +522,36 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-2">
+        <Card className="col-span-2 border-red-200 bg-red-50/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-red-700">
               <Database className="h-5 w-5" />
-              Limpieza del Sistema
+              Zona Crítica - Sistema
             </CardTitle>
-            <CardDescription>
-              Gestión de datos y limpieza del sistema (Solo Administradores)
+            <CardDescription className="text-red-600">
+              Backup y limpieza del sistema (Solo Administradores)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid gap-6 md:grid-cols-2">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-blue-900 mb-2">Backup de Datos</h4>
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Backup de Datos
+                </h4>
                 <p className="text-sm text-blue-800 mb-3">
                   Exporta todos los datos del sistema antes de realizar cualquier limpieza.
                 </p>
-                <Button onClick={handleExportData} variant="outline" className="w-full">
+                <Button onClick={handleExportData} variant="default" className="w-full">
                   <Download className="h-4 w-4 mr-2" />
-                  Exportar Backup
+                  Generar Backup Completo
                 </Button>
               </div>
 
-              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="p-4 bg-red-100 rounded-lg border border-red-300">
                 <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Zona de Peligro - Limpieza de Datos
+                  Limpieza del Sistema
                 </h4>
                 <p className="text-sm text-red-800 mb-3">
                   Estas acciones eliminarán datos permanentemente. Se generará un backup automáticamente antes de ejecutar.
@@ -599,28 +562,28 @@ export default function AdminPage() {
                     variant="destructive"
                     size="sm"
                   >
-                    Limpiar Productos
+                    Productos
                   </Button>
                   <Button
                     onClick={() => openCleanupDialog('sales')}
                     variant="destructive"
                     size="sm"
                   >
-                    Limpiar Ventas
+                    Ventas
                   </Button>
                   <Button
                     onClick={() => openCleanupDialog('repairs')}
                     variant="destructive"
                     size="sm"
                   >
-                    Limpiar Reparaciones
+                    Reparaciones
                   </Button>
                   <Button
                     onClick={() => openCleanupDialog('all')}
                     variant="destructive"
                     size="sm"
                   >
-                    Limpiar TODO
+                    Todo
                   </Button>
                 </div>
               </div>
