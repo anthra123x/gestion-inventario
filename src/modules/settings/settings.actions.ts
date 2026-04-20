@@ -66,7 +66,6 @@ export async function updateSystemSettings(formData: FormData) {
       settings,
     }
   } catch (error) {
-    console.error('Update settings error:', error)
     return {
       error: 'Error al actualizar configuración',
     }

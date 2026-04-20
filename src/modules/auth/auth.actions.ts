@@ -41,7 +41,6 @@ export async function login(formData: FormData) {
       success: true,
     }
   } catch (error) {
-    console.error('Login error:', error)
     return {
       error: 'Error al iniciar sesión',
     }
@@ -66,7 +65,6 @@ export async function ensureUserExists(email: string, name: string) {
 
     return { success: true }
   } catch (error: any) {
-    console.error('Error ensuring user exists:', error)
     return { error: 'Error al verificar usuario' }
   }
 }
@@ -116,7 +114,6 @@ export async function register(formData: FormData) {
       success: 'Usuario creado exitosamente. Por favor inicia sesión.',
     }
   } catch (error) {
-    console.error('Register error:', error)
     return {
       error: 'Error al registrar usuario',
     }
@@ -171,7 +168,6 @@ export async function getCurrentUser() {
 
     return dbUser
   } catch (error) {
-    console.error('Error getting current user:', error)
     return null
   }
 }
@@ -289,7 +285,6 @@ export async function createUserByAdmin(formData: FormData) {
       success: `Usuario creado exitosamente. Contraseña temporal: ${tempPassword}`,
     }
   } catch (error) {
-    console.error('Create user error:', error)
     return {
       error: 'Error al crear usuario',
     }

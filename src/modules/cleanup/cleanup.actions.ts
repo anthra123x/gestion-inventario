@@ -31,7 +31,6 @@ export async function exportData() {
       data,
     }
   } catch (error) {
-    console.error('Error exporting data:', error)
     return {
       success: false,
       error: 'Error al exportar datos',
@@ -58,7 +57,6 @@ export async function cleanupProducts() {
       success: `Limpieza completada: ${deletedProducts.count} productos y ${deletedMovements.count} movimientos eliminados`,
     }
   } catch (error) {
-    console.error('Error cleaning up products:', error)
     return {
       error: 'Error al limpiar productos',
     }
@@ -84,7 +82,6 @@ export async function cleanupSales() {
       success: `Limpieza completada: ${deletedSales.count} ventas y ${deletedSaleItems.count} items eliminados`,
     }
   } catch (error) {
-    console.error('Error cleaning up sales:', error)
     return {
       error: 'Error al limpiar ventas',
     }
@@ -110,7 +107,6 @@ export async function cleanupRepairs() {
       success: `Limpieza completada: ${deletedRepairs.count} reparaciones y ${deletedRepairParts.count} repuestos eliminados`,
     }
   } catch (error) {
-    console.error('Error cleaning up repairs:', error)
     return {
       error: 'Error al limpiar reparaciones',
     }
@@ -130,7 +126,6 @@ export async function cleanupClients() {
       success: `Limpieza completada: ${deletedClients.count} clientes eliminados`,
     }
   } catch (error) {
-    console.error('Error cleaning up clients:', error)
     return {
       error: 'Error al limpiar clientes',
     }
@@ -139,8 +134,6 @@ export async function cleanupClients() {
 
 export async function cleanupAll() {
   try {
-    console.log('=== CLEANUP ALL STARTED ===')
-
     // Orden de eliminación: relaciones primero
     const deletedSaleItems = await prisma.saleItem.deleteMany({})
     const deletedRepairParts = await prisma.repairPart.deleteMany({})
@@ -150,15 +143,6 @@ export async function cleanupAll() {
     const deletedRepairs = await prisma.repair.deleteMany({})
     const deletedProducts = await prisma.product.deleteMany({})
     const deletedClients = await prisma.client.deleteMany({})
-
-    console.log('Limpieza completa:')
-    console.log('  - SaleItems:', deletedSaleItems.count)
-    console.log('  - RepairParts:', deletedRepairParts.count)
-    console.log('  - InventoryMovements:', deletedMovements.count)
-    console.log('  - Sales:', deletedSales.count)
-    console.log('  - Repairs:', deletedRepairs.count)
-    console.log('  - Products:', deletedProducts.count)
-    console.log('  - Clients:', deletedClients.count)
 
     revalidatePath('/inventory')
     revalidatePath('/sales')
@@ -170,7 +154,6 @@ export async function cleanupAll() {
       success: 'Limpieza completa del sistema ejecutada exitosamente',
     }
   } catch (error) {
-    console.error('Error cleaning up all:', error)
     return {
       error: 'Error al limpiar el sistema',
     }

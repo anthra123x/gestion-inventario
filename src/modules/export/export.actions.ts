@@ -26,7 +26,6 @@ export async function exportProductsToExcel() {
       filename: `productos_${new Date().toISOString().split('T')[0]}.xlsx`,
     }
   } catch (error) {
-    console.error('Error exporting products:', error)
     return {
       success: false,
       error: 'Error al exportar productos',
@@ -63,7 +62,6 @@ export async function exportSalesToExcel() {
       filename: `ventas_${new Date().toISOString().split('T')[0]}.xlsx`,
     }
   } catch (error) {
-    console.error('Error exporting sales:', error)
     return {
       success: false,
       error: 'Error al exportar ventas',
@@ -104,7 +102,6 @@ export async function exportRepairsToExcel() {
       filename: `reparaciones_${new Date().toISOString().split('T')[0]}.xlsx`,
     }
   } catch (error) {
-    console.error('Error exporting repairs:', error)
     return {
       success: false,
       error: 'Error al exportar reparaciones',
@@ -132,7 +129,6 @@ export async function exportClientsToExcel() {
       filename: `clientes_${new Date().toISOString().split('T')[0]}.xlsx`,
     }
   } catch (error) {
-    console.error('Error exporting clients:', error)
     return {
       success: false,
       error: 'Error al exportar clientes',
