@@ -86,7 +86,6 @@ export async function createProduct(formData: FormData) {
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
 
   if (!validatedFields.success) {
-    console.error('VALIDATION ERROR:', validatedFields.error.issues)
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
@@ -129,11 +128,6 @@ export async function createProduct(formData: FormData) {
       product,
     }
   } catch (error: any) {
-    console.error('=== ERROR REAL DE PRISMA ===')
-    console.error('Error:', error)
-    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
-
     // Manejar error de unique constraint específicamente
     if (error.code === 'P2002') {
       // P2002: Unique constraint failed
@@ -196,7 +190,6 @@ export async function updateProduct(id: string, formData: FormData) {
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
 
   if (!validatedFields.success) {
-    console.error('VALIDATION ERROR:', validatedFields.error.issues)
     const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
       error: errorMessages || 'Datos inválidos',
@@ -237,10 +230,6 @@ export async function updateProduct(id: string, formData: FormData) {
       product,
     }
   } catch (error: any) {
-    console.error('=== ERROR REAL DE PRISMA ===')
-    console.error('Error:', error)
-    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
-
     // Manejar error de unique constraint específicamente
     if (error.code === 'P2002') {
       // P2002: Unique constraint failed
@@ -302,12 +291,6 @@ export async function deleteProduct(id: string) {
       success: 'Producto eliminado exitosamente',
     }
   } catch (error: any) {
-    console.error('=== ERROR AL ELIMINAR PRODUCTO ===')
-    console.error('Error:', error)
-    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
-    console.error('Error code:', error.code)
-    console.error('Error meta:', error.meta)
-
     // Manejar error de foreign key
     if (error.code === 'P2003') {
       return {

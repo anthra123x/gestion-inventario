@@ -238,7 +238,6 @@ export async function createRepair(formData: FormData) {
       repair,
     }
   } catch (error: any) {
-    console.error('Error creating repair:', error)
     return {
       error: error.message || 'Error al crear la reparación',
     }

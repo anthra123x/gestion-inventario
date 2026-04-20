@@ -229,7 +229,6 @@ export async function createSale(formData: FormData) {
       sale,
     }
   } catch (error: any) {
-    console.error('Error creating sale:', error)
     return {
       error: error.message || 'Error al registrar la venta',
     }
