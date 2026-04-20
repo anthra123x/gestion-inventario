@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import { createRepair } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
+import { ProductCategory } from '@prisma/client'
 
 export default function NewRepairPage() {
   const router = useRouter()
@@ -22,7 +23,7 @@ export default function NewRepairPage() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const productsData = await getProducts()
+        const productsData = await getProducts(undefined, ProductCategory.REPAIR_PART)
         setProducts(productsData)
       } catch (err) {
         toast.error('Error al cargar productos', {
