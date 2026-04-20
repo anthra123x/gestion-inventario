@@ -109,12 +109,23 @@ export default function RepairsPage() {
     return colors[status]
   }
 
+  function getStatusBadgeColor(status: RepairStatus): string {
+    const colors: Record<RepairStatus, string> = {
+      RECEIVED: 'bg-blue-100 text-blue-800 border-blue-200',
+      IN_PROGRESS: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      READY: 'bg-green-100 text-green-800 border-green-200',
+      DELIVERED: 'bg-purple-100 text-purple-800 border-purple-200',
+      CANCELLED: 'bg-red-100 text-red-800 border-red-200'
+    }
+    return colors[status]
+  }
+
   function getStatusNextOptions(status: RepairStatus): RepairStatus[] {
     const flow: Record<RepairStatus, RepairStatus[]> = {
       RECEIVED: ['IN_PROGRESS', 'CANCELLED'],
-      IN_PROGRESS: ['READY', 'CANCELLED'],
-      READY: ['DELIVERED', 'IN_PROGRESS'],
-      DELIVERED: [],
+      IN_PROGRESS: ['READY', 'RECEIVED', 'CANCELLED'],
+      READY: ['DELIVERED', 'IN_PROGRESS', 'RECEIVED', 'CANCELLED'],
+      DELIVERED: ['READY', 'IN_PROGRESS', 'RECEIVED'],
       CANCELLED: ['RECEIVED']
     }
     return flow[status] || []
@@ -275,7 +286,7 @@ export default function RepairsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Badge variant={getStatusColor(repair.status) as any} className="flex items-center space-x-1">
+                      <Badge variant="outline" className={`flex items-center space-x-1 ${getStatusBadgeColor(repair.status)}`}>
                         {getStatusIcon(repair.status)}
                         <span>{getStatusLabel(repair.status)}</span>
                       </Badge>
@@ -293,24 +304,29 @@ export default function RepairsPage() {
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {/* Status Quick Actions */}
-                      {getStatusNextOptions(repair.status).length > 0 && (
+                      {getStatusNextOptions(repair.status).length > 0 ? (
                         <Select
                           value={repair.status}
                           onValueChange={(value) => handleStatusChange(repair.id, value as RepairStatus)}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {getStatusNextOptions(repair.status).map((status) => (
                               <SelectItem key={status} value={status}>
-                                {getStatusLabel(status)}
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(status)}
+                                  <span>{getStatusLabel(status)}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : (
+                        <span className="text-sm text-gray-500 italic">Estado final</span>
                       )}
-                      
+
                       {/* View/Edit Actions */}
                       <Link href={`/repairs/${repair.id}`}>
                         <Button variant="outline" size="sm">
