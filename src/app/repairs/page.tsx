@@ -306,11 +306,10 @@ export default function RepairsPage() {
                       {/* Status Quick Actions */}
                       {getStatusNextOptions(repair.status).length > 0 ? (
                         <Select
-                          value={repair.status}
                           onValueChange={(value) => handleStatusChange(repair.id, value as RepairStatus)}
                         >
                           <SelectTrigger className="w-40">
-                            <SelectValue />
+                            <SelectValue placeholder="Cambiar estado..." />
                           </SelectTrigger>
                           <SelectContent>
                             {getStatusNextOptions(repair.status).map((status) => (
