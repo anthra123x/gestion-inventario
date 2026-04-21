@@ -308,12 +308,20 @@ export default function InventoryPage() {
           </div>
           
           {filteredProducts.length === 0 && (
-            <div className="text-center py-8">
-              <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-gray-600">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground font-medium">
                 {search || categoryFilter !== 'ALL' 
-                  ? 'No se encontraron productos con los filtros seleccionados'
+                  ? 'No se encontraron productos'
                   : 'No hay productos en el inventario'
+                }
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {search || categoryFilter !== 'ALL' 
+                  ? 'Intenta con otros filtros de búsqueda'
+                  : 'Crea tu primer producto para comenzar'
                 }
               </p>
             </div>

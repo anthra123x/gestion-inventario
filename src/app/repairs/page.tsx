@@ -341,12 +341,20 @@ export default function RepairsPage() {
           </div>
           
           {filteredRepairs.length === 0 && (
-            <div className="text-center py-8">
-              <Wrench className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-gray-600">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Wrench className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground font-medium">
                 {search || statusFilter !== 'ALL' 
-                  ? 'No se encontraron reparaciones con los filtros seleccionados'
+                  ? 'No se encontraron reparaciones'
                   : 'No hay reparaciones registradas'
+                }
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {search || statusFilter !== 'ALL' 
+                  ? 'Intenta con otros filtros de búsqueda'
+                  : 'Crea tu primera orden de reparación'
                 }
               </p>
             </div>
