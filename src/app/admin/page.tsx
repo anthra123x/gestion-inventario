@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Settings, Trash2, UserPlus, Database, Download, AlertTriangle, Building2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
 import { exportData, cleanupProducts, cleanupSales, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
@@ -82,14 +83,14 @@ export default function AdminPage() {
     const result = await createUserByAdmin(formData)
 
     if (result.success) {
-      alert(result.success)
+      toast.success(result.success)
       setNewUserEmail('')
       setNewUserName('')
       setNewUserRole('EMPLOYEE')
       const updated = await getUsers()
       setUsers(updated)
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
   }
 
@@ -110,11 +111,11 @@ export default function AdminPage() {
     const result = await updateSystemSettings(formData)
 
     if (result.success) {
-      alert(result.success)
+      toast.success(result.success)
       const updated = await getSystemSettings()
       setSettings(updated)
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
   }
 
@@ -129,9 +130,9 @@ export default function AdminPage() {
       link.download = `backup_tecnicell_${new Date().toISOString().split('T')[0]}.json`
       link.click()
       URL.revokeObjectURL(url)
-      alert('Backup exportado exitosamente')
+      toast.success('Backup exportado exitosamente')
     } else {
-      alert(result.error || 'Error al exportar backup')
+      toast.error(result.error || 'Error al exportar backup')
     }
   }
 
@@ -149,7 +150,7 @@ export default function AdminPage() {
       // Primero exportar backup
       const backupResult = await exportData()
       if (!backupResult.success) {
-        alert('Error al generar backup. No se puede continuar con la limpieza.')
+        toast.error('Error al generar backup. No se puede continuar con la limpieza.')
         setCleanupLoading(false)
         return
       }
@@ -191,15 +192,14 @@ export default function AdminPage() {
       }
 
       if (result.success) {
-        alert(result.success)
+        toast.success(result.success)
         setCleanupDialogOpen(false)
         setCleanupType(null)
       } else {
-        alert(result.error)
+        toast.error(result.error)
       }
     } catch (error) {
-      console.error('Error during cleanup:', error)
-      alert('Error durante la limpieza')
+      toast.error('Error durante la limpieza')
     } finally {
       setCleanupLoading(false)
     }
@@ -229,9 +229,9 @@ export default function AdminPage() {
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos')
       XLSX.writeFile(workbook, result.filename)
-      alert('Archivo Excel exportado exitosamente')
+      toast.success('Archivo Excel exportado exitosamente')
     } else {
-      alert(result.error || 'Error al exportar')
+      toast.error(result.error || 'Error al exportar')
     }
   }
 

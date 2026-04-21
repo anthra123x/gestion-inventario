@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Download, Calendar, Filter, BarChart3, Package, Users, Wrench } from 'lucide-react'
+import { toast } from 'sonner'
 import { generateReportData } from '@/modules/reports/reports.actions'
 import { ProductCategory, RepairStatus } from '@prisma/client'
 
@@ -44,12 +45,12 @@ export default function ReportsPage() {
 
   function exportToPDF() {
     // This would implement PDF export using pdf-lib or react-pdf
-    alert('Exportación PDF en desarrollo')
+    toast.info('Exportación PDF en desarrollo')
   }
 
   function exportToExcel() {
     // This would implement Excel export using xlsx
-    alert('Exportación Excel en desarrollo')
+    toast.info('Exportación Excel en desarrollo')
   }
 
   function getReportIcon(type: string) {

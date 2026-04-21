@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
 import { getProducts, deleteProduct } from '@/modules/inventory/inventory.actions'
 import { Product, ProductCategory } from '@prisma/client'
 
@@ -64,7 +65,7 @@ export default function InventoryPage() {
       const result = await deleteProduct(product.id)
 
       if (result?.error) {
-        alert(result.error)
+        toast.error(result.error)
         return
       }
 
@@ -74,8 +75,7 @@ export default function InventoryPage() {
         setProductToDelete(null)
       }
     } catch (error) {
-      console.error('Error deleting product:', error)
-      alert('Error al eliminar el producto. Por favor intenta nuevamente.')
+      toast.error('Error al eliminar el producto. Por favor intenta nuevamente.')
     }
   }
 
