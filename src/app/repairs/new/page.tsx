@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/format'
 import { createRepair } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 import { ProductCategory } from '@prisma/client'
@@ -238,7 +239,7 @@ export default function NewRepairPage() {
                 <SelectContent>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name} - ${product.salePrice.toLocaleString('es-CO')} COP (Stock: {product.stock})
+                      {product.name} - {formatCurrency(product.salePrice)} (Stock: {product.stock})
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatCurrency } from '@/lib/format'
 import { getRepairs, getRepairStats, updateRepairStatus } from '@/modules/repairs/repairs.actions'
 import { RepairStatus } from '@prisma/client'
 
@@ -330,7 +331,7 @@ export default function RepairsPage() {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">${repair.cost.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium">{formatCurrency(repair.cost)}</TableCell>
                   <TableCell>
                     <div className="text-sm">
                       {new Date(repair.createdAt).toLocaleDateString()}

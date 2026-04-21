@@ -6,10 +6,7 @@ import { Button } from '@/components/ui/button'
 import { getSaleById } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
 import { ArrowLeft, Printer, X } from 'lucide-react'
-
-function formatCOP(value: number): string {
-  return new Intl.NumberFormat('es-CO').format(value)
-}
+import { formatCurrency } from '@/lib/format'
 
 function getPaymentMethodLabel(method: PaymentMethod): string {
   const labels: Record<PaymentMethod, string> = {
@@ -169,8 +166,8 @@ export default function SalePrintPage() {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-center text-gray-900">{item.quantity}</td>
-                    <td className="py-3 px-4 text-right text-gray-900">${formatCOP(item.unitPrice)}</td>
-                    <td className="py-3 px-4 text-right font-medium text-gray-900">${formatCOP(item.total)}</td>
+                    <td className="py-3 px-4 text-right text-gray-900">{formatCurrency(item.unitPrice)}</td>
+                    <td className="py-3 px-4 text-right font-medium text-gray-900">{formatCurrency(item.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -182,7 +179,7 @@ export default function SalePrintPage() {
             <div className="flex justify-end">
               <div className="text-right">
                 <p className="text-sm text-gray-500">TOTAL</p>
-                <p className="text-4xl font-bold text-gray-900">${formatCOP(sale.total)} COP</p>
+                <p className="text-4xl font-bold text-gray-900">{formatCurrency(sale.total)}</p>
               </div>
             </div>
           </div>

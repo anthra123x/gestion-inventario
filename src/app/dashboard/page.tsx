@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatCurrency, formatNumber } from '@/lib/format'
 import { Package, ShoppingCart, Wrench, Users, TrendingUp, AlertTriangle } from 'lucide-react'
 import { getDashboardStats } from '@/modules/dashboard/dashboard.actions'
 
@@ -84,15 +85,15 @@ export default function DashboardPage() {
   const statsCards = [
     {
       title: 'Ventas del Mes',
-      value: `$${stats.salesStats?.totalRevenue?.toFixed(2) || '0'}`,
-      change: `${stats.salesStats?.totalSales || 0} ventas`,
+      value: formatCurrency(stats.salesStats?.totalRevenue || 0),
+      change: `${formatNumber(stats.salesStats?.totalSales || 0)} ventas`,
       icon: TrendingUp,
       color: 'text-green-600',
     },
     {
       title: 'Productos en Stock',
-      value: stats.lowStockProducts?.length?.toString() || '0',
-      change: `${stats.lowStockProducts?.filter((p: any) => p.stock <= p.minStock).length || 0} con stock bajo`,
+      value: formatNumber(stats.lowStockProducts?.length || 0),
+      change: `${formatNumber(stats.lowStockProducts?.filter((p: any) => p.stock <= p.minStock).length || 0)} con stock bajo`,
       icon: Package,
       color: 'text-blue-600',
     },
@@ -188,7 +189,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500">{new Date(sale.createdAt).toLocaleDateString('es-CO')}</p>
                   </div>
                   <div className="text-sm font-medium text-green-600">
-                    ${sale.total?.toLocaleString('es-CO') || '0'} COP
+                    {formatCurrency(sale.total || 0)}
                   </div>
                 </div>
               ))}

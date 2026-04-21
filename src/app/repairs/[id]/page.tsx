@@ -5,15 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Clock, DollarSign, User, Phone, Mail, MapPin, Wrench, Package } from 'lucide-react'
 import Link from 'next/link'
+import { formatCurrency } from '@/lib/format'
 
 interface RepairPageProps {
   params: Promise<{
     id: string
   }>
-}
-
-function formatCOP(value: number): string {
-  return new Intl.NumberFormat('es-CO').format(value)
 }
 
 function getRepairStatusColor(status: string): string {
@@ -138,7 +135,7 @@ export default async function RepairPage({ params }: RepairPageProps) {
                   <DollarSign className="h-5 w-5" />
                   Costo
                 </h3>
-                <p className="text-2xl font-bold">${formatCOP(repair.cost)} COP</p>
+                <p className="text-2xl font-bold">{formatCurrency(repair.cost)}</p>
               </div>
             )}
 

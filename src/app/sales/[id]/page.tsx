@@ -9,10 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Printer, Download, FileText } from 'lucide-react'
 import { getSaleById } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
-
-function formatCOP(value: number): string {
-  return value.toLocaleString('es-CO')
-}
+import { formatCurrency } from '@/lib/format'
 
 function getPaymentMethodLabel(method: PaymentMethod): string {
   const labels: Record<PaymentMethod, string> = {
@@ -179,8 +176,8 @@ export default function SaleDetailPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right print:text-sm">{item.quantity}</TableCell>
-                        <TableCell className="text-right print:text-sm">${formatCOP(item.unitPrice)}</TableCell>
-                        <TableCell className="text-right font-medium print:text-sm">${formatCOP(item.total)}</TableCell>
+                        <TableCell className="text-right print:text-sm">{formatCurrency(item.unitPrice)}</TableCell>
+                        <TableCell className="text-right font-medium print:text-sm">{formatCurrency(item.total)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -192,7 +189,7 @@ export default function SaleDetailPage() {
             <div className="flex justify-end print:border-t print:border-gray-300 print:pt-4">
               <div className="space-y-2 text-right print:w-1/2">
                 <div className="text-3xl font-bold print:text-2xl">
-                  Total: ${formatCOP(sale.total)} COP
+                  Total: {formatCurrency(sale.total)}
                 </div>
               </div>
             </div>

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatCurrency, formatNumber } from '@/lib/format'
 import { getSales, getSalesStats } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
 
@@ -167,7 +168,7 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                ${stats.totalRevenue.toFixed(2)}
+                {formatCurrency(stats.totalRevenue)}
               </div>
             </CardContent>
           </Card>
@@ -179,7 +180,7 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                ${stats.totalSales > 0 ? (stats.totalRevenue / stats.totalSales).toFixed(2) : '0.00'}
+                {formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}
               </div>
             </CardContent>
           </Card>
@@ -282,7 +283,7 @@ export default function SalesPage() {
                       {sale._count?.saleItems || 0} producto{(sale._count?.saleItems || 0) !== 1 ? 's' : ''}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">${sale.total.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium">{formatCurrency(sale.total)}</TableCell>
                   <TableCell>
                     <Badge variant={getPaymentMethodColor(sale.paymentMethod) as any}>
                       {getPaymentMethodLabel(sale.paymentMethod)}

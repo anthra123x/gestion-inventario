@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import { getProducts, deleteProduct } from '@/modules/inventory/inventory.actions'
 import { Product, ProductCategory } from '@prisma/client'
@@ -288,7 +289,7 @@ export default function InventoryPage() {
                         <div className="text-sm text-gray-500">Mín: {product.minStock}</div>
                       </div>
                     </TableCell>
-                    <TableCell>${product.salePrice.toFixed(2)}</TableCell>
+                    <TableCell>{formatCurrency(product.salePrice)}</TableCell>
                     <TableCell>
                       <Badge variant={stockStatus.color as any}>
                         {stockStatus.label}
