@@ -58,8 +58,19 @@ export async function getProductById(id: string) {
  * @returns Resultado de la operación con producto creado o error
  */
 export async function createProduct(formData: FormData) {
+  const rawData = {
+    name: formData.get('name'),
+    description: formData.get('description'),
+    category: formData.get('category'),
+    stock: formData.get('stock'),
+    minStock: formData.get('minStock'),
+    purchasePrice: formData.get('purchasePrice'),
+    salePrice: formData.get('salePrice'),
+    supplier: formData.get('supplier'),
+    barcode: formData.get('barcode'),
+  }
+
   // Normalizar datos antes de validar
-  const barcodeValue = formData.get('barcode')
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -69,7 +80,7 @@ export async function createProduct(formData: FormData) {
     purchasePrice: Number(formData.get('purchasePrice')) || 0,
     salePrice: Number(formData.get('salePrice')) || 0,
     supplier: formData.get('supplier') || null,
-    barcode: barcodeValue && String(barcodeValue).trim() ? String(barcodeValue).trim() : null,
+    barcode: formData.get('barcode') || null,
   }
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
@@ -91,6 +102,21 @@ export async function createProduct(formData: FormData) {
   } catch (validationError: any) {
     return {
       error: validationError.message,
+    }
+  }
+
+  // Check for duplicate barcode only if barcode is provided
+  if (validatedFields.data.barcode) {
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        barcode: validatedFields.data.barcode,
+        deletedAt: null,
+      },
+    })
+    if (existingProduct) {
+      return {
+        error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
+      }
     }
   }
 
@@ -151,6 +177,18 @@ export async function createProduct(formData: FormData) {
  * @returns Resultado de la operación con producto actualizado o error
  */
 export async function updateProduct(id: string, formData: FormData) {
+  const rawData = {
+    name: formData.get('name'),
+    description: formData.get('description'),
+    category: formData.get('category'),
+    stock: formData.get('stock'),
+    minStock: formData.get('minStock'),
+    purchasePrice: formData.get('purchasePrice'),
+    salePrice: formData.get('salePrice'),
+    supplier: formData.get('supplier'),
+    barcode: formData.get('barcode'),
+  }
+
   // Normalizar datos antes de validar
   const normalizedData = {
     name: formData.get('name'),
@@ -161,10 +199,7 @@ export async function updateProduct(id: string, formData: FormData) {
     purchasePrice: formData.get('purchasePrice') ? Number(formData.get('purchasePrice')) : undefined,
     salePrice: formData.get('salePrice') ? Number(formData.get('salePrice')) : undefined,
     supplier: formData.get('supplier') || null,
-    barcode: (() => {
-      const val = formData.get('barcode')
-      return val && String(val).trim() ? String(val).trim() : null
-    })(),
+    barcode: formData.get('barcode') || null,
   }
 
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
@@ -194,6 +229,22 @@ export async function updateProduct(id: string, formData: FormData) {
   } catch (validationError: any) {
     return {
       error: validationError.message,
+    }
+  }
+
+  // Check for duplicate barcode only if barcode is provided and has changed
+  if (validatedFields.data.barcode && validatedFields.data.barcode !== id) {
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        barcode: validatedFields.data.barcode,
+        deletedAt: null,
+        NOT: { id },
+      },
+    })
+    if (existingProduct) {
+      return {
+        error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
+      }
     }
   }
 
