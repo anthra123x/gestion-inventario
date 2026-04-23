@@ -78,7 +78,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         ...data,
         description: data.description || null,
         supplier: data.supplier || null,
-        barcode: data.barcode || null,
+        barcode: (data.barcode && data.barcode.trim()) || null,
         // Asegurar que los números sean válidos
         stock: Number(data.stock) || 0,
         minStock: Number(data.minStock) || 0,
