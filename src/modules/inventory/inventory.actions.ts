@@ -151,18 +151,6 @@ export async function createProduct(formData: FormData) {
  * @returns Resultado de la operación con producto actualizado o error
  */
 export async function updateProduct(id: string, formData: FormData) {
-  const rawData = {
-    name: formData.get('name'),
-    description: formData.get('description'),
-    category: formData.get('category'),
-    stock: formData.get('stock'),
-    minStock: formData.get('minStock'),
-    purchasePrice: formData.get('purchasePrice'),
-    salePrice: formData.get('salePrice'),
-    supplier: formData.get('supplier'),
-    barcode: formData.get('barcode'),
-  }
-
   // Normalizar datos antes de validar
   const normalizedData = {
     name: formData.get('name'),
