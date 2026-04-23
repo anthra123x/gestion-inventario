@@ -72,6 +72,8 @@ export async function createProduct(formData: FormData) {
   }
 
   // Normalizar datos antes de validar
+  const normalizedBarcode = normalizeBarcode(formData.get('barcode') as string | null)
+  
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -81,7 +83,7 @@ export async function createProduct(formData: FormData) {
     purchasePrice: Number(formData.get('purchasePrice')) || 0,
     salePrice: Number(formData.get('salePrice')) || 0,
     supplier: formData.get('supplier') || null,
-    barcode: normalizeBarcode(formData.get('barcode') as string | null),
+    barcode: normalizedBarcode,
   }
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
@@ -106,11 +108,11 @@ export async function createProduct(formData: FormData) {
     }
   }
 
-  // Check for duplicate barcode only if barcode is provided
-  if (validatedFields.data.barcode) {
+  // Check for duplicate barcode only if barcode is provided and not 'none'
+  if (normalizedBarcode && normalizedBarcode !== 'none') {
     const existingProduct = await prisma.product.findFirst({
       where: {
-        barcode: validatedFields.data.barcode,
+        barcode: normalizedBarcode,
         deletedAt: null,
       },
     })
@@ -123,7 +125,10 @@ export async function createProduct(formData: FormData) {
 
   try {
     const product = await prisma.product.create({
-      data: validatedFields.data,
+      data: {
+        ...validatedFields.data,
+        barcode: normalizedBarcode,
+      },
     })
 
     // Create initial inventory movement if stock > 0
@@ -191,6 +196,8 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   // Normalizar datos antes de validar
+  const normalizedBarcodeUpdate = normalizeBarcode(formData.get('barcode') as string | null)
+  
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -200,7 +207,7 @@ export async function updateProduct(id: string, formData: FormData) {
     purchasePrice: formData.get('purchasePrice') ? Number(formData.get('purchasePrice')) : undefined,
     salePrice: formData.get('salePrice') ? Number(formData.get('salePrice')) : undefined,
     supplier: formData.get('supplier') || null,
-    barcode: normalizeBarcode(formData.get('barcode') as string | null),
+    barcode: normalizedBarcodeUpdate,
   }
 
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
@@ -233,11 +240,11 @@ export async function updateProduct(id: string, formData: FormData) {
     }
   }
 
-  // Check for duplicate barcode only if barcode is provided and has changed
-  if (validatedFields.data.barcode && validatedFields.data.barcode !== id) {
+  // Check for duplicate barcode only if barcode is provided and not 'none'
+  if (normalizedBarcodeUpdate && normalizedBarcodeUpdate !== 'none') {
     const existingProduct = await prisma.product.findFirst({
       where: {
-        barcode: validatedFields.data.barcode,
+        barcode: normalizedBarcodeUpdate,
         deletedAt: null,
         NOT: { id },
       },

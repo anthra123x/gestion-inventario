@@ -31,10 +31,10 @@ export function formatNumber(value: number | string | null | undefined): string 
   return new Intl.NumberFormat('es-CO').format(numValue)
 }
 
-export function normalizeBarcode(value: string | null | undefined): string | null {
+export function normalizeBarcode(value: string | null | undefined): string {
   if (!value || typeof value !== 'string') {
-    return null
+    return 'none'
   }
   const trimmed = value.trim()
-  return trimmed === '' ? null : trimmed
+  return trimmed === '' ? 'none' : trimmed
 }
