@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,20 +37,16 @@ export default function LoginPage() {
         return
       }
 
-      // Ensure user exists in our database (non-blocking)
       if (data.user) {
         try {
           await ensureUserExists(data.user.email || '', data.user.user_metadata?.name || data.user.email || '')
         } catch (ensureError) {
-          console.error('Ensure user error (non-blocking):', ensureError)
           // Continue anyway - user should already exist
         }
       }
 
-      // Redirect to dashboard using window.location for immediate redirect
       window.location.href = '/dashboard'
     } catch (err: any) {
-      console.error('Login error:', err)
       setError(err?.message || 'Error al iniciar sesión')
       setIsLoading(false)
     }
@@ -96,12 +91,6 @@ export default function LoginPage() {
               {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            ¿No tienes cuenta?{' '}
-            <Link href="/register" className="text-blue-600 hover:underline">
-              Regístrate
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
