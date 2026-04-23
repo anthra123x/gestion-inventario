@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Product, ProductCategory } from '@prisma/client'
+import { normalizeBarcode } from '@/lib/format'
 
 interface ProductFormProps {
   product?: Product
@@ -78,7 +79,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         ...data,
         description: data.description || null,
         supplier: data.supplier || null,
-        barcode: data.barcode || null,
+        barcode: normalizeBarcode(data.barcode),
         // Asegurar que los números sean válidos
         stock: Number(data.stock) || 0,
         minStock: Number(data.minStock) || 0,

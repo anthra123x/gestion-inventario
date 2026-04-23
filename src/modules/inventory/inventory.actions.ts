@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { normalizeBarcode } from '@/lib/format'
 import { CreateProductSchema, UpdateProductSchema, InventoryMovementSchema } from '@/lib/validations'
 import { ProductCategory } from '@prisma/client'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
@@ -80,7 +81,7 @@ export async function createProduct(formData: FormData) {
     purchasePrice: Number(formData.get('purchasePrice')) || 0,
     salePrice: Number(formData.get('salePrice')) || 0,
     supplier: formData.get('supplier') || null,
-    barcode: formData.get('barcode') || null,
+    barcode: normalizeBarcode(formData.get('barcode') as string | null),
   }
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
@@ -199,7 +200,7 @@ export async function updateProduct(id: string, formData: FormData) {
     purchasePrice: formData.get('purchasePrice') ? Number(formData.get('purchasePrice')) : undefined,
     salePrice: formData.get('salePrice') ? Number(formData.get('salePrice')) : undefined,
     supplier: formData.get('supplier') || null,
-    barcode: formData.get('barcode') || null,
+    barcode: normalizeBarcode(formData.get('barcode') as string | null),
   }
 
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
