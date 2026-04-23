@@ -71,17 +71,18 @@ export async function createProduct(formData: FormData) {
   }
 
   // Normalizar datos antes de validar
-  const normalizedData = {
-    name: formData.get('name'),
-    description: formData.get('description') || null,
-    category: formData.get('category'),
-    stock: Number(formData.get('stock')) || 0,
-    minStock: Number(formData.get('minStock')) || 0,
-    purchasePrice: Number(formData.get('purchasePrice')) || 0,
-    salePrice: Number(formData.get('salePrice')) || 0,
-    supplier: formData.get('supplier') || null,
-    barcode: formData.get('barcode') || null,
-  }
+const barcodeValue = formData.get('barcode')
+    const normalizedData = {
+      name: formData.get('name'),
+      description: formData.get('description') || null,
+      category: formData.get('category'),
+      stock: Number(formData.get('stock')) || 0,
+      minStock: Number(formData.get('minStock')) || 0,
+      purchasePrice: Number(formData.get('purchasePrice')) || 0,
+      salePrice: Number(formData.get('salePrice')) || 0,
+      supplier: formData.get('supplier') || null,
+      barcode: barcodeValue && String(barcodeValue).trim() ? String(barcodeValue).trim() : null,
+    }
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
 
@@ -184,7 +185,10 @@ export async function updateProduct(id: string, formData: FormData) {
     purchasePrice: formData.get('purchasePrice') ? Number(formData.get('purchasePrice')) : undefined,
     salePrice: formData.get('salePrice') ? Number(formData.get('salePrice')) : undefined,
     supplier: formData.get('supplier') || null,
-    barcode: formData.get('barcode') || null,
+    barcode: (() => {
+      const val = formData.get('barcode')
+      return val && String(val).trim() ? String(val).trim() : null
+    })(),
   }
 
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
