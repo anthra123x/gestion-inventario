@@ -58,31 +58,19 @@ export async function getProductById(id: string) {
  * @returns Resultado de la operación con producto creado o error
  */
 export async function createProduct(formData: FormData) {
-  const rawData = {
-    name: formData.get('name'),
-    description: formData.get('description'),
-    category: formData.get('category'),
-    stock: formData.get('stock'),
-    minStock: formData.get('minStock'),
-    purchasePrice: formData.get('purchasePrice'),
-    salePrice: formData.get('salePrice'),
-    supplier: formData.get('supplier'),
-    barcode: formData.get('barcode'),
-  }
-
   // Normalizar datos antes de validar
-const barcodeValue = formData.get('barcode')
-    const normalizedData = {
-      name: formData.get('name'),
-      description: formData.get('description') || null,
-      category: formData.get('category'),
-      stock: Number(formData.get('stock')) || 0,
-      minStock: Number(formData.get('minStock')) || 0,
-      purchasePrice: Number(formData.get('purchasePrice')) || 0,
-      salePrice: Number(formData.get('salePrice')) || 0,
-      supplier: formData.get('supplier') || null,
-      barcode: barcodeValue && String(barcodeValue).trim() ? String(barcodeValue).trim() : null,
-    }
+  const barcodeValue = formData.get('barcode')
+  const normalizedData = {
+    name: formData.get('name'),
+    description: formData.get('description') || null,
+    category: formData.get('category'),
+    stock: Number(formData.get('stock')) || 0,
+    minStock: Number(formData.get('minStock')) || 0,
+    purchasePrice: Number(formData.get('purchasePrice')) || 0,
+    salePrice: Number(formData.get('salePrice')) || 0,
+    supplier: formData.get('supplier') || null,
+    barcode: barcodeValue && String(barcodeValue).trim() ? String(barcodeValue).trim() : null,
+  }
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
 
