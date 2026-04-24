@@ -160,9 +160,6 @@ export default function SalePrintPage() {
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium text-gray-900">{item.product.name}</p>
-                        {item.product.barcode && (
-                          <p className="text-sm text-gray-500">SKU: {item.product.barcode}</p>
-                        )}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-center text-gray-900">{item.quantity}</td>

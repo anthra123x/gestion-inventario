@@ -2,14 +2,13 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { normalizeBarcode } from '@/lib/format'
 import { CreateProductSchema, UpdateProductSchema, InventoryMovementSchema } from '@/lib/validations'
 import { ProductCategory } from '@prisma/client'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
 
 /**
  * Obtiene lista de productos con filtros opcionales
- * @param search - Texto para buscar en nombre, descripción o barcode
+ * @param search - Texto para buscar en nombre o descripción
  * @param category - Categoría para filtrar productos
  * @returns Lista de productos activos (no eliminados)
  */
@@ -20,7 +19,6 @@ export async function getProducts(search?: string, category?: ProductCategory) {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
         { description: { contains: search, mode: 'insensitive' as const } },
-        { barcode: { contains: search, mode: 'insensitive' as const } },
       ],
     }),
     ...(category && { category }),
@@ -59,21 +57,6 @@ export async function getProductById(id: string) {
  * @returns Resultado de la operación con producto creado o error
  */
 export async function createProduct(formData: FormData) {
-  const rawData = {
-    name: formData.get('name'),
-    description: formData.get('description'),
-    category: formData.get('category'),
-    stock: formData.get('stock'),
-    minStock: formData.get('minStock'),
-    purchasePrice: formData.get('purchasePrice'),
-    salePrice: formData.get('salePrice'),
-    supplier: formData.get('supplier'),
-    barcode: formData.get('barcode'),
-  }
-
-  // Normalizar datos antes de validar
-  const normalizedBarcode = normalizeBarcode(formData.get('barcode') as string | null)
-  
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -83,7 +66,6 @@ export async function createProduct(formData: FormData) {
     purchasePrice: Number(formData.get('purchasePrice')) || 0,
     salePrice: Number(formData.get('salePrice')) || 0,
     supplier: formData.get('supplier') || null,
-    barcode: normalizedBarcode,
   }
 
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
@@ -108,30 +90,11 @@ export async function createProduct(formData: FormData) {
     }
   }
 
-  // Check for duplicate barcode only if barcode is provided and not 'none'
-  if (normalizedBarcode && normalizedBarcode !== 'none') {
-    const existingProduct = await prisma.product.findFirst({
-      where: {
-        barcode: normalizedBarcode,
-        deletedAt: null,
-      },
-    })
-    if (existingProduct) {
-      return {
-        error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
-      }
-    }
-  }
-
   try {
     const product = await prisma.product.create({
-      data: {
-        ...validatedFields.data,
-        barcode: normalizedBarcode,
-      },
+      data: validatedFields.data,
     })
 
-    // Create initial inventory movement if stock > 0
     if (validatedFields.data.stock > 0) {
       await prisma.inventoryMovement.create({
         data: {
@@ -149,21 +112,12 @@ export async function createProduct(formData: FormData) {
       product,
     }
   } catch (error: any) {
-    // Manejar error de unique constraint específicamente
     if (error.code === 'P2002') {
-      // P2002: Unique constraint failed
-      const target = error.meta?.target
-      if (target && target.includes('barcode')) {
-        return {
-          error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
-        }
-      }
       return {
         error: 'Ya existe un registro con estos datos únicos.',
       }
     }
 
-    // Devolver error específico
     if (error instanceof Error) {
       return {
         error: error.message,
@@ -182,22 +136,8 @@ export async function createProduct(formData: FormData) {
  * @param formData - Datos del formulario de producto
  * @returns Resultado de la operación con producto actualizado o error
  */
-export async function updateProduct(id: string, formData: FormData) {
-  const rawData = {
-    name: formData.get('name'),
-    description: formData.get('description'),
-    category: formData.get('category'),
-    stock: formData.get('stock'),
-    minStock: formData.get('minStock'),
-    purchasePrice: formData.get('purchasePrice'),
-    salePrice: formData.get('salePrice'),
-    supplier: formData.get('supplier'),
-    barcode: formData.get('barcode'),
-  }
 
-  // Normalizar datos antes de validar
-  const normalizedBarcodeUpdate = normalizeBarcode(formData.get('barcode') as string | null)
-  
+export async function updateProduct(id: string, formData: FormData) {
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -207,7 +147,6 @@ export async function updateProduct(id: string, formData: FormData) {
     purchasePrice: formData.get('purchasePrice') ? Number(formData.get('purchasePrice')) : undefined,
     salePrice: formData.get('salePrice') ? Number(formData.get('salePrice')) : undefined,
     supplier: formData.get('supplier') || null,
-    barcode: normalizedBarcodeUpdate,
   }
 
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
@@ -230,29 +169,12 @@ export async function updateProduct(id: string, formData: FormData) {
     if (validatedFields.data.salePrice !== undefined) {
       validateNonNegative(validatedFields.data.salePrice, 'Precio de venta')
     }
-    // Validate price margin if both prices are provided
     if (validatedFields.data.purchasePrice !== undefined && validatedFields.data.salePrice !== undefined) {
       validatePriceMargin(validatedFields.data.purchasePrice, validatedFields.data.salePrice)
     }
   } catch (validationError: any) {
     return {
       error: validationError.message,
-    }
-  }
-
-  // Check for duplicate barcode only if barcode is provided and not 'none'
-  if (normalizedBarcodeUpdate && normalizedBarcodeUpdate !== 'none') {
-    const existingProduct = await prisma.product.findFirst({
-      where: {
-        barcode: normalizedBarcodeUpdate,
-        deletedAt: null,
-        NOT: { id },
-      },
-    })
-    if (existingProduct) {
-      return {
-        error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
-      }
     }
   }
 
@@ -269,21 +191,18 @@ export async function updateProduct(id: string, formData: FormData) {
       product,
     }
   } catch (error: any) {
-    // Manejar error de unique constraint específicamente
     if (error.code === 'P2002') {
-      // P2002: Unique constraint failed
-      const target = error.meta?.target
-      if (target && target.includes('barcode')) {
-        return {
-          error: 'El código de barras ya está registrado en otro producto. Usa un código diferente o déjalo vacío.',
-        }
-      }
       return {
         error: 'Ya existe un registro con estos datos únicos.',
       }
     }
 
-    // Devolver error específico
+    if (error.code === 'P2025') {
+      return {
+        error: 'Producto no encontrado',
+      }
+    }
+
     if (error instanceof Error) {
       return {
         error: error.message,
@@ -297,20 +216,14 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 /**
- * Elimina un producto usando soft delete (marca como eliminado)
+ * Elimina un producto (soft delete)
  * @param id - ID del producto a eliminar
  * @returns Resultado de la operación
  */
 export async function deleteProduct(id: string) {
   try {
-    // Verificar si el producto tiene relaciones antes de eliminar
     const product = await prisma.product.findUnique({
       where: { id },
-      include: {
-        saleItems: true,
-        repairParts: true,
-        inventoryMovements: true,
-      },
     })
 
     if (!product) {
@@ -319,7 +232,6 @@ export async function deleteProduct(id: string) {
       }
     }
 
-    // Soft delete - marcar como eliminado en lugar de borrar permanentemente
     await prisma.product.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -330,14 +242,12 @@ export async function deleteProduct(id: string) {
       success: 'Producto eliminado exitosamente',
     }
   } catch (error: any) {
-    // Manejar error de foreign key
     if (error.code === 'P2003') {
       return {
         error: 'No se puede eliminar el producto porque está relacionado con ventas o reparaciones. Usa la función de limpieza del sistema.',
       }
     }
 
-    // Manejar error de registro no encontrado
     if (error.code === 'P2025') {
       return {
         error: 'Producto no encontrado',
@@ -366,85 +276,78 @@ export async function addInventoryMovement(formData: FormData) {
   }
 
   try {
-    const { productId, type, quantity, reason } = validatedFields.data
-
-    // Get current product
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-    })
-
-    if (!product) {
-      return {
-        error: 'Producto no encontrado',
-      }
-    }
-
-    // Check if there's enough stock for exit movements
-    if (type === 'EXIT' && product.stock < quantity) {
-      return {
-        error: 'Stock insuficiente',
-      }
-    }
-
-    // Create movement
-    await prisma.inventoryMovement.create({
-      data: {
-        productId,
-        type,
-        quantity,
-        reason,
-      },
-    })
-
-    // Update product stock
-    const newStock = type === 'ENTRY' 
-      ? product.stock + quantity 
-      : product.stock - quantity
-
-    await prisma.product.update({
-      where: { id: productId },
-      data: { stock: newStock },
-    })
+    const [movement, updatedProduct] = await prisma.$transaction([
+      prisma.inventoryMovement.create({
+        data: validatedFields.data,
+      }),
+      prisma.product.update({
+        where: { id: validatedFields.data.productId },
+        data: {
+          stock: {
+            increment: validatedFields.data.type === 'ENTRY' ? validatedFields.data.quantity : -validatedFields.data.quantity,
+          },
+        },
+      }),
+    ])
 
     revalidatePath('/inventory')
-    revalidatePath(`/inventory/${productId}`)
+    revalidatePath(`/inventory/${validatedFields.data.productId}`)
+
     return {
-      success: 'Movimiento de inventario registrado exitosamente',
+      success: `Movimiento de inventario registrado. Stock actual: $${updatedProduct.stock}`,
+      movement,
     }
-  } catch (error) {
+  } catch (error: any) {
     return {
-      error: 'Error al registrar movimiento',
+      error: error.message || 'Error al registrar movimiento de inventario',
     }
+  }
+}
+
+export async function getInventorySummary() {
+  const [totalProducts, totalValue, lowStockProducts, categories] = await Promise.all([
+    prisma.product.count({
+      where: { deletedAt: null },
+    }),
+    prisma.product.aggregate({
+      where: { deletedAt: null },
+      _sum: {
+        stock: true,
+      },
+    }),
+    prisma.product.count({
+      where: {
+        deletedAt: null,
+        stock: {
+          lte: prisma.product.fields.minStock,
+        },
+      },
+    }),
+    prisma.product.groupBy({
+      by: ['category'],
+      where: { deletedAt: null },
+      _count: {
+        id: true,
+      },
+    }),
+  ])
+
+  return {
+    totalProducts,
+    totalStock: totalValue._sum.stock || 0,
+    lowStockProducts,
+    categories,
   }
 }
 
 export async function getLowStockProducts() {
   return await prisma.product.findMany({
     where: {
-      stock: {
-        lte: prisma.product.fields.minStock,
-      },
+      deletedAt: null,
     },
     orderBy: {
       stock: 'asc',
     },
+    take: 10,
   })
-}
-
-export async function getProductsByCategory() {
-  const products = await prisma.product.groupBy({
-    by: ['category'],
-    _count: {
-      id: true,
-    },
-    _sum: {
-      stock: true,
-    },
-  })
-
-  return products.map(item => ({
-    category: item.category,
-    count: item._count.id,
-    totalStock: item._sum.stock || 0,
-  }))
 }

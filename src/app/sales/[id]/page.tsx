@@ -170,9 +170,6 @@ export default function SaleDetailPage() {
                         <TableCell className="print:text-sm">
                           <div>
                             <div className="font-medium">{item.product.name}</div>
-                            {item.product.barcode && (
-                              <div className="text-sm text-gray-500 print:text-xs">SKU: {item.product.barcode}</div>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right print:text-sm">{item.quantity}</TableCell>

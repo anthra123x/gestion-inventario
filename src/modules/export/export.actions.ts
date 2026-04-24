@@ -17,7 +17,6 @@ export async function exportProductsToExcel() {
       PrecioCompra: p.purchasePrice,
       PrecioVenta: p.salePrice,
       Proveedor: p.supplier || '',
-      CódigoBarras: p.barcode || '',
     }))
 
     return {

@@ -30,7 +30,6 @@ export const CreateProductSchema = z.object({
   purchasePrice: z.coerce.number().min(0, 'El precio de compra debe ser positivo'),
   salePrice: z.coerce.number().min(0, 'El precio de venta debe ser positivo'),
   supplier: z.string().optional().nullable(),
-  barcode: z.string().optional().nullable()
 })
 
 export const UpdateProductSchema = CreateProductSchema.partial()

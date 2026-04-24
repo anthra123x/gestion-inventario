@@ -207,7 +207,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    product.barcode?.toLowerCase().includes(productSearch.toLowerCase()) ||
     product.description?.toLowerCase().includes(productSearch.toLowerCase())
   )
 
@@ -347,9 +346,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                               <TableCell className="max-w-[300px]">
                                 <div className="truncate" title={product.name}>
                                   <div className="font-medium">{product.name}</div>
-                                  {product.barcode && (
-                                    <div className="text-sm text-gray-500 truncate">SKU: {product.barcode}</div>
-                                  )}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-medium">
@@ -439,9 +435,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                         <TableCell className="max-w-[300px]">
                           <div className="truncate" title={item.product?.name}>
                             <div className="font-medium">{item.product?.name}</div>
-                            {item.product?.barcode && (
-                              <div className="text-sm text-gray-500 truncate">SKU: {item.product.barcode}</div>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-medium">

@@ -50,8 +50,7 @@ export default function InventoryPage() {
     if (search) {
       filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.description?.toLowerCase().includes(search.toLowerCase()) ||
-        product.barcode?.toLowerCase().includes(search.toLowerCase())
+        product.description?.toLowerCase().includes(search.toLowerCase())
       )
     }
 
@@ -273,9 +272,6 @@ export default function InventoryPage() {
                     <TableCell>
                       <div>
                         <div className="font-medium">{product.name}</div>
-                        {product.barcode && (
-                          <div className="text-sm text-gray-500">SKU: {product.barcode}</div>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
