@@ -10,9 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { Plus, Trash2, Search, Loader2, User, Phone, Mail, MapPin, AlertTriangle, CheckCircle, XCircle, TrendingUp, Percent, ShoppingCart } from 'lucide-react'
 import { getProducts } from '@/modules/inventory/inventory.actions'
@@ -43,7 +41,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [productSearch, setProductSearch] = useState('')
-  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingData, setIsLoadingData] = useState(false)
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -169,7 +166,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
     setSelectedProduct(null)
     setQuantity(1)
     setProductSearch('')
-    setIsProductDialogOpen(false)
   }
 
   function removeFromCart(index: number) {
@@ -318,21 +314,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
         {/* Product Catalog - 3 cols */}
         <Card className="lg:col-span-3">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Catálogo de Productos</CardTitle>
-              <Button
-                type="button"
-                onClick={() => setIsProductDialogOpen(true)}
-                disabled={isLoadingData}
-              >
-                {isLoadingData ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
-                )}
-                Agregar Producto
-              </Button>
-            </div>
+            <CardTitle className="text-lg">Catálogo de Productos</CardTitle>
           </CardHeader>
           <CardContent>
             {/* Quick product list */}
@@ -408,114 +390,6 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                 </div>
               </div>
             )}
-
-            {/* Product Selection Dialog */}
-            <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Seleccionar Producto</DialogTitle>
-                  <DialogDescription>
-                    Busca y selecciona el producto que deseas agregar
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      placeholder="Buscar productos..."
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-
-                  <div className="max-h-[400px] overflow-y-auto rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[40%]">Producto</TableHead>
-                          <TableHead className="w-[20%]">Precio</TableHead>
-                          <TableHead className="w-[15%]">Stock</TableHead>
-                          <TableHead className="w-[25%]">Acción</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredProducts.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-gray-500 py-8">
-                              No se encontraron productos
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredProducts.map((product) => (
-                            <TableRow key={product.id} className="hover:bg-muted/50">
-                              <TableCell className="max-w-[300px]">
-                                <div className="truncate" title={product.name}>
-                                  <div className="font-medium">{product.name}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                {formatCurrency(product.salePrice)}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={product.stock > product.minStock ? 'default' : 'destructive'}
-                                  className="w-fit"
-                                >
-                                  {product.stock}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  onClick={() => setSelectedProduct(product)}
-                                  disabled={product.stock === 0}
-                                  className="w-full"
-                                >
-                                  {product.stock === 0 ? 'Agotado' : 'Seleccionar'}
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {selectedProduct && (
-                    <div className="border-t pt-4 space-y-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <p className="font-medium text-lg">{selectedProduct.name}</p>
-                          <div className="text-sm text-gray-500 space-y-1">
-                            <p>Precio: {formatCurrency(selectedProduct.salePrice)} COP</p>
-                            <p>Stock disponible: {selectedProduct.stock} unidades</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor="quantity-dialog">Cantidad:</Label>
-                            <Input
-                              id="quantity-dialog"
-                              type="number"
-                              min={1}
-                              max={selectedProduct.stock}
-                              value={quantity}
-                              onChange={(e) => setQuantity(Math.min(parseInt(e.target.value) || 1, selectedProduct.stock))}
-                              className="w-24"
-                            />
-                          </div>
-                          <Button type="button" onClick={addToCart} size="lg">
-                            Agregar al Carrito
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
           </CardContent>
         </Card>
 
