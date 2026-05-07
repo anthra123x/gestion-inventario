@@ -38,12 +38,17 @@ export async function getSalesReport(filters?: {
     orderBy: { createdAt: 'desc' },
   })
 
-  // Calculate summary
   const totalSales = sales.length
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0)
+  const totalCost = sales.reduce((sum, sale) =>
+    sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.purchasePriceAtSale * item.quantity), 0)
+  , 0)
+  const totalProfit = sales.reduce((sum, sale) =>
+    sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.profit || 0), 0)
+  , 0)
   const averageSale = totalSales > 0 ? totalRevenue / totalSales : 0
+  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
-  // Group by payment method
   const paymentMethodStats = sales.reduce((acc, sale) => {
     if (!acc[sale.paymentMethod]) {
       acc[sale.paymentMethod] = {
@@ -56,7 +61,6 @@ export async function getSalesReport(filters?: {
     return acc
   }, {} as Record<PaymentMethod, { count: number; total: number }>)
 
-  // Top products
   const productSales = sales.flatMap(sale => sale.saleItems)
   const topProducts = productSales.reduce((acc, item) => {
     const productId = item.productId
@@ -65,10 +69,14 @@ export async function getSalesReport(filters?: {
         product: item.product,
         quantity: 0,
         revenue: 0,
+        cost: 0,
+        profit: 0,
       }
     }
     acc[productId].quantity += item.quantity
     acc[productId].revenue += item.total
+    acc[productId].cost += item.purchasePriceAtSale * item.quantity
+    acc[productId].profit += item.profit || 0
     return acc
   }, {} as Record<string, any>)
 
@@ -77,10 +85,13 @@ export async function getSalesReport(filters?: {
     summary: {
       totalSales,
       totalRevenue,
+      totalCost,
+      totalProfit,
+      profitMargin,
       averageSale,
       paymentMethodStats,
     },
-    topProducts: Object.values(topProducts).sort((a, b) => b.quantity - a.quantity),
+    topProducts: Object.values(topProducts).sort((a, b) => b.revenue - a.revenue),
   }
 }
 
@@ -89,6 +100,7 @@ export async function getInventoryReport(filters?: {
   lowStock?: boolean
 }) {
   const where = {
+    deletedAt: null,
     ...(filters?.category && { category: filters.category }),
     ...(filters?.lowStock && {
       stock: {
@@ -102,14 +114,13 @@ export async function getInventoryReport(filters?: {
     orderBy: { name: 'asc' },
   })
 
-  // Calculate summary
   const totalProducts = products.length
   const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
   const totalValue = products.reduce((sum, product) => sum + (product.stock * product.salePrice), 0)
+  const totalCostValue = products.reduce((sum, product) => sum + (product.stock * product.purchasePrice), 0)
   const lowStockCount = products.filter(product => product.stock <= product.minStock).length
   const outOfStockCount = products.filter(product => product.stock === 0).length
 
-  // Group by category
   const categoryStats = products.reduce((acc, product) => {
     if (!acc[product.category]) {
       acc[product.category] = {
@@ -130,6 +141,7 @@ export async function getInventoryReport(filters?: {
       totalProducts,
       totalStock,
       totalValue,
+      totalCostValue,
       lowStockCount,
       outOfStockCount,
     },
@@ -172,47 +184,59 @@ export async function getRepairsReport(filters?: {
     orderBy: { createdAt: 'desc' },
   })
 
-  // Calculate summary
   const totalRepairs = repairs.length
   const totalRevenue = repairs.reduce((sum, repair) => sum + repair.cost, 0)
+  const totalPartsCost = repairs.reduce((sum, repair) => sum + (repair.partsCost || 0), 0)
+  const totalProfit = repairs.reduce((sum, repair) => sum + (repair.profit || 0), 0)
   const averageRepair = totalRepairs > 0 ? totalRevenue / totalRepairs : 0
+  const avgProfit = totalRepairs > 0 ? totalProfit / totalRepairs : 0
 
-  // Group by status
   const statusStats = repairs.reduce((acc, repair) => {
     if (!acc[repair.status]) {
       acc[repair.status] = {
         count: 0,
         revenue: 0,
+        profit: 0,
       }
     }
     acc[repair.status].count += 1
     acc[repair.status].revenue += repair.cost
+    acc[repair.status].profit += repair.profit || 0
     return acc
-  }, {} as Record<RepairStatus, { count: number; revenue: number }>)
+  }, {} as Record<RepairStatus, { count: number; revenue: number; profit: number }>)
 
-  // Group by device type
   const deviceStats = repairs.reduce((acc, repair) => {
     const device = repair.device
     if (!acc[device]) {
       acc[device] = {
         count: 0,
         revenue: 0,
+        profit: 0,
       }
     }
     acc[device].count += 1
     acc[device].revenue += repair.cost
+    acc[device].profit += repair.profit || 0
     return acc
-  }, {} as Record<string, { count: number; revenue: number }>)
+  }, {} as Record<string, { count: number; revenue: number; profit: number }>)
+
+  const mostProfitable = repairs.length > 0
+    ? repairs.reduce((max, repair) => (repair.profit || 0) > (max.profit || 0) ? repair : max, repairs[0])
+    : null
 
   return {
     repairs,
     summary: {
       totalRepairs,
       totalRevenue,
+      totalPartsCost,
+      totalProfit,
       averageRepair,
+      avgProfit,
       statusStats,
+      mostProfitable,
     },
-    deviceStats: Object.entries(deviceStats).sort((a, b) => b[1].count - a[1].count),
+    deviceStats: Object.entries(deviceStats).sort((a, b) => b[1].revenue - a[1].revenue),
   }
 }
 
@@ -264,7 +288,6 @@ export async function getClientsReport(filters?: {
     orderBy: { name: 'asc' },
   })
 
-  // Filter clients based on criteria
   let filteredClients = clients
   if (filters?.hasSales) {
     filteredClients = filteredClients.filter(client => client.sales.length > 0)
@@ -273,23 +296,32 @@ export async function getClientsReport(filters?: {
     filteredClients = filteredClients.filter(client => client.repairs.length > 0)
   }
 
-  // Calculate client stats
-  const clientStats = filteredClients.map(client => ({
-    ...client,
-    totalSpent: client.sales.reduce((sum, sale) => sum + sale.total, 0),
-    totalRepairsCost: client.repairs.reduce((sum, repair) => sum + repair.cost, 0),
-    totalTransactions: client.sales.length + client.repairs.length,
-  }))
+  const clientStats = filteredClients.map(client => {
+    const totalSalesSpent = client.sales.reduce((sum, sale) => sum + sale.total, 0)
+    const totalSalesProfit = client.sales.reduce(
+      (sum, sale) => sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.profit || 0), 0), 0
+    )
+    const totalRepairsCost = client.repairs.reduce((sum, repair) => sum + repair.cost, 0)
+    const totalRepairsProfit = client.repairs.reduce((sum, repair) => sum + (repair.profit || 0), 0)
 
-  // Sort by total spent
+    return {
+      ...client,
+      totalSpent: totalSalesSpent,
+      totalSalesProfit,
+      totalRepairsCost,
+      totalRepairsProfit,
+      totalTransactions: client.sales.length + client.repairs.length,
+    }
+  })
+
   clientStats.sort((a, b) => b.totalSpent - a.totalSpent)
 
-  // Calculate summary
   const totalClients = clientStats.length
   const totalSpent = clientStats.reduce((sum, client) => sum + client.totalSpent, 0)
   const averageSpent = totalClients > 0 ? totalSpent / totalClients : 0
-  const newClients = filters?.startDate && filters?.endDate 
-    ? clientStats.filter(client => 
+  const totalProfit = clientStats.reduce((sum, client) => sum + (client.totalSalesProfit || 0) + (client.totalRepairsProfit || 0), 0)
+  const newClients = filters?.startDate && filters?.endDate
+    ? clientStats.filter(client =>
         client.createdAt >= filters.startDate! && client.createdAt <= filters.endDate!
       ).length
     : 0
@@ -299,6 +331,7 @@ export async function getClientsReport(filters?: {
     summary: {
       totalClients,
       totalSpent,
+      totalProfit,
       averageSpent,
       newClients,
     },

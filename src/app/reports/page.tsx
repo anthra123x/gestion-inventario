@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Download, Calendar, Filter, BarChart3, Package, Users, Wrench } from 'lucide-react'
+import { FileText, Download, Calendar, Filter, BarChart3, Package, Users, Wrench, TrendingUp, DollarSign, TrendingDown, PiggyBank } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/format'
 import { generateReportData } from '@/modules/reports/reports.actions'
-import { ProductCategory, RepairStatus } from '@prisma/client'
+import { ProductCategory, RepairStatus, PaymentMethod } from '@prisma/client'
 
 export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<string>('sales')
@@ -38,18 +39,13 @@ export default function ReportsPage() {
       setReportData(data)
     } catch (error) {
       console.error('Error generating report:', error)
+      toast.error('Error al generar el reporte')
     } finally {
       setLoading(false)
     }
   }
 
-  function exportToPDF() {
-    // This would implement PDF export using pdf-lib or react-pdf
-    toast.info('Exportación PDF en desarrollo')
-  }
-
   function exportToExcel() {
-    // This would implement Excel export using xlsx
     toast.info('Exportación Excel en desarrollo')
   }
 
@@ -83,9 +79,17 @@ export default function ReportsPage() {
     }
   }
 
+  function getPaymentMethodLabel(method: string) {
+    const labels: Record<string, string> = {
+      CASH: 'Efectivo',
+      CARD: 'Tarjeta',
+      TRANSFER: 'Transferencia',
+    }
+    return labels[method] || method
+  }
+
   return (
     <div className="container mx-auto py-6 min-h-screen space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Reportes</h1>
         <p className="text-gray-600">Genera y exporta reportes del negocio</p>
@@ -97,7 +101,7 @@ export default function ReportsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
-              Configuración
+              Configuracion
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -116,7 +120,6 @@ export default function ReportsPage() {
               </Select>
             </div>
 
-            {/* Date Range */}
             <div>
               <Label htmlFor="startDate">Fecha Inicio</Label>
               <Input
@@ -137,10 +140,9 @@ export default function ReportsPage() {
               />
             </div>
 
-            {/* Report-specific filters */}
             {selectedReport === 'inventory' && (
               <div>
-                <Label htmlFor="category">Categoría</Label>
+                <Label htmlFor="category">Categoria</Label>
                 <Select value={filters.category} onValueChange={(value) => setFilters((prev: any) => ({ ...prev, category: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todas" />
@@ -182,10 +184,6 @@ export default function ReportsPage() {
               
               {reportData && (
                 <div className="space-y-2">
-                  <Button onClick={exportToPDF} variant="outline" className="w-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Exportar PDF
-                  </Button>
                   <Button onClick={exportToExcel} variant="outline" className="w-full">
                     <Download className="mr-2 h-4 w-4" />
                     Exportar Excel
@@ -216,140 +214,476 @@ export default function ReportsPage() {
                 </p>
               </div>
             ) : (
-              <Tabs defaultValue="summary" className="space-y-4">
+              <Tabs defaultValue="summary" className="space-y-6">
                 <TabsList>
                   <TabsTrigger value="summary">Resumen</TabsTrigger>
                   <TabsTrigger value="details">Detalles</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="summary" className="space-y-4">
-                  {/* Summary Cards */}
+                {/* ==================== SALES REPORT ==================== */}
+                <TabsContent value="summary" className="space-y-6">
                   {selectedReport === 'sales' && reportData.summary && (
-                    <div className="grid gap-4 md:grid-cols-4">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{reportData.summary.totalSales}</div>
-                          <p className="text-sm text-gray-600">Total Ventas</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.totalRevenue.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Ingresos Totales</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.averageSale.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Promedio por Venta</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{Object.keys(reportData.summary.paymentMethodStats).length}</div>
-                          <p className="text-sm text-gray-600">Métodos de Pago</p>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    <>
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold">{reportData.summary.totalSales}</div>
+                            <p className="text-sm text-gray-600">Total Ventas</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-green-600">{formatCurrency(reportData.summary.totalRevenue)}</div>
+                            <p className="text-sm text-gray-600">Ingresos Totales</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-orange-600">{formatCurrency(reportData.summary.totalCost)}</div>
+                            <p className="text-sm text-gray-600">Costo Invertido</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-emerald-600">{formatCurrency(reportData.summary.totalProfit)}</div>
+                            <p className="text-sm text-gray-600">Ganancia Bruta</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-5 w-5 text-blue-600" />
+                              <span className="text-2xl font-bold text-blue-600">
+                                {reportData.summary.profitMargin?.toFixed(1)}%
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Margen de Ganancia</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-5 w-5 text-purple-600" />
+                              <span className="text-2xl font-bold text-purple-600">
+                                {formatCurrency(reportData.summary.averageSale)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Ticket Promedio</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold">
+                              {Object.keys(reportData.summary.paymentMethodStats).length}
+                            </div>
+                            <p className="text-sm text-gray-600">Metodos de Pago</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Payment Method Breakdown */}
+                      {reportData.summary.paymentMethodStats && Object.keys(reportData.summary.paymentMethodStats).length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Desglose por Metodo de Pago</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {Object.entries(reportData.summary.paymentMethodStats as Record<PaymentMethod, { count: number; total: number }>).map(([method, data]) => (
+                                <div key={method} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <p className="font-medium">{getPaymentMethodLabel(method)}</p>
+                                    <p className="text-sm text-gray-500">{data.count} transacciones</p>
+                                  </div>
+                                  <p className="font-semibold">{formatCurrency(data.total)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Top Products */}
+                      {reportData.topProducts && reportData.topProducts.length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Productos Mas Vendidos</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {reportData.topProducts.slice(0, 10).map((product: any, index: number) => (
+                                <div key={product.product?.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm font-bold text-gray-400 w-6">#{index + 1}</span>
+                                    <div>
+                                      <p className="font-medium">{product.product?.name || 'Producto eliminado'}</p>
+                                      <p className="text-sm text-gray-500">{product.quantity} unidades</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold">{formatCurrency(product.revenue)}</p>
+                                    <p className="text-sm text-emerald-600">Ganancia: {formatCurrency(product.profit || 0)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
                   )}
 
+                  {/* ==================== INVENTORY REPORT ==================== */}
                   {selectedReport === 'inventory' && reportData.summary && (
-                    <div className="grid gap-4 md:grid-cols-4">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{reportData.summary.totalProducts}</div>
-                          <p className="text-sm text-gray-600">Total Productos</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{reportData.summary.totalStock}</div>
-                          <p className="text-sm text-gray-600">Unidades en Stock</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.totalValue.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Valor del Inventario</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-orange-600">{reportData.summary.lowStockCount}</div>
-                          <p className="text-sm text-gray-600">Stock Bajo</p>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    <>
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold">{reportData.summary.totalProducts}</div>
+                            <p className="text-sm text-gray-600">Total Productos</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold">{reportData.summary.totalStock}</div>
+                            <p className="text-sm text-gray-600">Unidades en Stock</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-green-600">{formatCurrency(reportData.summary.totalValue)}</div>
+                            <p className="text-sm text-gray-600">Valor de Venta</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-orange-600">{reportData.summary.lowStockCount}</div>
+                            <p className="text-sm text-gray-600">Stock Bajo</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Category Breakdown */}
+                      {reportData.categoryStats && Object.keys(reportData.categoryStats).length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Por Categoria</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {Object.entries(reportData.categoryStats).map(([category, data]: [string, any]) => (
+                                <div key={category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <p className="font-medium">{category}</p>
+                                    <p className="text-sm text-gray-500">{data.count} productos, {data.stock} unidades</p>
+                                  </div>
+                                  <p className="font-semibold">{formatCurrency(data.value)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
                   )}
 
+                  {/* ==================== REPAIRS REPORT ==================== */}
                   {selectedReport === 'repairs' && reportData.summary && (
-                    <div className="grid gap-4 md:grid-cols-4">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{reportData.summary.totalRepairs}</div>
-                          <p className="text-sm text-gray-600">Total Reparaciones</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.totalRevenue.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Ingresos por Reparaciones</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.averageRepair.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Promedio por Reparación</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{Object.keys(reportData.summary.statusStats).length}</div>
-                          <p className="text-sm text-gray-600">Estados</p>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    <>
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold">{reportData.summary.totalRepairs}</div>
+                            <p className="text-sm text-gray-600">Total Reparaciones</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-green-600">{formatCurrency(reportData.summary.totalRevenue)}</div>
+                            <p className="text-sm text-gray-600">Total Facturado</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-orange-600">{formatCurrency(reportData.summary.totalPartsCost)}</div>
+                            <p className="text-sm text-gray-600">Costo Repuestos</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-emerald-600">{formatCurrency(reportData.summary.totalProfit)}</div>
+                            <p className="text-sm text-gray-600">Ganancia Real</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-5 w-5 text-blue-600" />
+                              <span className="text-2xl font-bold text-blue-600">
+                                {formatCurrency(reportData.summary.avgProfit)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Promedio Ganancia/Reparacion</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-5 w-5 text-purple-600" />
+                              <span className="text-2xl font-bold text-purple-600">
+                                {formatCurrency(reportData.summary.averageRepair)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Promedio por Reparacion</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <PiggyBank className="h-5 w-5 text-green-600" />
+                              {reportData.summary.mostProfitable ? (
+                                <span className="text-sm font-semibold text-green-600">
+                                  #{reportData.summary.mostProfitable.id.slice(-6)} — {formatCurrency(reportData.summary.mostProfitable.profit || 0)}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-gray-500">N/A</span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Reparacion Mas Rentable</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Status Breakdown */}
+                      {reportData.summary.statusStats && Object.keys(reportData.summary.statusStats).length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Por Estado</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {Object.entries(reportData.summary.statusStats).map(([status, data]: [string, any]) => (
+                                <div key={status} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant={status === 'DELIVERED' ? 'default' : status === 'IN_PROGRESS' ? 'secondary' : status === 'CANCELLED' ? 'destructive' : 'outline'}>
+                                        {status === 'RECEIVED' ? 'Recibido' : status === 'IN_PROGRESS' ? 'En Progreso' : status === 'READY' ? 'Listo' : status === 'DELIVERED' ? 'Entregado' : 'Cancelado'}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-1">{data.count} reparaciones</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold">{formatCurrency(data.revenue)}</p>
+                                    <p className="text-sm text-emerald-600">Ganancia: {formatCurrency(data.profit || 0)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Device Breakdown */}
+                      {reportData.deviceStats && reportData.deviceStats.length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Por Tipo de Dispositivo</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {reportData.deviceStats.slice(0, 10).map(([device, data]: [string, any]) => (
+                                <div key={device} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <p className="font-medium">{device}</p>
+                                    <p className="text-sm text-gray-500">{data.count} reparaciones</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold">{formatCurrency(data.revenue)}</p>
+                                    <p className="text-sm text-emerald-600">Ganancia: {formatCurrency(data.profit || 0)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
                   )}
 
+                  {/* ==================== CLIENTS REPORT ==================== */}
                   {selectedReport === 'clients' && reportData.summary && (
-                    <div className="grid gap-4 md:grid-cols-4">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">{reportData.summary.totalClients}</div>
-                          <p className="text-sm text-gray-600">Total Clientes</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.totalSpent.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Gasto Total</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">${reportData.summary.averageSpent.toFixed(2)}</div>
-                          <p className="text-sm text-gray-600">Gasto Promedio</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-green-600">{reportData.summary.newClients}</div>
-                          <p className="text-sm text-gray-600">Nuevos Clientes</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                </TabsContent>
+                    <>
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold">{reportData.summary.totalClients}</div>
+                            <p className="text-sm text-gray-600">Total Clientes</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-green-600">{formatCurrency(reportData.summary.totalSpent)}</div>
+                            <p className="text-sm text-gray-600">Gasto Total</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-emerald-600">{formatCurrency(reportData.summary.totalProfit)}</div>
+                            <p className="text-sm text-gray-600">Ganancia Total</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-2xl font-bold text-green-600">{reportData.summary.newClients}</div>
+                            <p className="text-sm text-gray-600">Nuevos Clientes</p>
+                          </CardContent>
+                        </Card>
+                      </div>
 
-                <TabsContent value="details">
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">
-                      Vista detallada del reporte. Aquí se mostrarían tablas completas con los datos.
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      (Implementación de tablas detalladas en desarrollo)
-                    </p>
-                  </div>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-purple-600" />
+                            <span className="text-2xl font-bold text-purple-600">
+                              {formatCurrency(reportData.summary.averageSpent)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Gasto Promedio por Cliente</p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Top Clients */}
+                      {reportData.clients && reportData.clients.length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Top Clientes</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {reportData.clients.slice(0, 15).map((client: any, index: number) => (
+                                <div key={client.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm font-bold text-gray-400 w-6">#{index + 1}</span>
+                                    <div>
+                                      <p className="font-medium">{client.name}</p>
+                                      <p className="text-sm text-gray-500">
+                                        {client.totalTransactions} transacciones
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold">{formatCurrency(client.totalSpent)}</p>
+                                    <p className="text-sm text-emerald-600">
+                                      Ganancia: {formatCurrency((client.totalSalesProfit || 0) + (client.totalRepairsProfit || 0))}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
+                  )}
+
+                  {/* ==================== DETAILS TAB ==================== */}
+                  {selectedReport === 'sales' && reportData.sales && reportData.sales.length > 0 && (
+                    <TabsContent value="details" className="space-y-4">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Detalle de Ventas</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">ID</th>
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">Cliente</th>
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">Items</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Ingreso</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Costo</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Ganancia</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {reportData.sales.slice(0, 20).map((sale: any) => {
+                                  const saleCost = sale.saleItems.reduce((sum: number, item: any) => sum + (item.purchasePriceAtSale * item.quantity), 0)
+                                  const saleProfit = sale.saleItems.reduce((sum: number, item: any) => sum + (item.profit || 0), 0)
+                                  return (
+                                    <tr key={sale.id} className="border-b hover:bg-gray-50">
+                                      <td className="py-2 px-3">#{sale.id.slice(-6)}</td>
+                                      <td className="py-2 px-3">{sale.client?.name || sale.clientName || 'Ocasional'}</td>
+                                      <td className="py-2 px-3">{sale.saleItems.length} items</td>
+                                      <td className="py-2 px-3 text-right font-medium">{formatCurrency(sale.total)}</td>
+                                      <td className="py-2 px-3 text-right text-orange-600">{formatCurrency(saleCost)}</td>
+                                      <td className="py-2 px-3 text-right text-emerald-600">{formatCurrency(saleProfit)}</td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
+
+                  {selectedReport === 'repairs' && reportData.repairs && reportData.repairs.length > 0 && (
+                    <TabsContent value="details" className="space-y-4">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Detalle de Reparaciones</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">ID</th>
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">Cliente</th>
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">Dispositivo</th>
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">Estado</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Facturado</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Costo</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Ganancia</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {reportData.repairs.slice(0, 20).map((repair: any) => (
+                                  <tr key={repair.id} className="border-b hover:bg-gray-50">
+                                    <td className="py-2 px-3">#{repair.id.slice(-6)}</td>
+                                    <td className="py-2 px-3">{repair.client?.name}</td>
+                                    <td className="py-2 px-3">{repair.device}</td>
+                                    <td className="py-2 px-3">
+                                      <Badge variant={repair.status === 'DELIVERED' ? 'default' : repair.status === 'CANCELLED' ? 'destructive' : 'secondary'}>
+                                        {repair.status === 'RECEIVED' ? 'Recibido' : repair.status === 'IN_PROGRESS' ? 'En Progreso' : repair.status === 'READY' ? 'Listo' : repair.status === 'DELIVERED' ? 'Entregado' : 'Cancelado'}
+                                      </Badge>
+                                    </td>
+                                    <td className="py-2 px-3 text-right font-medium">{formatCurrency(repair.cost)}</td>
+                                    <td className="py-2 px-3 text-right text-orange-600">{formatCurrency(repair.partsCost || 0)}</td>
+                                    <td className="py-2 px-3 text-right text-emerald-600">{formatCurrency(repair.profit || 0)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
+
+                  {(selectedReport === 'inventory' || selectedReport === 'clients') && (
+                    <TabsContent value="details" className="text-center py-8">
+                      <p className="text-gray-600">Los detalles completos se muestran en las tablas del resumen.</p>
+                    </TabsContent>
+                  )}
                 </TabsContent>
               </Tabs>
             )}
