@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateRepairSchema, UpdateRepairSchema } from '@/lib/validations'
+import { checkStockAvailability } from '@/lib/stock-check'
+import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
 import { RepairStatus } from '@prisma/client'
 
@@ -70,7 +72,15 @@ export async function getRepairById(id: string) {
 
 export async function createRepair(formData: FormData) {
   const partsJson = formData.get('parts') as string
-  const rawParts = partsJson ? JSON.parse(partsJson) : []
+
+  let rawParts: any[]
+  try {
+    rawParts = partsJson ? JSON.parse(partsJson) : []
+  } catch {
+    return {
+      error: 'Datos de repuestos inválidos',
+    }
+  }
 
   // Normalizar parts para evitar NaN
   const parts = rawParts.map((part: any) => ({
@@ -122,9 +132,8 @@ export async function createRepair(formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 
@@ -149,30 +158,56 @@ export async function createRepair(formData: FormData) {
   try {
     const { clientId, device, problem, diagnosis, cost, notes, internalNotes, estimatedDate, parts } = validatedFields.data
 
-    // Calculate parts total
+    // Calculate parts total (what customer pays for parts)
     const partsTotal = (parts || []).reduce((sum, part) => sum + (part.unitCost * part.quantity), 0)
     const total = cost + partsTotal
+
+    // Fetch purchase prices for profit calculation
+    const partsCostMap: Record<string, number> = {}
+    if (parts && parts.length > 0) {
+      const products = await prisma.product.findMany({
+        where: {
+          id: {
+            in: parts.map(p => p.productId),
+          },
+        },
+        select: {
+          id: true,
+          purchasePrice: true,
+        },
+      })
+
+      for (const product of products) {
+        partsCostMap[product.id] = product.purchasePrice
+      }
+    }
+
+    // Calculate actual parts cost (what business paid)
+    const partsCost = (parts || []).reduce(
+      (sum, part) => sum + ((partsCostMap[part.productId] || 0) * part.quantity),
+      0
+    )
+
+    // Validate: no losses allowed
+    if (cost < partsCost) {
+      return {
+        error: `El costo estimado (${cost}) es menor al costo de los repuestos (${partsCost}). No se permiten reparaciones con pérdida.`,
+      }
+    }
+
+    const profit = cost - partsCost
 
     // Use transaction for atomicity
     const repair = await prisma.$transaction(async (tx) => {
       // Check stock availability for parts
       if (parts && parts.length > 0) {
-        for (const part of parts) {
-          const product = await tx.product.findUnique({
-            where: { id: part.productId },
-          })
-
-          if (!product) {
-            throw new Error(`Producto con ID ${part.productId} no encontrado`)
-          }
-
-          if (product.stock < part.quantity) {
-            throw new Error(`Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${part.quantity}`)
-          }
-        }
+        await checkStockAvailability(tx, parts.map(part => ({
+          productId: part.productId,
+          quantity: part.quantity,
+        })))
       }
 
-      // Create repair
+      // Create repair with profit tracking
       const newRepair = await tx.repair.create({
         data: {
           clientId,
@@ -180,6 +215,8 @@ export async function createRepair(formData: FormData) {
           problem,
           diagnosis,
           cost: total,
+          partsCost,
+          profit,
           notes,
           internalNotes,
           estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
@@ -189,6 +226,7 @@ export async function createRepair(formData: FormData) {
               quantity: part.quantity,
               unitCost: part.unitCost,
               total: part.unitCost * part.quantity,
+              purchasePriceAtPart: partsCostMap[part.productId] || 0,
             })),
           } : undefined,
         },
@@ -298,33 +336,35 @@ export async function deleteRepair(id: string) {
       }
     }
 
-    // Restore stock for parts
-    for (const part of repair.repairParts) {
-      await prisma.product.update({
-        where: { id: part.productId },
-        data: {
-          stock: {
-            increment: part.quantity,
+    // Atomic transaction: restore stock + movements + delete
+    await prisma.$transaction(async (tx) => {
+      // Restore stock for parts
+      for (const part of repair.repairParts) {
+        await tx.product.update({
+          where: { id: part.productId },
+          data: {
+            stock: {
+              increment: part.quantity,
+            },
           },
-        },
-      })
+        })
 
-      // Create inventory movement
-      await prisma.inventoryMovement.create({
-        data: {
-          productId: part.productId,
-          type: 'ENTRY',
-          quantity: part.quantity,
-          reason: `Cancelación reparación #${repair.id}`,
-          referenceId: repair.id,
-          referenceType: 'repair',
-        },
-      })
-    }
+        await tx.inventoryMovement.create({
+          data: {
+            productId: part.productId,
+            type: 'ENTRY',
+            quantity: part.quantity,
+            reason: `Cancelación reparación #${repair.id}`,
+            referenceId: repair.id,
+            referenceType: 'repair',
+          },
+        })
+      }
 
-    // Delete repair (this will cascade delete repair parts)
-    await prisma.repair.delete({
-      where: { id },
+      // Delete repair (cascade deletes repair parts)
+      await tx.repair.delete({
+        where: { id },
+      })
     })
 
     revalidatePath('/repairs')
@@ -339,7 +379,7 @@ export async function deleteRepair(id: string) {
 }
 
 export async function getRepairStats() {
-  const [totalRepairs, activeRepairs, completedRepairs, repairsByStatus] = await Promise.all([
+  const [totalRepairs, activeRepairs, completedRepairs, repairsByStatus, profitData] = await Promise.all([
     prisma.repair.count(),
     prisma.repair.count({
       where: {
@@ -359,6 +399,16 @@ export async function getRepairStats() {
         id: true,
       },
     }),
+    prisma.repair.aggregate({
+      _sum: {
+        cost: true,
+        partsCost: true,
+        profit: true,
+      },
+      _avg: {
+        profit: true,
+      },
+    }),
   ])
 
   return {
@@ -366,6 +416,10 @@ export async function getRepairStats() {
     activeRepairs,
     completedRepairs,
     repairsByStatus,
+    totalRevenue: profitData._sum.cost || 0,
+    totalPartsCost: profitData._sum.partsCost || 0,
+    totalProfit: profitData._sum.profit || 0,
+    avgProfit: profitData._avg.profit || 0,
   }
 }
 

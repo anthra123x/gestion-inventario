@@ -18,47 +18,34 @@ import { Product, ProductCategory } from '@prisma/client'
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'ALL'>('ALL')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
 
   useEffect(() => {
     loadProducts()
-  }, [])
-
-  useEffect(() => {
-    filterProducts()
-  }, [products, search, categoryFilter])
+  }, [search, categoryFilter, page])
 
   async function loadProducts() {
     try {
-      const data = await getProducts()
-      setProducts(data)
+      setLoading(true)
+      const searchParam = search || undefined
+      const categoryParam = categoryFilter !== 'ALL' ? categoryFilter : undefined
+      const result = await getProducts(searchParam, categoryParam, page, pageSize)
+      setProducts(result.products)
+      setTotalProducts(result.total)
+      setTotalPages(result.totalPages)
     } catch (error) {
       console.error('Error loading products:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  function filterProducts() {
-    let filtered = products
-
-    if (search) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.description?.toLowerCase().includes(search.toLowerCase())
-      )
-    }
-
-    if (categoryFilter !== 'ALL') {
-      filtered = filtered.filter(product => product.category === categoryFilter)
-    }
-
-    setFilteredProducts(filtered)
   }
 
   async function handleDeleteProduct(product: Product) {
@@ -246,7 +233,7 @@ export default function InventoryPage() {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Productos ({filteredProducts.length})</CardTitle>
+          <CardTitle>Productos ({totalProducts})</CardTitle>
           <CardDescription>
             Lista completa de productos en el inventario
           </CardDescription>
@@ -265,7 +252,7 @@ export default function InventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
+              {products.map((product) => {
                 const stockStatus = getStockStatus(product.stock, product.minStock)
                 return (
                   <TableRow key={product.id}>
@@ -342,23 +329,49 @@ export default function InventoryPage() {
           </Table>
           </div>
           
-          {filteredProducts.length === 0 && (
+          {products.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="rounded-full bg-muted p-4 mb-4">
                 <Package className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground font-medium">
-                {search || categoryFilter !== 'ALL' 
+                {search || categoryFilter !== 'ALL'
                   ? 'No se encontraron productos'
                   : 'No hay productos en el inventario'
                 }
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {search || categoryFilter !== 'ALL' 
+                {search || categoryFilter !== 'ALL'
                   ? 'Intenta con otros filtros de búsqueda'
                   : 'Crea tu primer producto para comenzar'
                 }
               </p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                Página {page} de {totalPages} — {totalProducts} productos
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

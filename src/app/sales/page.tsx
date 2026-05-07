@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Eye, ShoppingCart, TrendingUp, DollarSign, CreditCard } from 'lucide-react'
+import { Plus, Search, Eye, ShoppingCart, TrendingUp, DollarSign, CreditCard, PiggyBank, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,46 +20,33 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentMethod | 'ALL'>('ALL')
+  const [totalSales, setTotalSales] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
 
   useEffect(() => {
     loadData()
-  }, [])
-
-  useEffect(() => {
-    filterSales()
-  }, [sales, search, paymentFilter])
+  }, [search, paymentFilter, page])
 
   async function loadData() {
     try {
-      const [salesData, statsData] = await Promise.all([
-        getSales(),
+      setLoading(true)
+      const searchParam = search || undefined
+      const paymentParam = paymentFilter !== 'ALL' ? paymentFilter : undefined
+      const [salesResult, statsData] = await Promise.all([
+        getSales(searchParam, undefined, undefined, page, pageSize),
         getSalesStats(),
       ])
-      setSales(salesData)
+      setSales(salesResult.sales)
+      setTotalSales(salesResult.total)
+      setTotalPages(salesResult.totalPages)
       setStats(statsData)
     } catch (error) {
       console.error('Error loading sales:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  function filterSales() {
-    let filtered = sales
-
-    if (search) {
-      filtered = filtered.filter(sale =>
-        sale.client?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        sale.client?.phone?.toLowerCase().includes(search.toLowerCase()) ||
-        sale.notes?.toLowerCase().includes(search.toLowerCase())
-      )
-    }
-
-    if (paymentFilter !== 'ALL') {
-      filtered = filtered.filter(sale => sale.paymentMethod === paymentFilter)
-    }
-
-    return filtered
   }
 
   function getPaymentMethodLabel(method: string) {
@@ -82,7 +69,7 @@ export default function SalesPage() {
     return colors[method] || 'default'
   }
 
-  const filteredSales = filterSales()
+  const filteredSales = sales
 
   if (loading) {
     return (
@@ -202,6 +189,62 @@ export default function SalesPage() {
         </div>
       )}
 
+      {/* Profit Stats */}
+      {stats && stats.totalProfit !== undefined && (
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Costo Invertido</CardTitle>
+              <TrendingDown className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {formatCurrency(stats.totalCost || 0)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ganancia Bruta</CardTitle>
+              <PiggyBank className="h-4 w-4 text-emerald-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-600">
+                {formatCurrency(stats.totalProfit || 0)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Margen</CardTitle>
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.totalRevenue > 0
+                  ? `${((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1)}%`
+                  : '0%'
+                }
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Promedio/Venta</CardTitle>
+              <DollarSign className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {formatCurrency(stats.totalSales > 0 ? stats.totalProfit / stats.totalSales : 0)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -238,7 +281,7 @@ export default function SalesPage() {
       {/* Sales Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Ventas ({filteredSales.length})</CardTitle>
+          <CardTitle>Ventas ({totalSales})</CardTitle>
           <CardDescription>
             Historial completo de ventas
           </CardDescription>
@@ -258,7 +301,7 @@ export default function SalesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSales.map((sale) => (
+              {sales.map((sale) => (
                 <TableRow key={sale.id}>
                   <TableCell className="font-medium">#{sale.id.slice(-6)}</TableCell>
                   <TableCell>
@@ -310,23 +353,49 @@ export default function SalesPage() {
           </Table>
           </div>
           
-          {filteredSales.length === 0 && (
+          {sales.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="rounded-full bg-muted p-4 mb-4">
                 <ShoppingCart className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground font-medium">
-                {search || paymentFilter !== 'ALL' 
+                {search || paymentFilter !== 'ALL'
                   ? 'No se encontraron ventas'
                   : 'No hay ventas registradas'
                 }
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {search || paymentFilter !== 'ALL' 
+                {search || paymentFilter !== 'ALL'
                   ? 'Intenta con otros filtros de búsqueda'
                   : 'Registra tu primera venta para comenzar'
                 }
               </p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                Página {page} de {totalPages} — {totalSales} ventas
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

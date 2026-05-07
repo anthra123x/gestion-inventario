@@ -1,10 +1,10 @@
 'use client'
 
-import { Toaster } from 'sonner'
+import { Toaster as SonnerToaster } from './sonner'
 
 export function ToastProvider() {
   return (
-    <Toaster
+    <SonnerToaster
       position="top-right"
       expand={false}
       richColors

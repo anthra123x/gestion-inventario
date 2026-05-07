@@ -3,7 +3,9 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateSaleSchema } from '@/lib/validations'
-import { validateSaleItemData, validateNonNegative } from '@/lib/validations-data'
+import { checkStockAvailability } from '@/lib/stock-check'
+import { getZodErrorMessage } from '@/lib/zod-error'
+import { validateSaleItemData } from '@/lib/validations-data'
 import { PaymentMethod } from '@prisma/client'
 
 /**
@@ -13,7 +15,7 @@ import { PaymentMethod } from '@prisma/client'
  * @param endDate - Fecha final para filtrar por fecha de venta
  * @returns Lista de ventas con información de cliente y usuario
  */
-export async function getSales(search?: string, startDate?: Date, endDate?: Date) {
+export async function getSales(search?: string, startDate?: Date, endDate?: Date, page = 1, take = 20) {
   const where = {
     ...(search && {
       OR: [
@@ -32,48 +34,50 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
     }),
   }
 
-  const sales = await prisma.sale.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      total: true,
-      paymentMethod: true,
-      notes: true,
-      createdAt: true,
-      clientName: true,
-      clientPhone: true,
-      clientEmail: true,
-      clientAddress: true,
-      client: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
+  const [sales, total] = await Promise.all([
+    prisma.sale.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * take,
+      take,
+      select: {
+        id: true,
+        total: true,
+        paymentMethod: true,
+        notes: true,
+        createdAt: true,
+        clientName: true,
+        clientPhone: true,
+        clientEmail: true,
+        clientAddress: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            saleItems: true,
+          },
         },
       },
-      user: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  })
+    }),
+    prisma.sale.count({ where }),
+  ])
 
-  // Agregar conteo de items para cada venta
-  const salesWithItemCount = await Promise.all(
-    sales.map(async (sale) => {
-      const itemCount = await prisma.saleItem.count({
-        where: { saleId: sale.id }
-      })
-      return {
-        ...sale,
-        _count: { saleItems: itemCount }
-      }
-    })
-  )
-
-  return salesWithItemCount
+  return {
+    sales,
+    total,
+    page,
+    totalPages: Math.ceil(total / take),
+  }
 }
 
 /**
@@ -107,7 +111,15 @@ export async function getSaleById(id: string) {
  */
 export async function createSale(formData: FormData) {
   const itemsJson = formData.get('items') as string
-  const items = JSON.parse(itemsJson)
+
+  let items
+  try {
+    items = JSON.parse(itemsJson)
+  } catch {
+    return {
+      error: 'Datos de productos inválidos',
+    }
+  }
 
   const validatedFields = CreateSaleSchema.safeParse({
     clientId: formData.get('clientId') || null,
@@ -121,9 +133,8 @@ export async function createSale(formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 
@@ -150,18 +161,20 @@ export async function createSale(formData: FormData) {
 
     // Use transaction for atomicity
     const sale = await prisma.$transaction(async (tx) => {
-      // Check stock availability with lock
+      // Check stock availability and capture purchase prices
+      const productCosts: Record<string, number> = {}
+      await checkStockAvailability(tx, items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      })))
+
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
+          select: { purchasePrice: true },
         })
-
-        if (!product) {
-          throw new Error(`Producto con ID ${item.productId} no encontrado`)
-        }
-
-        if (product.stock < item.quantity) {
-          throw new Error(`Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}`)
+        if (product) {
+          productCosts[item.productId] = product.purchasePrice
         }
       }
 
@@ -182,6 +195,8 @@ export async function createSale(formData: FormData) {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               total: item.unitPrice * item.quantity,
+              purchasePriceAtSale: productCosts[item.productId] || 0,
+              profit: (item.unitPrice - (productCosts[item.productId] || 0)) * item.quantity,
             })),
           },
         },
@@ -251,7 +266,7 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
     }),
   }
 
-  const [totalSales, totalRevenue, salesByPaymentMethod, topProducts] = await Promise.all([
+  const [totalSales, totalRevenue, salesByPaymentMethod, topProducts, profitData] = await Promise.all([
     prisma.sale.count({ where }),
     prisma.sale.aggregate({
       where,
@@ -285,6 +300,18 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
       },
       take: 10,
     }),
+    prisma.saleItem.aggregate({
+      where: {
+        sale: where,
+      },
+      _sum: {
+        purchasePriceAtSale: true,
+        profit: true,
+      },
+      _avg: {
+        profit: true,
+      },
+    }),
   ])
 
   // Get product details for top products
@@ -306,9 +333,16 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
     product: products.find(p => p.id === item.productId),
   }))
 
+  // Calculate total cost: sum of (purchasePriceAtSale * quantity)
+  // We already have profit, so: totalCost = totalRevenue - totalProfit
+  const totalProfit = profitData._sum.profit || 0
+  const totalCost = (totalRevenue._sum.total || 0) - totalProfit
+
   return {
     totalSales,
     totalRevenue: totalRevenue._sum.total || 0,
+    totalCost,
+    totalProfit,
     salesByPaymentMethod,
     topProducts: topProductsWithDetails,
   }

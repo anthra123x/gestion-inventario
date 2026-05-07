@@ -137,6 +137,8 @@ model SaleItem {
   quantity   Int
   unitPrice Float
   total     Float
+  purchasePriceAtSale Float @default(0)
+  profit    Float @default(0)
 
   // Relations
   sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
@@ -153,6 +155,8 @@ model Repair {
   diagnosis      String?
   status         RepairStatus @default(RECEIVED)
   cost           Float        @default(0)
+  partsCost      Float        @default(0)
+  profit         Float        @default(0)
   notes          String?
   internalNotes  String?
   dateReceived   DateTime     @default(now())
@@ -180,6 +184,7 @@ model RepairPart {
   quantity   Int
   unitCost   Float
   total      Float
+  purchasePriceAtPart Float @default(0)
 
   // Relations
   repair  Repair  @relation(fields: [repairId], references: [id], onDelete: Cascade)

@@ -6,20 +6,6 @@ export const RepairStatusSchema = z.enum(['RECEIVED', 'IN_PROGRESS', 'READY', 'D
 export const PaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER'])
 export const MovementTypeSchema = z.enum(['ENTRY', 'EXIT'])
 
-// User schemas
-export const CreateUserSchema = z.object({
-  email: z.string().email('Email inválido'),
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  role: UserRoleSchema.default('EMPLOYEE'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres')
-})
-
-export const UpdateUserSchema = z.object({
-  email: z.string().email('Email inválido').optional(),
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').optional(),
-  role: UserRoleSchema.optional()
-})
-
 // Product schemas
 export const CreateProductSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -92,25 +78,4 @@ export const UpdateRepairSchema = z.object({
   internalNotes: z.string().optional().nullable(),
   estimatedDate: z.string().optional().nullable(),
   dateDelivered: z.string().optional().nullable()
-})
-
-// Auth schemas
-export const LoginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'La contraseña es requerida')
-})
-
-export const RegisterSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres')
-})
-
-// Report schemas
-export const ReportFiltersSchema = z.object({
-  startDate: z.date().optional(),
-  endDate: z.date().optional(),
-  type: z.enum(['sales', 'inventory', 'repairs', 'clients']).optional(),
-  category: ProductCategorySchema.optional(),
-  status: RepairStatusSchema.optional()
 })

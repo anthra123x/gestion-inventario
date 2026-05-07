@@ -2,50 +2,9 @@
 
 import { supabase } from '@/lib/supabase-server'
 import { prisma } from '@/lib/prisma'
-import { LoginSchema, RegisterSchema } from '@/lib/validations'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { UserRole } from '@prisma/client'
-
-export async function login(formData: FormData) {
-  // This server action is no longer used for main login
-  // Auth is now handled client-side to properly set cookies
-  // This is kept for backward compatibility
-
-  const validatedFields = LoginSchema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-  })
-
-  if (!validatedFields.success) {
-    return {
-      error: 'Campos inválidos',
-    }
-  }
-
-  const { email } = validatedFields.data
-
-  try {
-    // Check if user exists in our database
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (!user) {
-      return {
-        error: 'Usuario no encontrado. Por favor regístrate.',
-      }
-    }
-
-    return {
-      success: true,
-    }
-  } catch (error) {
-    return {
-      error: 'Error al iniciar sesión',
-    }
-  }
-}
 
 export async function ensureUserExists(email: string, name: string) {
   try {
@@ -66,57 +25,6 @@ export async function ensureUserExists(email: string, name: string) {
     return { success: true }
   } catch (error: any) {
     return { error: 'Error al verificar usuario' }
-  }
-}
-
-export async function register(formData: FormData) {
-  // This server action is no longer used for main register
-  // Auth is now handled client-side to properly set cookies
-  // This is kept for backward compatibility
-
-  const validatedFields = RegisterSchema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-    name: formData.get('name'),
-  })
-
-  if (!validatedFields.success) {
-    return {
-      error: 'Campos inválidos',
-    }
-  }
-
-  const { email, name } = validatedFields.data
-
-  try {
-    // Check if user already exists in our database
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
-      return {
-        error: 'El usuario ya existe',
-      }
-    }
-
-    // Create user in our database
-    await prisma.user.create({
-      data: {
-        email,
-        name,
-        role: 'EMPLOYEE' as UserRole,
-      },
-    })
-
-    revalidatePath('/login')
-    return {
-      success: 'Usuario creado exitosamente. Por favor inicia sesión.',
-    }
-  } catch (error) {
-    return {
-      error: 'Error al registrar usuario',
-    }
   }
 }
 
@@ -151,7 +59,6 @@ export async function getCurrentUser() {
       return null
     }
 
-    // Get user from our database to get role
     const dbUser = await prisma.user.findUnique({
       where: { email: user.email },
       select: {
@@ -242,7 +149,6 @@ export async function createUserByAdmin(formData: FormData) {
   }
 
   try {
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     })
@@ -253,7 +159,6 @@ export async function createUserByAdmin(formData: FormData) {
       }
     }
 
-    // Create user in Supabase Auth with a temporary password
     const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -271,7 +176,6 @@ export async function createUserByAdmin(formData: FormData) {
       }
     }
 
-    // Create user in our database with the specified role
     await prisma.user.create({
       data: {
         email,
@@ -282,7 +186,7 @@ export async function createUserByAdmin(formData: FormData) {
 
     revalidatePath('/admin')
     return {
-      success: `Usuario creado exitosamente. Contraseña temporal: ${tempPassword}`,
+      success: 'Usuario creado exitosamente. La contraseña temporal se ha generado y debe ser comunicada de forma segura.',
     }
   } catch (error) {
     return {

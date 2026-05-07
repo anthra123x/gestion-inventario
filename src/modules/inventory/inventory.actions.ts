@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateProductSchema, UpdateProductSchema, InventoryMovementSchema } from '@/lib/validations'
 import { ProductCategory } from '@prisma/client'
+import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
 
 /**
@@ -12,7 +13,7 @@ import { validateProductData, validateNonNegative, validatePriceMargin } from '@
  * @param category - Categoría para filtrar productos
  * @returns Lista de productos activos (no eliminados)
  */
-export async function getProducts(search?: string, category?: ProductCategory) {
+export async function getProducts(search?: string, category?: ProductCategory, page = 1, take = 20) {
   const where = {
     deletedAt: null,
     ...(search && {
@@ -24,10 +25,22 @@ export async function getProducts(search?: string, category?: ProductCategory) {
     ...(category && { category }),
   }
 
-  return await prisma.product.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-  })
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * take,
+      take,
+    }),
+    prisma.product.count({ where }),
+  ])
+
+  return {
+    products,
+    total,
+    page,
+    totalPages: Math.ceil(total / take),
+  }
 }
 
 /**
@@ -71,9 +84,8 @@ export async function createProduct(formData: FormData) {
   const validatedFields = CreateProductSchema.safeParse(normalizedData)
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 
@@ -152,9 +164,8 @@ export async function updateProduct(id: string, formData: FormData) {
   const validatedFields = UpdateProductSchema.safeParse(normalizedData)
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 
@@ -269,9 +280,8 @@ export async function addInventoryMovement(formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 

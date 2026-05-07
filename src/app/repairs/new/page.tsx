@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,12 +20,13 @@ export default function NewRepairPage() {
   const [error, setError] = useState('')
   const [products, setProducts] = useState<any[]>([])
   const [selectedProducts, setSelectedProducts] = useState<any[]>([])
+  const [cost, setCost] = useState<number>(0)
 
   useEffect(() => {
     async function loadProducts() {
       try {
-        const productsData = await getProducts(undefined, ProductCategory.REPAIR_PART)
-        setProducts(productsData)
+        const productsData = await getProducts(undefined, ProductCategory.REPAIR_PART, 1, 100)
+        setProducts(productsData.products)
       } catch (err) {
         toast.error('Error al cargar productos', {
           description: 'No se pudieron cargar los productos disponibles',
@@ -35,19 +36,36 @@ export default function NewRepairPage() {
     loadProducts()
   }, [])
 
+  const partsCost = useMemo(() => {
+    return selectedProducts.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.productId)
+      return sum + ((product?.purchasePrice || 0) * item.quantity)
+    }, 0)
+  }, [selectedProducts, products])
+
+  const estimatedProfit = cost - partsCost
+
+  const hasLoss = cost > 0 && partsCost > cost
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    if (hasLoss) {
+      toast.error('No se puede crear la reparación', {
+        description: 'El costo estimado es menor al costo de los repuestos. Se produciría una pérdida.',
+      })
+      return
+    }
+
     setIsLoading(true)
     setError('')
 
     try {
       const formData = new FormData(e.currentTarget)
 
-      // Normalizar datos opcionales - convertir strings vacíos a null
       const diagnosis = formData.get('diagnosis') as string
       if (diagnosis === '') formData.set('diagnosis', '')
 
-      const cost = formData.get('cost') as string
       formData.set('cost', (Number(cost) || 0).toString())
 
       const notes = formData.get('clientNotes') as string
@@ -59,7 +77,6 @@ export default function NewRepairPage() {
       const estimatedDate = formData.get('estimatedDate') as string
       if (estimatedDate === '') formData.delete('estimatedDate')
 
-      // Add selected products
       formData.append('parts', JSON.stringify(selectedProducts))
 
       const result = await createRepair(formData)
@@ -69,7 +86,6 @@ export default function NewRepairPage() {
         toast.error('Error al crear reparación', {
           description: result.error,
         })
-        console.error('Error del backend:', result.error)
         setIsLoading(false)
       } else {
         toast.success('Reparación creada exitosamente', {
@@ -83,7 +99,6 @@ export default function NewRepairPage() {
       toast.error('Error al crear reparación', {
         description: errorMessage,
       })
-      console.error('Error en handleSubmit:', err)
       setIsLoading(false)
     }
   }
@@ -119,7 +134,6 @@ export default function NewRepairPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Datos del Cliente */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Datos del Cliente</h3>
               <div className="grid gap-4 md:grid-cols-2">
@@ -165,7 +179,6 @@ export default function NewRepairPage() {
               </div>
             </div>
 
-            {/* Datos del Dispositivo */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Datos del Dispositivo</h3>
               <div className="grid gap-4 md:grid-cols-2">
@@ -190,13 +203,15 @@ export default function NewRepairPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cost">Costo Estimado (COP)</Label>
+                  <Label htmlFor="cost">Costo Estimado / Mano de Obra (COP)</Label>
                   <Input
                     id="cost"
                     name="cost"
                     type="number"
                     step="100"
                     placeholder="Ej: 50000"
+                    value={cost}
+                    onChange={(e) => setCost(Number(e.target.value) || 0)}
                     required
                   />
                 </div>
@@ -239,7 +254,7 @@ export default function NewRepairPage() {
                 <SelectContent>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name} - {formatCurrency(product.salePrice)} (Stock: {product.stock})
+                      {product.name} — {formatCurrency(product.salePrice)} (Stock: {product.stock})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -252,6 +267,9 @@ export default function NewRepairPage() {
                     return (
                       <div key={index} className="flex items-center gap-2 p-2 border rounded">
                         <span className="flex-1">{product?.name}</span>
+                        <span className="text-sm text-gray-500">
+                          Costo: {formatCurrency(product?.purchasePrice || 0)}
+                        </span>
                         <Input
                           type="number"
                           min="1"
@@ -274,12 +292,40 @@ export default function NewRepairPage() {
               )}
             </div>
 
+            {/* Profit Summary */}
+            <Card className={hasLoss ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}>
+              <CardContent className="pt-6">
+                <h4 className="font-semibold mb-3">Resumen de Rentabilidad</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Costo repuestos:</span>
+                    <span className="font-medium">{formatCurrency(partsCost)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Mano de obra:</span>
+                    <span className="font-medium">{formatCurrency(cost)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2 mt-2">
+                    <span className="font-semibold">Ganancia estimada:</span>
+                    <span className={`font-bold text-lg ${hasLoss ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(estimatedProfit)}
+                    </span>
+                  </div>
+                  {hasLoss && (
+                    <div className="text-red-600 text-xs mt-2 font-medium">
+                      ⚠️ Esta reparación generaría una pérdida. Ajusta el costo estimado o reduce los repuestos.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {error && (
               <div className="text-red-500 text-sm">{error}</div>
             )}
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || hasLoss}>
                 {isLoading ? 'Creando...' : 'Crear Reparación'}
               </Button>
               <Button

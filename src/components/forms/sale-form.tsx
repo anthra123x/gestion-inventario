@@ -77,8 +77,8 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   async function loadInitialData() {
     setIsLoadingData(true)
     try {
-      const productsData = await getProducts()
-      setProducts(productsData)
+      const productsData = await getProducts(undefined, undefined, 1, 100)
+      setProducts(productsData.products)
     } catch (error) {
       toast.error('Error al cargar datos', {
         description: 'No se pudieron cargar los productos. Por favor intenta nuevamente.',
@@ -165,6 +165,9 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   }
 
   const total = items.reduce((sum, item) => sum + item.total, 0)
+  const totalCost = items.reduce((sum, item) => sum + ((item.product?.purchasePrice || 0) * item.quantity), 0)
+  const totalProfit = total - totalCost
+  const margin = total > 0 ? ((totalProfit / total) * 100).toFixed(1) : '0'
 
   async function handleFormSubmit() {
     setIsSubmitting(true)
@@ -472,6 +475,17 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
                 <div className="mt-4 flex justify-end">
                   <div className="text-2xl font-bold">
                     Total: ${formatCOP(total)} COP
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Costo invertido:</span>
+                    <span className="font-medium">${formatCOP(totalCost)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Ganancia estimada:</span>
+                    <span className="font-semibold text-green-600">${formatCOP(totalProfit)} ({margin}%)</span>
                   </div>
                 </div>
               </CardContent>

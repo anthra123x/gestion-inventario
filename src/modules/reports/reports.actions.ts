@@ -1,7 +1,6 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { ReportFiltersSchema } from '@/lib/validations'
 import { ProductCategory, RepairStatus, PaymentMethod } from '@prisma/client'
 
 export async function getSalesReport(filters?: {

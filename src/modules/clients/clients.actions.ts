@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getZodErrorMessage } from '@/lib/zod-error'
 import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
 import { getCurrentUser } from '@/modules/auth/auth.actions'
 
@@ -86,9 +87,8 @@ export async function createClient(formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 
@@ -134,9 +134,8 @@ export async function updateClient(id: string, formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.issues.map((e: any) => e.message).join(', ')
     return {
-      error: errorMessages || 'Datos inválidos',
+      error: getZodErrorMessage(validatedFields),
     }
   }
 
