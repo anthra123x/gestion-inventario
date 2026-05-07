@@ -47,8 +47,9 @@ export const CreateSaleSchema = z.object({
   items: z.array(z.object({
     productId: z.string(),
     quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
-    unitPrice: z.number().min(0, 'El precio debe ser positivo')
+    unitPrice: z.number().min(0, 'El precio debe ser positivo'),
   })).min(1, 'Debe agregar al menos un producto'),
+  discountPercent: z.coerce.number().min(0, 'El descuento debe ser positivo').max(100, 'El descuento máximo es 100%').default(0),
   paymentMethod: PaymentMethodSchema,
   notes: z.string().optional().nullable()
 })

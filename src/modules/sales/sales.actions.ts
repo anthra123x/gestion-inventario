@@ -5,7 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { CreateSaleSchema } from '@/lib/validations'
 import { checkStockAvailability } from '@/lib/stock-check'
 import { getZodErrorMessage } from '@/lib/zod-error'
-import { validateSaleItemData } from '@/lib/validations-data'
+import { validateSaleItemData, validateSalePriceAgainstCost } from '@/lib/validations-data'
+import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit } from '@/lib/finance'
 import { PaymentMethod } from '@prisma/client'
 
 /**
@@ -121,6 +122,15 @@ export async function createSale(formData: FormData) {
     }
   }
 
+  const discountPercentRaw = formData.get('discountPercent') || '0'
+  let discountPercent = 0
+  try {
+    discountPercent = parseFloat(String(discountPercentRaw))
+    if (isNaN(discountPercent)) discountPercent = 0
+  } catch {
+    discountPercent = 0
+  }
+
   const validatedFields = CreateSaleSchema.safeParse({
     clientId: formData.get('clientId') || null,
     clientName: formData.get('clientName') || null,
@@ -128,6 +138,7 @@ export async function createSale(formData: FormData) {
     clientEmail: formData.get('clientEmail') || null,
     clientAddress: formData.get('clientAddress') || null,
     items,
+    discountPercent,
     paymentMethod: formData.get('paymentMethod') as PaymentMethod,
     notes: formData.get('notes') || null,
   })
@@ -154,29 +165,47 @@ export async function createSale(formData: FormData) {
   }
 
   try {
-    const { clientId, clientName, clientPhone, clientEmail, clientAddress, items, paymentMethod, notes } = validatedFields.data
+    const { clientId, clientName, clientPhone, clientEmail, clientAddress, items, discountPercent: discountPct, paymentMethod, notes } = validatedFields.data
 
-    // Calculate total
-    const total = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+    // Fetch all product costs upfront
+    const productIds = items.map(item => item.productId)
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, purchasePrice: true, name: true },
+    })
+    const productMap = new Map(products.map(p => [p.id, { purchasePrice: p.purchasePrice, name: p.name }]))
+
+    // Validate no item generates loss
+    for (const item of items) {
+      const product = productMap.get(item.productId)
+      if (product) {
+        const validation = validateSalePriceAgainstCost(item.unitPrice, product.purchasePrice)
+        if (!validation.ok) {
+          return { error: validation.message }
+        }
+      }
+    }
+
+    const subtotal = calcSubtotal(items)
+    const discountAmount = calcDiscountAmount(subtotal, discountPct)
+    const total = calcTotal(subtotal, discountPct)
+    const cost = calcCost(items.map(item => ({
+      unitCost: productMap.get(item.productId)?.purchasePrice || 0,
+      quantity: item.quantity,
+    })))
+
+    const saleProfit = calcProfit(subtotal, cost, discountPct)
+    if (saleProfit < 0) {
+      return { error: 'La venta genera pérdida después de aplicar el descuento. Ajusta el precio o el descuento.' }
+    }
 
     // Use transaction for atomicity
     const sale = await prisma.$transaction(async (tx) => {
-      // Check stock availability and capture purchase prices
-      const productCosts: Record<string, number> = {}
+      // Check stock availability
       await checkStockAvailability(tx, items.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
       })))
-
-      for (const item of items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { purchasePrice: true },
-        })
-        if (product) {
-          productCosts[item.productId] = product.purchasePrice
-        }
-      }
 
       // Create sale with client data
       const newSale = await tx.sale.create({
@@ -187,17 +216,27 @@ export async function createSale(formData: FormData) {
           clientEmail,
           clientAddress,
           total,
+          discountPercent: discountPct,
+          discountAmount,
           paymentMethod,
           notes,
           saleItems: {
-            create: items.map(item => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              total: item.unitPrice * item.quantity,
-              purchasePriceAtSale: productCosts[item.productId] || 0,
-              profit: (item.unitPrice - (productCosts[item.productId] || 0)) * item.quantity,
-            })),
+            create: items.map(item => {
+              const purchasePrice = productMap.get(item.productId)?.purchasePrice || 0
+              const itemSubtotal = item.unitPrice * item.quantity
+              const itemDiscount = discountPct > 0 ? discountAmount * (itemSubtotal / subtotal) : 0
+              const effectiveItemTotal = itemSubtotal - itemDiscount
+              const itemProfit = effectiveItemTotal - (purchasePrice * item.quantity)
+
+              return {
+                productId: item.productId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                total: effectiveItemTotal,
+                purchasePriceAtSale: purchasePrice,
+                profit: itemProfit,
+              }
+            }),
           },
         },
         include: {
@@ -211,7 +250,6 @@ export async function createSale(formData: FormData) {
 
       // Update stock and create inventory movements
       for (const item of items) {
-        // Update product stock
         await tx.product.update({
           where: { id: item.productId },
           data: {
@@ -221,7 +259,6 @@ export async function createSale(formData: FormData) {
           },
         })
 
-        // Create inventory movement
         await tx.inventoryMovement.create({
           data: {
             productId: item.productId,

@@ -113,6 +113,8 @@ model Sale {
   clientEmail   String?
   clientAddress String?
   total         Float
+  discountPercent Float      @default(0)
+  discountAmount  Float      @default(0)
   paymentMethod PaymentMethod
   notes         String?
   createdAt     DateTime      @default(now())

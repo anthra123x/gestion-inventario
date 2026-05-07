@@ -54,6 +54,29 @@ export function validateSaleItemData(data: {
   validateNonNegative(data.total, 'Total')
 }
 
+export function validateSalePriceAgainstCost(unitPrice: number, purchasePrice: number): { ok: boolean; message: string; severity: 'error' | 'warning' } {
+  if (purchasePrice <= 0) return { ok: true, message: '', severity: 'warning' }
+
+  if (unitPrice < purchasePrice) {
+    return {
+      ok: false,
+      message: `El precio de venta ($${unitPrice.toLocaleString('es-CO')}) es menor al costo ($${purchasePrice.toLocaleString('es-CO')}). Esto genera pérdida.`,
+      severity: 'error',
+    }
+  }
+
+  const margin = ((unitPrice - purchasePrice) / unitPrice) * 100
+  if (margin < 15) {
+    return {
+      ok: true,
+      message: `Margen bajo (${margin.toFixed(1)}%). El precio está muy cerca del costo.`,
+      severity: 'warning',
+    }
+  }
+
+  return { ok: true, message: '', severity: 'warning' }
+}
+
 /**
  * Validates repair part data
  */

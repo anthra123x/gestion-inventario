@@ -174,9 +174,29 @@ export default function SalePrintPage() {
           {/* Total */}
           <div className="p-8 border-b border-gray-200">
             <div className="flex justify-end">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">TOTAL</p>
-                <p className="text-4xl font-bold text-gray-900">{formatCurrency(sale.total)}</p>
+              <div className="text-right space-y-2">
+                {(() => {
+                  const subtotal = sale.saleItems.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0)
+                  return (
+                    <>
+                      <div className="flex justify-between gap-12">
+                        <p className="text-sm text-gray-500">Subtotal</p>
+                        <p className="font-medium text-gray-900">{formatCurrency(subtotal)}</p>
+                      </div>
+                      {(sale.discountPercent > 0 || sale.discountAmount > 0) && (
+                        <div className="flex justify-between gap-12">
+                          <p className="text-sm text-red-600">Descuento ({sale.discountPercent}%)</p>
+                          <p className="font-medium text-red-600">-{formatCurrency(sale.discountAmount || (subtotal * (sale.discountPercent || 0) / 100))}</p>
+                        </div>
+                      )}
+                      <div className="border-t border-gray-300 my-1" />
+                      <div className="flex justify-between gap-12">
+                        <p className="text-sm text-gray-500">TOTAL</p>
+                        <p className="text-4xl font-bold text-gray-900">{formatCurrency(sale.total)}</p>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           </div>
