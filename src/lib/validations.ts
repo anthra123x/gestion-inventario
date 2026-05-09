@@ -80,3 +80,23 @@ export const UpdateRepairSchema = z.object({
   estimatedDate: z.string().optional().nullable(),
   dateDelivered: z.string().optional().nullable()
 })
+
+export const EditRepairSchema = z.object({
+  clientName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  clientPhone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
+  clientEmail: z.string().email('Email inválido').optional().nullable(),
+  clientAddress: z.string().optional().nullable(),
+  device: z.string().min(2, 'El dispositivo debe tener al menos 2 caracteres'),
+  problem: z.string().min(5, 'Describe el problema con al menos 5 caracteres'),
+  diagnosis: z.string().optional().nullable(),
+  cost: z.coerce.number().min(0, 'El costo debe ser positivo').default(0),
+  notes: z.string().optional().nullable(),
+  internalNotes: z.string().optional().nullable(),
+  estimatedDate: z.string().optional().nullable(),
+  status: RepairStatusSchema.optional(),
+  parts: z.array(z.object({
+    productId: z.string(),
+    quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+    unitCost: z.coerce.number().min(0, 'El costo debe ser positivo')
+  })).optional()
+})

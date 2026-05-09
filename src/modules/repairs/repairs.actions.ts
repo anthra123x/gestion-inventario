@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { CreateRepairSchema, UpdateRepairSchema } from '@/lib/validations'
+import { CreateRepairSchema, UpdateRepairSchema, EditRepairSchema } from '@/lib/validations'
 import { checkStockAvailability } from '@/lib/stock-check'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
@@ -336,6 +336,296 @@ export async function updateRepair(id: string, formData: FormData) {
     return {
       error: 'Error al actualizar la reparación',
     }
+  }
+}
+
+export async function editRepair(id: string, formData: FormData) {
+  const partsJson = formData.get('parts') as string
+
+  let rawParts: any[]
+  try {
+    rawParts = partsJson ? JSON.parse(partsJson) : []
+  } catch {
+    return { error: 'Datos de repuestos inválidos' }
+  }
+
+  const parts = rawParts.map((part: any) => ({
+    productId: part.productId,
+    quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
+    unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
+  }))
+
+  const clientName = formData.get('clientName') as string
+  const clientPhone = formData.get('clientPhone') as string
+  const clientEmail = formData.get('clientEmail') as string
+  const clientAddress = formData.get('clientAddress') as string
+
+  const costValue = parseFloat(formData.get('cost') as string)
+  const statusValue = formData.get('status') as RepairStatus | null
+
+  const validatedFields = EditRepairSchema.safeParse({
+    clientName,
+    clientPhone,
+    clientEmail: clientEmail || null,
+    clientAddress: clientAddress || null,
+    device: formData.get('device'),
+    problem: formData.get('problem'),
+    diagnosis: formData.get('diagnosis') || null,
+    cost: isNaN(costValue) ? 0 : costValue,
+    notes: formData.get('notes') || null,
+    internalNotes: formData.get('internalNotes') || null,
+    estimatedDate: formData.get('estimatedDate') as string || null,
+    status: statusValue || undefined,
+    parts,
+  })
+
+  if (!validatedFields.success) {
+    return { error: getZodErrorMessage(validatedFields) }
+  }
+
+  try {
+    validateNonNegative(validatedFields.data.cost, 'Costo')
+    if (validatedFields.data.parts && validatedFields.data.parts.length > 0) {
+      for (const part of validatedFields.data.parts) {
+        validateRepairPartData({
+          quantity: part.quantity,
+          unitCost: part.unitCost,
+          total: part.unitCost * part.quantity,
+        })
+      }
+    }
+  } catch (validationError: any) {
+    return { error: validationError.message }
+  }
+
+  try {
+    const existingRepair = await prisma.repair.findUnique({
+      where: { id },
+      include: {
+        repairParts: true,
+        client: true,
+      },
+    })
+
+    if (!existingRepair) {
+      return { error: 'Reparación no encontrada' }
+    }
+
+    const { clientName, clientPhone, clientEmail, clientAddress, device, problem, diagnosis, cost, notes, internalNotes, estimatedDate, status, parts } = validatedFields.data
+
+    const partsTotal = (parts || []).reduce((sum, part) => sum + (part.unitCost * part.quantity), 0)
+    const total = cost + partsTotal
+
+    const partsCostMap: Record<string, number> = {}
+    if (parts && parts.length > 0) {
+      const products = await prisma.product.findMany({
+        where: { id: { in: parts.map(p => p.productId) } },
+        select: { id: true, purchasePrice: true },
+      })
+      for (const product of products) {
+        partsCostMap[product.id] = product.purchasePrice
+      }
+    }
+
+    const partsCost = (parts || []).reduce(
+      (sum, part) => sum + ((partsCostMap[part.productId] || 0) * part.quantity), 0
+    )
+
+    if (cost < partsCost) {
+      return {
+        error: `El costo estimado (${cost}) es menor al costo de los repuestos (${partsCost}). No se permiten reparaciones con pérdida.`,
+      }
+    }
+
+    const profit = cost - partsCost
+
+    await prisma.$transaction(async (tx) => {
+      const oldPartsMap: Record<string, { quantity: number; productId: string }> = {}
+      for (const part of existingRepair.repairParts) {
+        oldPartsMap[part.productId] = { quantity: part.quantity, productId: part.productId }
+      }
+
+      const newPartsMap: Record<string, number> = {}
+      for (const part of parts || []) {
+        newPartsMap[part.productId] = (newPartsMap[part.productId] || 0) + part.quantity
+      }
+
+      const allProductIds = [...new Set([...Object.keys(oldPartsMap), ...Object.keys(newPartsMap)])]
+
+      const currentStocks: Record<string, number> = {}
+      if (allProductIds.length > 0) {
+        const products = await tx.product.findMany({
+          where: { id: { in: allProductIds } },
+          select: { id: true, stock: true, name: true },
+        })
+        for (const p of products) {
+          currentStocks[p.id] = p.stock
+        }
+      }
+
+      for (const [productId, oldPart] of Object.entries(oldPartsMap)) {
+        const newQuantity = newPartsMap[productId] || 0
+        const diff = oldPart.quantity - newQuantity
+
+        if (diff !== 0) {
+          if (currentStocks[productId] === undefined) {
+            const product = await tx.product.findUnique({ where: { id: productId } })
+            currentStocks[productId] = product?.stock || 0
+          }
+
+          if (diff > 0) {
+            if (currentStocks[productId] < diff) {
+              const product = await tx.product.findUnique({ where: { id: productId } })
+              throw new Error(`Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${diff}`)
+            }
+            await tx.product.update({
+              where: { id: productId },
+              data: { stock: { increment: diff } },
+            })
+            await tx.inventoryMovement.create({
+              data: {
+                productId,
+                type: 'ENTRY',
+                quantity: diff,
+                reason: `Ajuste reparación #${id} (devolución)`,
+                referenceId: id,
+                referenceType: 'repair',
+              },
+            })
+          } else if (diff < 0) {
+            const needed = Math.abs(diff)
+            if (currentStocks[productId] < needed) {
+              const product = await tx.product.findUnique({ where: { id: productId } })
+              throw new Error(`Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${needed}`)
+            }
+            await tx.product.update({
+              where: { id: productId },
+              data: { stock: { decrement: needed } },
+            })
+            await tx.inventoryMovement.create({
+              data: {
+                productId,
+                type: 'EXIT',
+                quantity: needed,
+                reason: `Ajuste reparación #${id} (adición)`,
+                referenceId: id,
+                referenceType: 'repair',
+              },
+            })
+          }
+
+          currentStocks[productId] += diff
+        }
+      }
+
+      for (const [productId, newQuantity] of Object.entries(newPartsMap)) {
+        if (!oldPartsMap[productId]) {
+          if (currentStocks[productId] === undefined) {
+            const product = await tx.product.findUnique({ where: { id: productId } })
+            currentStocks[productId] = product?.stock || 0
+          }
+
+          if (currentStocks[productId] < newQuantity) {
+            const product = await tx.product.findUnique({ where: { id: productId } })
+            throw new Error(`Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${newQuantity}`)
+          }
+          await tx.product.update({
+            where: { id: productId },
+            data: { stock: { decrement: newQuantity } },
+          })
+          await tx.inventoryMovement.create({
+            data: {
+              productId,
+              type: 'EXIT',
+              quantity: newQuantity,
+              reason: `Reparación #${id} (repuesto agregado)`,
+              referenceId: id,
+              referenceType: 'repair',
+            },
+          })
+        }
+      }
+
+      const clientId = existingRepair.clientId
+      if (existingRepair.client.phone !== clientPhone) {
+        const existingClient = await tx.client.findFirst({
+          where: { phone: clientPhone, id: { not: existingRepair.clientId } },
+        })
+        if (existingClient) {
+          await tx.repair.update({
+            where: { id },
+            data: { clientId: existingClient.id },
+          })
+        } else {
+          await tx.client.update({
+            where: { id: existingRepair.clientId },
+            data: {
+              name: clientName,
+              phone: clientPhone,
+              email: clientEmail || null,
+              address: clientAddress || null,
+            },
+          })
+        }
+      } else {
+        await tx.client.update({
+          where: { id: existingRepair.clientId },
+          data: {
+            name: clientName,
+            email: clientEmail || null,
+            address: clientAddress || null,
+          },
+        })
+      }
+
+      await tx.repairPart.deleteMany({
+        where: { repairId: id },
+      })
+
+      const updateData: any = {
+        device,
+        problem,
+        diagnosis,
+        cost: total,
+        partsCost,
+        profit,
+        notes,
+        internalNotes,
+        estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
+      }
+
+      if (status) {
+        updateData.status = status
+        if (status === 'DELIVERED') {
+          updateData.dateDelivered = new Date()
+        }
+      }
+
+      await tx.repair.update({
+        where: { id },
+        data: updateData,
+      })
+
+      if (parts && parts.length > 0) {
+        await tx.repairPart.createMany({
+          data: parts.map(part => ({
+            repairId: id,
+            productId: part.productId,
+            quantity: part.quantity,
+            unitCost: part.unitCost,
+            total: part.unitCost * part.quantity,
+            purchasePriceAtPart: partsCostMap[part.productId] || 0,
+          })),
+        })
+      }
+    })
+
+    revalidatePath('/repairs')
+    revalidatePath(`/repairs/${id}`)
+    revalidatePath('/dashboard')
+    return { success: 'Reparación actualizada exitosamente' }
+  } catch (error: any) {
+    return { error: error.message || 'Error al actualizar la reparación' }
   }
 }
 

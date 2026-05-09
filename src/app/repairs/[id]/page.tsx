@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Clock, DollarSign, User, Phone, Mail, MapPin, Wrench, Package } from 'lucide-react'
+import { ArrowLeft, Clock, DollarSign, User, Phone, Mail, MapPin, Wrench, Package, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/format'
 
@@ -54,9 +54,17 @@ export default async function RepairPage({ params }: RepairPageProps) {
               Volver
             </Button>
           </Link>
-          <Badge variant="outline" className={getRepairStatusColor(repair.status)}>
-            {getRepairStatusLabel(repair.status)}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Link href={`/repairs/${id}/edit`}>
+              <Button variant="outline">
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar Reparación
+              </Button>
+            </Link>
+            <Badge variant="outline" className={getRepairStatusColor(repair.status)}>
+              {getRepairStatusLabel(repair.status)}
+            </Badge>
+          </div>
         </div>
 
         {/* Repair Details */}
