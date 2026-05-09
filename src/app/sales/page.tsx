@@ -1,16 +1,20 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Eye, ShoppingCart, TrendingUp, DollarSign, CreditCard, PiggyBank, TrendingDown } from 'lucide-react'
+import { Plus, Eye, ShoppingCart, TrendingUp, DollarSign, CreditCard, PiggyBank, TrendingDown, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatCurrency, formatNumber } from '@/lib/format'
+import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
+import { SearchInput } from '@/components/ui/search-input'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { formatCurrency } from '@/lib/format'
 import { getSales, getSalesStats } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
 
@@ -58,65 +62,61 @@ export default function SalesPage() {
       CASH: 'Efectivo',
       CARD: 'Tarjeta',
       TRANSFER: 'Transferencia',
-      MERCADO_PAGO: 'Mercado Pago (antiguo)',
     }
     return labels[method] || method
   }
 
-  function getPaymentMethodColor(method: string) {
-    const colors: Record<string, string> = {
+  function getPaymentMethodVariant(method: string): 'default' | 'secondary' | 'outline' | 'destructive' {
+    const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
       CASH: 'default',
       CARD: 'secondary',
       TRANSFER: 'outline',
-      MERCADO_PAGO: 'destructive',
     }
-    return colors[method] || 'default'
+    return variants[method] || 'default'
   }
 
-  const filteredSales = sales
-
-  if (loading) {
+  if (loading && sales.length === 0) {
     return (
-      <div className="container mx-auto py-6 min-h-screen space-y-6">
+      <div className="page-container py-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <Skeleton className="h-9 w-24 mb-2" />
             <Skeleton className="h-5 w-44" />
           </div>
-          <Skeleton className="h-10 w-28" />
+          <Skeleton className="h-10 w-32" />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4">
+        <StatCardGrid columns={4}>
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-4 rounded-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-24" />
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-24" />
+                  </div>
+                  <Skeleton className="h-11 w-11 rounded-xl" />
+                </div>
               </CardContent>
             </Card>
           ))}
-        </div>
+        </StatCardGrid>
 
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-24 mb-1" />
             <Skeleton className="h-4 w-36" />
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 flex-1" />
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 w-20" />
-                  <Skeleton className="h-10 w-16" />
-                </div>
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-16" />
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -124,262 +124,188 @@ export default function SalesPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 min-h-screen space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Ventas</h1>
-          <p className="text-gray-600">Gestiona las ventas del negocio</p>
-        </div>
-        <Link href="/sales/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Venta
-          </Button>
-        </Link>
-      </div>
+    <div className="page-container py-6 space-y-6">
+      <PageHeader
+        title="Ventas"
+        description="Gestiona las ventas del negocio"
+        actions={
+          <Link href="/sales/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Venta
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Ventas</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalSales}</div>
-            </CardContent>
-          </Card>
+        <>
+          <StatCardGrid columns={4}>
+            <StatCard
+              title="Total Ventas"
+              value={stats.totalSales}
+              change={`${stats.totalSales} transacciones`}
+              icon={ShoppingCart}
+              color="default"
+            />
+            <StatCard
+              title="Ingresos Totales"
+              value={formatCurrency(stats.totalRevenue)}
+              change={`Promedio: ${formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}`}
+              icon={DollarSign}
+              color="success"
+            />
+            <StatCard
+              title="Ganancia Bruta"
+              value={formatCurrency(stats.totalProfit || 0)}
+              change={`Margen: ${stats.totalRevenue > 0 ? ((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1) : 0}%`}
+              icon={PiggyBank}
+              color="success"
+            />
+            <StatCard
+              title="Método Popular"
+              value={stats.salesByPaymentMethod.length > 0 
+                ? getPaymentMethodLabel(stats.salesByPaymentMethod[0].paymentMethod)
+                : 'N/A'}
+              change={`${stats.salesByPaymentMethod[0]?._count || 0} ventas`}
+              icon={CreditCard}
+              color="purple"
+            />
+          </StatCardGrid>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(stats.totalRevenue)}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <TrendingDown className="h-4 w-4" />
+                Costo Invertido
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Promedio por Venta</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}
+              <div className="text-xl font-bold text-orange-600">{formatCurrency(stats.totalCost || 0)}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                Margen
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Método Popular</CardTitle>
-              <CreditCard className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.salesByPaymentMethod.length > 0 
-                  ? getPaymentMethodLabel(stats.salesByPaymentMethod[0].paymentMethod)
-                  : 'N/A'
-                }
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Profit Stats */}
-      {stats && stats.totalProfit !== undefined && (
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Costo Invertido</CardTitle>
-              <TrendingDown className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {formatCurrency(stats.totalCost || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ganancia Bruta</CardTitle>
-              <PiggyBank className="h-4 w-4 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-600">
-                {formatCurrency(stats.totalProfit || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Margen</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {stats.totalRevenue > 0
-                  ? `${((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1)}%`
-                  : '0%'
-                }
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Promedio/Venta</CardTitle>
-              <DollarSign className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {formatCurrency(stats.totalSales > 0 ? stats.totalProfit / stats.totalSales : 0)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Buscar ventas..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="text-xl font-bold text-blue-600">
+                {stats.totalRevenue > 0 ? `${((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1)}%` : '0%'}
               </div>
             </div>
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <DollarSign className="h-4 w-4" />
+                Promedio/Venta
+              </div>
+              <div className="text-xl font-bold">{formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <PiggyBank className="h-4 w-4" />
+                Ganancia/Promedio
+              </div>
+              <div className="text-xl font-bold text-emerald-600">
+                {formatCurrency(stats.totalSales > 0 ? stats.totalProfit / stats.totalSales : 0)}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Buscar ventas..."
+              />
+            </div>
             <Select value={paymentFilter} onValueChange={(value) => setPaymentFilter(value as PaymentMethod | 'ALL')}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Método de pago" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos los métodos</SelectItem>
+                <SelectItem value="ALL">Todos</SelectItem>
                 <SelectItem value="CASH">Efectivo</SelectItem>
                 <SelectItem value="CARD">Tarjeta</SelectItem>
                 <SelectItem value="TRANSFER">Transferencia</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Sales Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ventas ({totalSales})</CardTitle>
-          <CardDescription>
-            Historial completo de ventas
-          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Productos</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Método</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sales.map((sale) => (
-                <TableRow key={sale.id}>
-                  <TableCell className="font-medium">#{sale.id.slice(-6)}</TableCell>
-                  <TableCell>
-                    {sale.client ? (
-                      <div>
-                        <div className="font-medium">{sale.client.name}</div>
-                        <div className="text-sm text-gray-500">{sale.client.phone}</div>
-                      </div>
-                    ) : sale.clientName ? (
-                      <div>
-                        <div className="font-medium">{sale.clientName}</div>
-                        {sale.clientPhone && (
-                          <div className="text-sm text-gray-500">{sale.clientPhone}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-500">Cliente ocasional</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {sale._count?.saleItems || 0} producto{(sale._count?.saleItems || 0) !== 1 ? 's' : ''}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{formatCurrency(sale.total)}</TableCell>
-                  <TableCell>
-                    <Badge variant={getPaymentMethodColor(sale.paymentMethod) as any}>
-                      {getPaymentMethodLabel(sale.paymentMethod)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {new Date(sale.createdAt).toLocaleDateString()}
-                      <div className="text-gray-500">
-                        {new Date(sale.createdAt).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/print/${sale.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </TableCell>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>ID</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="text-center">Items</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Método</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {sales.map((sale) => (
+                  <TableRow key={sale.id}>
+                    <TableCell className="font-mono text-sm">#{sale.id.slice(-6)}</TableCell>
+                    <TableCell>
+                      {sale.client ? (
+                        <div>
+                          <div className="font-medium">{sale.client.name}</div>
+                          <div className="text-xs text-muted-foreground">{sale.client.phone}</div>
+                        </div>
+                      ) : sale.clientName ? (
+                        <div>
+                          <div className="font-medium">{sale.clientName}</div>
+                          {sale.clientPhone && (
+                            <div className="text-xs text-muted-foreground">{sale.clientPhone}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Cliente ocasional</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <StatusBadge variant="neutral">{sale._count?.saleItems || 0}</StatusBadge>
+                    </TableCell>
+                    <TableCell className="font-semibold text-emerald-600">{formatCurrency(sale.total)}</TableCell>
+                    <TableCell>
+                      <Badge variant={getPaymentMethodVariant(sale.paymentMethod)}>
+                        {getPaymentMethodLabel(sale.paymentMethod)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{new Date(sale.createdAt).toLocaleDateString('es-CO')}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleTimeString('es-CO')}</div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link href={`/print/${sale.id}`}>
+                        <Button variant="ghost" size="icon-sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-          
+
           {sales.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <ShoppingCart className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground font-medium">
-                {search || paymentFilter !== 'ALL'
-                  ? 'No se encontraron ventas'
-                  : 'No hay ventas registradas'
-                }
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {search || paymentFilter !== 'ALL'
-                  ? 'Intenta con otros filtros de búsqueda'
-                  : 'Registra tu primera venta para comenzar'
-                }
-              </p>
-            </div>
+            <EmptyState
+              icon={Receipt}
+              title={search || paymentFilter !== 'ALL' ? 'Sin resultados' : 'Sin ventas'}
+              description={search || paymentFilter !== 'ALL' ? 'No hay ventas que coincidan con tu búsqueda' : 'Registra tu primera venta para comenzar'}
+              action={search || paymentFilter !== 'ALL' ? undefined : { label: 'Crear venta', href: '/sales/new' }}
+            />
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <p className="text-sm text-gray-600">
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 Página {page} de {totalPages} — {totalSales} ventas
               </p>
               <div className="flex gap-2">

@@ -39,6 +39,12 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -73,14 +79,20 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar: oklch(0.11 0.015 265);
+  --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.55 0.2 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-accent: oklch(0.18 0.015 265);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.708 0 0);
+  --success: oklch(0.65 0.19 145);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.75 0.18 70);
+  --warning-foreground: oklch(0.205 0 0);
+  --info: oklch(0.55 0.2 250);
+  --info-foreground: oklch(0.985 0 0);
 }
 
 .dark {
@@ -156,5 +168,65 @@
   
   .button-hover {
     transition: all 0.15s ease-in-out;
+  }
+
+  .glass {
+    backdrop-filter: blur(12px);
+    background-color: oklch(1 0 0 / 0.8);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, oklch(0.55 0.2 250) 0%, oklch(0.65 0.2 280) 100%);
+  }
+
+  .text-gradient-primary {
+    background: linear-gradient(135deg, oklch(0.55 0.2 250), oklch(0.65 0.2 280));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-card {
+    @apply relative overflow-hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, oklch(0.55 0.2 250 / 0.05) 0%, transparent 100%);
+  }
+
+  .stat-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .page-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-spacing {
+    @apply space-y-6;
+  }
+
+  .card-prompt {
+    @apply bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground border-l-2 border-primary/30;
   }
 }

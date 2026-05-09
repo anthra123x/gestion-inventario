@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 interface HeaderProps {
   user: {
@@ -31,8 +32,8 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-4 lg:px-6">
-      <div className="flex items-center space-x-2 lg:space-x-4">
+    <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
+      <div className="flex items-center gap-3 lg:gap-4">
         <Button
           variant="ghost"
           size="icon"
@@ -41,30 +42,30 @@ export function Header({ user, onMenuClick }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="relative flex-1 lg:flex-none">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative flex-1 max-w-sm lg:max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="global-search"
             type="search"
             placeholder="Buscar... (Alt+Q)"
-            className="w-full lg:w-96 pl-10"
+            className="w-full pl-10"
           />
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 lg:space-x-4">
+      <div className="flex items-center gap-2 lg:gap-4">
         <Button variant="ghost" size="icon" className="hidden lg:flex">
           <Bell className="h-5 w-5" />
         </Button>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center space-x-2 lg:space-x-3 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 lg:gap-3 cursor-pointer rounded-lg p-1.5 hover:bg-muted transition-colors">
             <div className="text-right hidden sm:block">
               <div className="text-sm font-medium">{user.name}</div>
-              <div className="text-xs text-gray-500 capitalize">{user.role.toLowerCase()}</div>
+              <div className="text-xs text-muted-foreground capitalize">{user.role.toLowerCase()}</div>
             </div>
-            <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-              <span className="text-sm font-medium text-white">
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-sm font-medium text-primary-foreground">
                 {user.name.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -79,7 +80,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
               <span>Perfil</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Cerrar Sesión</span>
             </DropdownMenuItem>

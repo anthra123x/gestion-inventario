@@ -1,15 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Eye, Wrench, Clock, CheckCircle, AlertCircle, XCircle, PiggyBank, TrendingUp, DollarSign } from 'lucide-react'
+import { Plus, Eye, Wrench, Clock, CheckCircle, XCircle, PiggyBank, TrendingUp, DollarSign, AlertCircle, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
+import { SearchInput } from '@/components/ui/search-input'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/ui/page-header'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency } from '@/lib/format'
 import { getRepairs, getRepairStats, updateRepairStatus } from '@/modules/repairs/repairs.actions'
 import { RepairStatus } from '@prisma/client'
@@ -68,54 +71,15 @@ export default function RepairsPage() {
     }
   }
 
-  function getStatusIcon(status: RepairStatus) {
-    switch (status) {
-      case 'RECEIVED':
-        return <Clock className="h-4 w-4" />
-      case 'IN_PROGRESS':
-        return <Wrench className="h-4 w-4" />
-      case 'READY':
-        return <CheckCircle className="h-4 w-4" />
-      case 'DELIVERED':
-        return <CheckCircle className="h-4 w-4" />
-      case 'CANCELLED':
-        return <XCircle className="h-4 w-4" />
-      default:
-        return <AlertCircle className="h-4 w-4" />
+  function getStatusInfo(status: RepairStatus) {
+    const info: Record<RepairStatus, { label: string; icon: typeof Clock; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }> = {
+      RECEIVED: { label: 'Recibido', icon: Clock, variant: 'info' },
+      IN_PROGRESS: { label: 'En Progreso', icon: Wrench, variant: 'warning' },
+      READY: { label: 'Listo', icon: CheckCircle, variant: 'success' },
+      DELIVERED: { label: 'Entregado', icon: CheckCircle, variant: 'purple' },
+      CANCELLED: { label: 'Cancelado', icon: XCircle, variant: 'error' }
     }
-  }
-
-  function getStatusLabel(status: RepairStatus) {
-    const labels = {
-      RECEIVED: 'Recibido',
-      IN_PROGRESS: 'En Progreso',
-      READY: 'Listo',
-      DELIVERED: 'Entregado',
-      CANCELLED: 'Cancelado'
-    }
-    return labels[status]
-  }
-
-  function getStatusColor(status: RepairStatus) {
-    const colors = {
-      RECEIVED: 'secondary',
-      IN_PROGRESS: 'default',
-      READY: 'outline',
-      DELIVERED: 'default',
-      CANCELLED: 'destructive'
-    }
-    return colors[status]
-  }
-
-  function getStatusBadgeColor(status: RepairStatus): string {
-    const colors: Record<RepairStatus, string> = {
-      RECEIVED: 'bg-blue-100 text-blue-800 border-blue-200',
-      IN_PROGRESS: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      READY: 'bg-green-100 text-green-800 border-green-200',
-      DELIVERED: 'bg-purple-100 text-purple-800 border-purple-200',
-      CANCELLED: 'bg-red-100 text-red-800 border-red-200'
-    }
-    return colors[status]
+    return info[status]
   }
 
   function getStatusNextOptions(status: RepairStatus): RepairStatus[] {
@@ -129,197 +93,155 @@ export default function RepairsPage() {
     return flow[status] || []
   }
 
-  if (loading) {
+  if (loading && repairs.length === 0) {
     return (
-      <div className="container mx-auto py-6 min-h-screen space-y-6">
+      <div className="page-container py-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <Skeleton className="h-9 w-32 mb-2" />
+            <Skeleton className="h-9 w-40 mb-2" />
             <Skeleton className="h-5 w-52" />
           </div>
-          <Skeleton className="h-10 w-40" />
+          <Skeleton className="h-10 w-44" />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4">
+        <StatCardGrid columns={4}>
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-4 w-4 rounded-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-7 w-12" />
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-8 w-12" />
+                  </div>
+                  <Skeleton className="h-11 w-11 rounded-xl" />
+                </div>
               </CardContent>
             </Card>
           ))}
-        </div>
+        </StatCardGrid>
 
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-36 mb-1" />
             <Skeleton className="h-4 w-44" />
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-10 w-20" />
-                  <Skeleton className="h-10 flex-1" />
-                  <Skeleton className="h-10 w-32" />
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 w-16" />
-                </div>
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-16" />
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
     )
   }
 
+  const completionRate = stats && stats.totalRepairs > 0 
+    ? Math.round((stats.completedRepairs / stats.totalRepairs) * 100) 
+    : 0
+
   return (
-    <div className="container mx-auto py-6 min-h-screen space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Reparaciones</h1>
-          <p className="text-gray-600">Gestiona las órdenes de reparación</p>
-        </div>
-        <Link href="/repairs/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Reparación
-          </Button>
-        </Link>
-      </div>
+    <div className="page-container py-6 space-y-6">
+      <PageHeader
+        title="Reparaciones"
+        description="Gestiona las órdenes de reparación"
+        actions={
+          <Link href="/repairs/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Reparación
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Reparaciones</CardTitle>
-              <Wrench className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRepairs}</div>
-            </CardContent>
-          </Card>
+        <>
+          <StatCardGrid columns={4}>
+            <StatCard
+              title="Total Reparaciones"
+              value={stats.totalRepairs}
+              change={`${stats.totalRepairs} órdenes`}
+              icon={Wrench}
+              color="default"
+            />
+            <StatCard
+              title="Activas"
+              value={stats.activeRepairs}
+              change="En proceso"
+              icon={Clock}
+              color="info"
+            />
+            <StatCard
+              title="Completadas"
+              value={stats.completedRepairs}
+              change={`Tasa: ${completionRate}%`}
+              icon={CheckCircle}
+              color="success"
+            />
+            <StatCard
+              title="Ganancia Total"
+              value={formatCurrency(stats.totalProfit || 0)}
+              change={`Promedio: ${formatCurrency(stats.avgProfit || 0)}`}
+              icon={PiggyBank}
+              color="success"
+            />
+          </StatCardGrid>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Activas</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.activeRepairs}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completadas</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completedRepairs}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tasa Completación</CardTitle>
-              <AlertCircle className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.totalRepairs > 0 
-                  ? `${Math.round((stats.completedRepairs / stats.totalRepairs) * 100)}%`
-                  : '0%'
-                }
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <DollarSign className="h-4 w-4" />
+                Total Facturado
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="text-xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue || 0)}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <Wrench className="h-4 w-4" />
+                Costo Repuestos
+              </div>
+              <div className="text-xl font-bold text-orange-600">{formatCurrency(stats.totalPartsCost || 0)}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                Ganancia Promedio
+              </div>
+              <div className="text-xl font-bold">{formatCurrency(stats.avgProfit || 0)}</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <AlertCircle className="h-4 w-4" />
+                Tasa Completación
+              </div>
+              <div className="text-xl font-bold text-purple-600">{completionRate}%</div>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* Profit Stats */}
-      {stats && stats.totalProfit !== undefined && (
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Facturado</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(stats.totalRevenue || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Costo Repuestos</CardTitle>
-              <Wrench className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {formatCurrency(stats.totalPartsCost || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ganancia Real</CardTitle>
-              <PiggyBank className="h-4 w-4 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-600">
-                {formatCurrency(stats.totalProfit || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Promedio/Reparación</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(stats.avgProfit || 0)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Buscar reparaciones..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Buscar reparaciones..."
+              />
             </div>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RepairStatus | 'ALL')}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos los estados</SelectItem>
+                <SelectItem value="ALL">Todos</SelectItem>
                 <SelectItem value="RECEIVED">Recibido</SelectItem>
                 <SelectItem value="IN_PROGRESS">En Progreso</SelectItem>
                 <SelectItem value="READY">Listo</SelectItem>
@@ -328,127 +250,101 @@ export default function RepairsPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Repairs Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Reparaciones ({totalRepairs})</CardTitle>
-          <CardDescription>
-            Órdenes de reparación registradas
-          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Dispositivo</TableHead>
-                <TableHead>Problema</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Costo</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {repairs.map((repair) => (
-                <TableRow key={repair.id}>
-                  <TableCell className="font-medium">#{repair.id.slice(-6)}</TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{repair.client?.name}</div>
-                      <div className="text-sm text-gray-500">{repair.client?.phone}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{repair.device}</TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate" title={repair.problem}>
-                      {repair.problem}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className={`flex items-center space-x-1 ${getStatusBadgeColor(repair.status)}`}>
-                        {getStatusIcon(repair.status)}
-                        <span>{getStatusLabel(repair.status)}</span>
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{formatCurrency(repair.cost)}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {new Date(repair.createdAt).toLocaleDateString()}
-                      <div className="text-gray-500">
-                        {new Date(repair.createdAt).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {/* Status Quick Actions */}
-                      {getStatusNextOptions(repair.status).length > 0 ? (
-                        <Select
-                          onValueChange={(value) => handleStatusChange(repair.id, value as RepairStatus)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Cambiar estado..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getStatusNextOptions(repair.status).map((status) => (
-                              <SelectItem key={status} value={status}>
-                                <div className="flex items-center gap-2">
-                                  {getStatusIcon(status)}
-                                  <span>{getStatusLabel(status)}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-sm text-gray-500 italic">Estado final</span>
-                      )}
-
-                      {/* View/Edit Actions */}
-                      <Link href={`/repairs/${repair.id}`}>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </TableCell>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>ID</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Dispositivo</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Costo</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {repairs.map((repair) => {
+                  const statusInfo = getStatusInfo(repair.status)
+                  const StatusIcon = statusInfo.icon
+                  return (
+                    <TableRow key={repair.id}>
+                      <TableCell className="font-mono text-sm">#{repair.id.slice(-6)}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{repair.client?.name}</div>
+                          <div className="text-xs text-muted-foreground">{repair.client?.phone}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{repair.device}</div>
+                          <div className="text-xs text-muted-foreground max-w-[150px] truncate">{repair.problem}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge variant={statusInfo.variant} dot>
+                          {statusInfo.label}
+                        </StatusBadge>
+                      </TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(repair.cost)}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">{new Date(repair.createdAt).toLocaleDateString('es-CO')}</div>
+                        <div className="text-xs text-muted-foreground">{new Date(repair.createdAt).toLocaleTimeString('es-CO')}</div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {getStatusNextOptions(repair.status).length > 0 && (
+                            <Select
+                              onValueChange={(value) => handleStatusChange(repair.id, value as RepairStatus)}
+                            >
+                              <SelectTrigger className="w-32 h-8">
+                                <SelectValue placeholder="Estado" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {getStatusNextOptions(repair.status).map((status) => {
+                                  const info = getStatusInfo(status)
+                                  const InfoIcon = info.icon
+                                  return (
+                                    <SelectItem key={status} value={status}>
+                                      <div className="flex items-center gap-2">
+                                        <InfoIcon className="h-3.5 w-3.5" />
+                                        <span>{info.label}</span>
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                })}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <Link href={`/repairs/${repair.id}`}>
+                            <Button variant="ghost" size="icon-sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
-          
+
           {repairs.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Wrench className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground font-medium">
-                {search || statusFilter !== 'ALL' 
-                  ? 'No se encontraron reparaciones'
-                  : 'No hay reparaciones registradas'
-                }
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {search || statusFilter !== 'ALL' 
-                  ? 'Intenta con otros filtros de búsqueda'
-                  : 'Crea tu primera orden de reparación'
-                }
-              </p>
-            </div>
+            <EmptyState
+              icon={Wrench}
+              title={search || statusFilter !== 'ALL' ? 'Sin resultados' : 'Sin reparaciones'}
+              description={search || statusFilter !== 'ALL' ? 'No hay reparaciones que coincidan con tu búsqueda' : 'Crea tu primera orden de reparación'}
+              action={search || statusFilter !== 'ALL' ? undefined : { label: 'Crear reparación', href: '/repairs/new' }}
+            />
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <p className="text-sm text-gray-600">
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 Página {page} de {totalPages} — {totalRepairs} reparaciones
               </p>
               <div className="flex gap-2">

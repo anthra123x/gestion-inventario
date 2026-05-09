@@ -2,15 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Edit, Trash2, Package } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
+import { SearchInput } from '@/components/ui/search-input'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/ui/page-header'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import { getProducts, deleteProduct } from '@/modules/inventory/inventory.actions'
@@ -68,23 +72,24 @@ export default function InventoryPage() {
       }
 
       if (result?.success) {
+        toast.success('Producto eliminado')
         await loadProducts()
         setDeleteDialogOpen(false)
         setProductToDelete(null)
       }
     } catch (error) {
-      toast.error('Error al eliminar el producto. Por favor intenta nuevamente.')
+      toast.error('Error al eliminar el producto')
     }
   }
 
   function getStockStatus(stock: number, minStock: number) {
-    if (stock === 0) return { label: 'Agotado', color: 'destructive' }
-    if (stock <= minStock) return { label: 'Stock Bajo', color: 'secondary' }
-    return { label: 'En Stock', color: 'default' }
+    if (stock === 0) return { label: 'Agotado', variant: 'destructive' as const }
+    if (stock <= minStock) return { label: 'Stock Bajo', variant: 'secondary' as const }
+    return { label: 'En Stock', variant: 'default' as const }
   }
 
   function getCategoryLabel(category: ProductCategory) {
-    const labels = {
+    const labels: Record<ProductCategory, string> = {
       ACCESSORY: 'Accesorio',
       REPAIR_PART: 'Repuesto',
       DEVICE: 'Dispositivo',
@@ -93,48 +98,55 @@ export default function InventoryPage() {
     return labels[category]
   }
 
-  if (loading) {
+  const stockCounts = {
+    total: products.length,
+    inStock: products.filter(p => p.stock > p.minStock).length,
+    lowStock: products.filter(p => p.stock > 0 && p.stock <= p.minStock).length,
+    outOfStock: products.filter(p => p.stock === 0).length,
+  }
+
+  if (loading && products.length === 0) {
     return (
-      <div className="container mx-auto py-6 min-h-screen space-y-6">
+      <div className="page-container py-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <Skeleton className="h-9 w-32 mb-2" />
             <Skeleton className="h-5 w-48" />
           </div>
-          <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-10 w-40" />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4">
+        <StatCardGrid>
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-4 w-4 rounded-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                  <Skeleton className="h-11 w-11 rounded-xl" />
+                </div>
               </CardContent>
             </Card>
           ))}
-        </div>
+        </StatCardGrid>
 
         <Card>
           <CardHeader>
-            <Skeleton className="h-5 w-32 mb-1" />
+            <Skeleton className="h-5 w-40 mb-1" />
             <Skeleton className="h-4 w-48" />
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-10 flex-1" />
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 w-20" />
-                  <Skeleton className="h-10 w-20" />
-                  <Skeleton className="h-10 w-20" />
-                </div>
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-20" />
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -142,94 +154,67 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 min-h-screen space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Inventario</h1>
-          <p className="text-gray-600">Gestiona tus productos y stock</p>
-        </div>
-        <Link href="/inventory/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Producto
-          </Button>
-        </Link>
-      </div>
+    <div className="page-container py-6 space-y-6">
+      <PageHeader
+        title="Inventario"
+        description="Gestiona tus productos y stock"
+        actions={
+          <Link href="/inventory/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo Producto
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Productos</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{products.length}</div>
-          </CardContent>
-        </Card>
+      <StatCardGrid columns={4}>
+        <StatCard
+          title="Total Productos"
+          value={totalProducts}
+          change={`${stockCounts.total} productos`}
+          icon={Package}
+          color="default"
+        />
+        <StatCard
+          title="En Stock"
+          value={stockCounts.inStock}
+          change="Niveles seguros"
+          icon={TrendingUp}
+          color="success"
+        />
+        <StatCard
+          title="Stock Bajo"
+          value={stockCounts.lowStock}
+          change="Necesitan reabastecimiento"
+          icon={AlertTriangle}
+          color="warning"
+        />
+        <StatCard
+          title="Agotados"
+          value={stockCounts.outOfStock}
+          change="Sin stock disponible"
+          icon={XCircle}
+          color="danger"
+        />
+      </StatCardGrid>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Stock</CardTitle>
-            <Package className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {products.filter(p => p.stock > p.minStock).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stock Bajo</CardTitle>
-            <Package className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {products.filter(p => p.stock > 0 && p.stock <= p.minStock).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Agotados</CardTitle>
-            <Package className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {products.filter(p => p.stock === 0).length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Buscar productos..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Buscar productos..."
+              />
             </div>
             <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as ProductCategory | 'ALL')}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todas las categorías</SelectItem>
+                <SelectItem value="ALL">Todas</SelectItem>
                 <SelectItem value="ACCESSORY">Accesorios</SelectItem>
                 <SelectItem value="REPAIR_PART">Repuestos</SelectItem>
                 <SelectItem value="DEVICE">Dispositivos</SelectItem>
@@ -237,131 +222,89 @@ export default function InventoryPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Products Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Productos ({totalProducts})</CardTitle>
-          <CardDescription>
-            Lista completa de productos en el inventario
-          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Producto</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Precio Venta</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => {
-                const stockStatus = getStockStatus(product.stock, product.minStock)
-                return (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="text-center">Stock</TableHead>
+                  <TableHead>Precio Venta</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => {
+                  const stockStatus = getStockStatus(product.stock, product.minStock)
+                  return (
+                    <TableRow key={product.id}>
+                      <TableCell>
                         <div className="font-medium">{product.name}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getCategoryLabel(product.category)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center">
-                        <div className="font-medium">{product.stock}</div>
-                        <div className="text-sm text-gray-500">Mín: {product.minStock}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatCurrency(product.salePrice)}</TableCell>
-                    <TableCell>
-                      <Badge variant={stockStatus.color as any}>
-                        {stockStatus.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Link href={`/inventory/${product.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
+                        {product.description && (
+                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {product.description}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {getCategoryLabel(product.category)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="font-semibold">{product.stock}</div>
+                        <div className="text-xs text-muted-foreground">Mín: {product.minStock}</div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatCurrency(product.salePrice)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={stockStatus.variant}>
+                          {stockStatus.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/inventory/${product.id}`}>
+                            <Button variant="ghost" size="icon-sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setProductToDelete(product)
+                              setDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setProductToDelete(product)
-                            setDeleteDialogOpen(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>¿Eliminar producto?</DialogTitle>
-                              <DialogDescription>
-                                ¿Estás seguro de que deseas eliminar "{productToDelete?.name}"? 
-                                Esta acción no se puede deshacer.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setDeleteDialogOpen(false)}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() => productToDelete && handleDeleteProduct(productToDelete)}
-                              >
-                                Eliminar
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
-          
+
           {products.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Package className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground font-medium">
-                {search || categoryFilter !== 'ALL'
-                  ? 'No se encontraron productos'
-                  : 'No hay productos en el inventario'
-                }
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {search || categoryFilter !== 'ALL'
-                  ? 'Intenta con otros filtros de búsqueda'
-                  : 'Crea tu primer producto para comenzar'
-                }
-              </p>
-            </div>
+            <EmptyState
+              icon={Package}
+              title={search || categoryFilter !== 'ALL' ? 'Sin resultados' : 'Sin productos'}
+              description={search || categoryFilter !== 'ALL' ? 'No hay productos que coincidan con tu búsqueda' : 'Crea tu primer producto para comenzar'}
+              action={search || categoryFilter !== 'ALL' ? undefined : { label: 'Crear producto', href: '/inventory/new' }}
+            />
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <p className="text-sm text-gray-600">
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 Página {page} de {totalPages} — {totalProducts} productos
               </p>
               <div className="flex gap-2">
@@ -386,6 +329,25 @@ export default function InventoryPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar producto?</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar "{productToDelete?.name}"? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={() => productToDelete && handleDeleteProduct(productToDelete)}>
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
