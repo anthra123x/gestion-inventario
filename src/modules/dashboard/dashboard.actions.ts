@@ -40,19 +40,14 @@ async function getRecentSales() {
   return await prisma.sale.findMany({
     take: 5,
     orderBy: { createdAt: 'desc' },
-    include: {
+    select: {
+      id: true,
+      total: true,
+      createdAt: true,
       client: {
         select: {
+          id: true,
           name: true,
-        },
-      },
-      saleItems: {
-        include: {
-          product: {
-            select: {
-              name: true,
-            },
-          },
         },
       },
     },
@@ -63,9 +58,14 @@ async function getRecentRepairs() {
   return await prisma.repair.findMany({
     take: 5,
     orderBy: { createdAt: 'desc' },
-    include: {
+    select: {
+      id: true,
+      device: true,
+      status: true,
+      createdAt: true,
       client: {
         select: {
+          id: true,
           name: true,
         },
       },

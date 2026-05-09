@@ -402,21 +402,17 @@ export async function getDailySales(days: number = 30) {
     orderBy: {
       createdAt: 'asc',
     },
+    take: 1000,
   })
 
-  // Group by day
-  const salesByDay = sales.reduce((acc, sale) => {
+  const salesByDay: Record<string, number> = {}
+  for (const sale of sales) {
     const date = sale.createdAt.toISOString().split('T')[0]
-    if (!acc[date]) {
-      acc[date] = 0
-    }
-    acc[date] += sale.total
-    return acc
-  }, {} as Record<string, number>)
+    salesByDay[date] = (salesByDay[date] || 0) + sale.total
+  }
 
-  // Fill missing days with 0
   const result = []
-  for (let i = 0; i < days; i++) {
+  for (let i = days - 1; i >= 0; i--) {
     const date = new Date()
     date.setDate(date.getDate() - i)
     const dateStr = date.toISOString().split('T')[0]
@@ -426,5 +422,5 @@ export async function getDailySales(days: number = 30) {
     })
   }
 
-  return result.reverse()
+  return result
 }

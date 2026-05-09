@@ -115,16 +115,17 @@ export async function createRepair(formData: FormData) {
   // Always create or find client by phone
   let finalClientId: string
 
-  // Check if client already exists by phone
-  const existingClient = await prisma.client.findUnique({
-    where: { phone: clientPhone },
-  })
+  // Always create or find client by phone using transaction
+  const clientId = await prisma.$transaction(async (tx) => {
+    const existingClient = await tx.client.findUnique({
+      where: { phone: clientPhone },
+    })
 
-  if (existingClient) {
-    finalClientId = existingClient.id
-  } else {
-    // Create new client
-    const newClient = await prisma.client.create({
+    if (existingClient) {
+      return existingClient.id
+    }
+
+    const newClient = await tx.client.create({
       data: {
         name: clientName,
         phone: clientPhone,
@@ -132,13 +133,14 @@ export async function createRepair(formData: FormData) {
         address: clientAddress || null,
       },
     })
-    finalClientId = newClient.id
-  }
+
+    return newClient.id
+  })
 
   const costValue = parseFloat(formData.get('cost') as string)
 
   const validatedFields = CreateRepairSchema.safeParse({
-    clientId: finalClientId,
+    clientId: clientId,
     device: formData.get('device'),
     problem: formData.get('problem'),
     diagnosis: formData.get('diagnosis') || null,
