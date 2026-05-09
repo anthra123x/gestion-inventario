@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Edit, Eye, Wrench, Clock, CheckCircle, AlertCircle, XCircle, PiggyBank, TrendingUp, DollarSign } from 'lucide-react'
+import { Plus, Search, Eye, Wrench, Clock, CheckCircle, AlertCircle, XCircle, PiggyBank, TrendingUp, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,47 +20,43 @@ export default function RepairsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<RepairStatus | 'ALL'>('ALL')
+  const [totalRepairs, setTotalRepairs] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [page, setPage] = useState(1)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [debouncedStatus, setDebouncedStatus] = useState<RepairStatus | 'ALL'>('ALL')
+  const pageSize = 20
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedStatus(statusFilter), 300)
+    return () => clearTimeout(timer)
+  }, [statusFilter])
 
   useEffect(() => {
     loadData()
-  }, [])
-
-  useEffect(() => {
-    filterRepairs()
-  }, [repairs, search, statusFilter])
+  }, [debouncedSearch, debouncedStatus, page])
 
   async function loadData() {
     try {
+      setLoading(true)
       const [repairsData, statsData] = await Promise.all([
-        getRepairs(),
-        getRepairStats(),
+        getRepairs(debouncedSearch || undefined, debouncedStatus !== 'ALL' ? debouncedStatus : undefined, page, pageSize),
+        page === 1 ? getRepairStats() : Promise.resolve(null),
       ])
-      setRepairs(repairsData)
-      setStats(statsData)
+      setRepairs(repairsData.repairs)
+      setTotalRepairs(repairsData.total)
+      setTotalPages(repairsData.totalPages)
+      if (statsData) setStats(statsData)
     } catch (error) {
       console.error('Error loading repairs:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  function filterRepairs() {
-    let filtered = repairs
-
-    if (search) {
-      filtered = filtered.filter(repair =>
-        repair.client?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        repair.client?.phone?.toLowerCase().includes(search.toLowerCase()) ||
-        repair.device?.toLowerCase().includes(search.toLowerCase()) ||
-        repair.problem?.toLowerCase().includes(search.toLowerCase())
-      )
-    }
-
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(repair => repair.status === statusFilter)
-    }
-
-    return filtered
   }
 
   async function handleStatusChange(repairId: string, newStatus: RepairStatus) {
@@ -132,8 +128,6 @@ export default function RepairsPage() {
     }
     return flow[status] || []
   }
-
-  const filteredRepairs = filterRepairs()
 
   if (loading) {
     return (
@@ -340,7 +334,7 @@ export default function RepairsPage() {
       {/* Repairs Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Reparaciones ({filteredRepairs.length})</CardTitle>
+          <CardTitle>Reparaciones ({totalRepairs})</CardTitle>
           <CardDescription>
             Órdenes de reparación registradas
           </CardDescription>
@@ -361,7 +355,7 @@ export default function RepairsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRepairs.map((repair) => (
+              {repairs.map((repair) => (
                 <TableRow key={repair.id}>
                   <TableCell className="font-medium">#{repair.id.slice(-6)}</TableCell>
                   <TableCell>
@@ -432,7 +426,7 @@ export default function RepairsPage() {
           </Table>
           </div>
           
-          {filteredRepairs.length === 0 && (
+          {repairs.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="rounded-full bg-muted p-4 mb-4">
                 <Wrench className="h-8 w-8 text-muted-foreground" />
@@ -449,6 +443,32 @@ export default function RepairsPage() {
                   : 'Crea tu primera orden de reparación'
                 }
               </p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                Página {page} de {totalPages} — {totalRepairs} reparaciones
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

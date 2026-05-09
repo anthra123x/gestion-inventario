@@ -26,18 +26,28 @@ export default function InventoryPage() {
   const [totalProducts, setTotalProducts] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [debouncedCategory, setDebouncedCategory] = useState('')
   const pageSize = 20
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCategory(categoryFilter), 300)
+    return () => clearTimeout(timer)
+  }, [categoryFilter])
+
+  useEffect(() => {
     loadProducts()
-  }, [search, categoryFilter, page])
+  }, [debouncedSearch, debouncedCategory, page])
 
   async function loadProducts() {
     try {
       setLoading(true)
-      const searchParam = search || undefined
-      const categoryParam = categoryFilter !== 'ALL' ? categoryFilter : undefined
-      const result = await getProducts(searchParam, categoryParam, page, pageSize)
+      const result = await getProducts(debouncedSearch || undefined, debouncedCategory !== 'ALL' ? debouncedCategory as ProductCategory : undefined, page, pageSize)
       setProducts(result.products)
       setTotalProducts(result.total)
       setTotalPages(result.totalPages)

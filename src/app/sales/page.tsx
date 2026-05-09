@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Plus, Search, Eye, ShoppingCart, TrendingUp, DollarSign, CreditCard, PiggyBank, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,28 +20,32 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentMethod | 'ALL'>('ALL')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [totalSales, setTotalSales] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
   const pageSize = 20
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
     loadData()
-  }, [search, paymentFilter, page])
+  }, [debouncedSearch, paymentFilter, page])
 
   async function loadData() {
     try {
       setLoading(true)
-      const searchParam = search || undefined
-      const paymentParam = paymentFilter !== 'ALL' ? paymentFilter : undefined
       const [salesResult, statsData] = await Promise.all([
-        getSales(searchParam, undefined, undefined, page, pageSize),
-        getSalesStats(),
+        getSales(debouncedSearch || undefined, undefined, undefined, page, pageSize),
+        page === 1 ? getSalesStats() : Promise.resolve(null),
       ])
       setSales(salesResult.sales)
       setTotalSales(salesResult.total)
       setTotalPages(salesResult.totalPages)
-      setStats(statsData)
+      if (statsData) setStats(statsData)
     } catch (error) {
       console.error('Error loading sales:', error)
     } finally {

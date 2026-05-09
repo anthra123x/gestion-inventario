@@ -315,36 +315,37 @@ export async function addInventoryMovement(formData: FormData) {
 }
 
 export async function getInventorySummary() {
-  const [totalProducts, totalValue, lowStockProducts, categories] = await Promise.all([
+  const [totalProducts, totalStockAgg, lowStockCount, categories] = await Promise.all([
     prisma.product.count({
       where: { deletedAt: null },
     }),
     prisma.product.aggregate({
       where: { deletedAt: null },
-      _sum: {
-        stock: true,
-      },
+      _sum: { stock: true },
     }),
-    prisma.product.count({
+    prisma.product.findMany({
       where: {
         deletedAt: null,
-        stock: {
-          lte: prisma.product.fields.minStock,
-        },
+        stock: { gt: 0 },
+      },
+      select: {
+        id: true,
+        stock: true,
+        minStock: true,
       },
     }),
     prisma.product.groupBy({
       by: ['category'],
       where: { deletedAt: null },
-      _count: {
-        id: true,
-      },
+      _count: { id: true },
     }),
   ])
 
+  const lowStockProducts = lowStockCount.filter(p => p.stock <= p.minStock).length
+
   return {
     totalProducts,
-    totalStock: totalValue._sum.stock || 0,
+    totalStock: totalStockAgg._sum.stock || 0,
     lowStockProducts,
     categories,
   }

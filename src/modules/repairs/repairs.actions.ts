@@ -8,7 +8,7 @@ import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
 import { RepairStatus } from '@prisma/client'
 
-export async function getRepairs(search?: string, status?: RepairStatus) {
+export async function getRepairs(search?: string, status?: RepairStatus, page = 1, take = 20) {
   const where = {
     ...(search && {
       OR: [
@@ -22,33 +22,51 @@ export async function getRepairs(search?: string, status?: RepairStatus) {
     ...(status && { status }),
   }
 
-  return await prisma.repair.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      device: true,
-      problem: true,
-      diagnosis: true,
-      status: true,
-      cost: true,
-      notes: true,
-      estimatedDate: true,
-      createdAt: true,
-      client: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
+  const [repairs, total] = await Promise.all([
+    prisma.repair.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * take,
+      take,
+      select: {
+        id: true,
+        device: true,
+        problem: true,
+        diagnosis: true,
+        status: true,
+        cost: true,
+        profit: true,
+        notes: true,
+        estimatedDate: true,
+        createdAt: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            repairParts: true,
+          },
         },
       },
-      user: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  })
+    }),
+    prisma.repair.count({ where }),
+  ])
+
+  return {
+    repairs,
+    total,
+    page,
+    totalPages: Math.ceil(total / take),
+  }
 }
 
 export async function getRepairById(id: string) {

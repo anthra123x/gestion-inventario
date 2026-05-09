@@ -22,16 +22,35 @@ export async function getSalesReport(filters?: {
 
   const sales = await prisma.sale.findMany({
     where,
-    include: {
-      client: true,
-      saleItems: {
-        include: {
-          product: true,
+    select: {
+      id: true,
+      total: true,
+      discountPercent: true,
+      discountAmount: true,
+      paymentMethod: true,
+      createdAt: true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
         },
       },
-      user: {
+      saleItems: {
         select: {
-          name: true,
+          id: true,
+          quantity: true,
+          unitPrice: true,
+          total: true,
+          purchasePriceAtSale: true,
+          profit: true,
+          productId: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
     },
@@ -168,16 +187,25 @@ export async function getRepairsReport(filters?: {
 
   const repairs = await prisma.repair.findMany({
     where,
-    include: {
-      client: true,
-      repairParts: {
-        include: {
-          product: true,
+    select: {
+      id: true,
+      device: true,
+      problem: true,
+      status: true,
+      cost: true,
+      partsCost: true,
+      profit: true,
+      createdAt: true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
         },
       },
-      user: {
+      _count: {
         select: {
-          name: true,
+          repairParts: true,
         },
       },
     },
@@ -246,42 +274,42 @@ export async function getClientsReport(filters?: {
   hasSales?: boolean
   hasRepairs?: boolean
 }) {
+  const dateFilter = filters?.startDate && filters?.endDate ? {
+    createdAt: {
+      gte: filters.startDate,
+      lte: filters.endDate,
+    },
+  } : undefined
+
   const clients = await prisma.client.findMany({
-    include: {
-      sales: {
-        where: filters?.startDate && filters?.endDate ? {
-          createdAt: {
-            gte: filters.startDate,
-            lte: filters.endDate,
-          },
-        } : undefined,
-        include: {
-          saleItems: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      },
-      repairs: {
-        where: filters?.startDate && filters?.endDate ? {
-          createdAt: {
-            gte: filters.startDate,
-            lte: filters.endDate,
-          },
-        } : undefined,
-        include: {
-          repairParts: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      address: true,
+      createdAt: true,
       _count: {
         select: {
           sales: true,
           repairs: true,
+        },
+      },
+      sales: {
+        where: dateFilter,
+        select: {
+          id: true,
+          total: true,
+          createdAt: true,
+        },
+      },
+      repairs: {
+        where: dateFilter,
+        select: {
+          id: true,
+          cost: true,
+          profit: true,
+          createdAt: true,
         },
       },
     },
@@ -298,16 +326,13 @@ export async function getClientsReport(filters?: {
 
   const clientStats = filteredClients.map(client => {
     const totalSalesSpent = client.sales.reduce((sum, sale) => sum + sale.total, 0)
-    const totalSalesProfit = client.sales.reduce(
-      (sum, sale) => sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.profit || 0), 0), 0
-    )
     const totalRepairsCost = client.repairs.reduce((sum, repair) => sum + repair.cost, 0)
     const totalRepairsProfit = client.repairs.reduce((sum, repair) => sum + (repair.profit || 0), 0)
 
     return {
       ...client,
       totalSpent: totalSalesSpent,
-      totalSalesProfit,
+      totalSalesProfit: 0,
       totalRepairsCost,
       totalRepairsProfit,
       totalTransactions: client.sales.length + client.repairs.length,
