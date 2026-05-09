@@ -103,7 +103,7 @@ export default function SaleDetailPage() {
             Volver
           </Button>
           <div className="flex gap-2 no-print">
-            <Button onClick={() => router.push(`/sales/${params.id}/print`)} variant="outline">
+            <Button onClick={() => router.push(`/print/${params.id}`)} variant="outline">
               <Printer className="mr-2 h-4 w-4" />
               Imprimir Factura
             </Button>
