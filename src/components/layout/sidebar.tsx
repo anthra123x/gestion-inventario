@@ -8,6 +8,7 @@ import {
   Package,
   ShoppingCart,
   Wrench,
+  Globe,
   FileText,
   Settings,
   Keyboard,
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Inventario', href: '/inventory', icon: Package, shortcut: 'Alt+I' },
   { name: 'Ventas', href: '/sales', icon: ShoppingCart, shortcut: 'Alt+V' },
   { name: 'Reparaciones', href: '/repairs', icon: Wrench, shortcut: 'Alt+R' },
+  { name: 'Tienda Online', href: '/orders', icon: Globe, shortcut: 'Alt+O' },
   { name: 'Reportes', href: '/reports', icon: FileText, shortcut: 'Alt+P' },
 ]
 

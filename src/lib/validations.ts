@@ -5,6 +5,7 @@ export const ProductCategorySchema = z.enum(['ACCESSORY', 'REPAIR_PART', 'DEVICE
 export const RepairStatusSchema = z.enum(['RECEIVED', 'IN_PROGRESS', 'READY', 'DELIVERED', 'CANCELLED'])
 export const PaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER'])
 export const MovementTypeSchema = z.enum(['ENTRY', 'EXIT'])
+export const OrderStatusSchema = z.enum(['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])
 
 // Product schemas
 export const CreateProductSchema = z.object({
@@ -99,4 +100,32 @@ export const EditRepairSchema = z.object({
     quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
     unitCost: z.coerce.number().min(0, 'El costo debe ser positivo')
   })).optional()
+})
+
+// Order schemas
+export const CreateOrderSchema = z.object({
+  clientName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  clientPhone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
+  clientEmail: z.string().email('Email inválido').optional().nullable(),
+  clientAddress: z.string().optional().nullable(),
+  clientNotes: z.string().optional().nullable(),
+  subtotal: z.coerce.number().min(0).default(0),
+  shipping: z.coerce.number().min(0).default(0),
+  total: z.coerce.number().min(0),
+  externalReference: z.string().optional().nullable(),
+  items: z.array(z.object({
+    productId: z.string(),
+    quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+    unitPrice: z.coerce.number().min(0, 'El precio debe ser positivo'),
+  })).min(1, 'Debe tener al menos un producto'),
+})
+
+export const UpdateOrderStatusSchema = z.object({
+  status: OrderStatusSchema,
+})
+
+export const OrderItemSchema = z.object({
+  productId: z.string(),
+  quantity: z.coerce.number().int().min(1),
+  unitPrice: z.coerce.number().min(0),
 })
