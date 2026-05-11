@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck, LayoutDashboard } from 'lucide-react'
+import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck, LayoutDashboard, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +34,23 @@ const statusFlow: Record<OrderStatus, OrderStatus[]> = {
   SHIPPED: ['DELIVERED', 'CANCELLED'],
   DELIVERED: [],
   CANCELLED: [],
+}
+
+const statusMessages: Record<OrderStatus, string> = {
+  PENDING: 'recibimos tu pedido en Tecnicell. Te confirmaremos pronto.',
+  CONFIRMED: 'tu pedido fue confirmado y estamos preparándolo.',
+  PREPARING: 'tu pedido ya está siendo preparado.',
+  SHIPPED: 'tu pedido ha sido enviado. Pronto lo recibirás.',
+  DELIVERED: 'entregamos tu pedido. Gracias por tu compra.',
+  CANCELLED: 'lamentamos informarte que tu pedido fue cancelado.',
+}
+
+function getWhatsAppUrl(order: any): string {
+  const cleanPhone = order.clientPhone.replace(/[^0-9]/g, '')
+  const finalPhone = cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`
+  const status = order.status as OrderStatus
+  const message = `Hola ${order.clientName}, *${statusMessages[status]}*%0A%0APedido: #${order.id.slice(-6).toUpperCase()}%0ATotal: ${formatCurrency(order.total)}`
+  return `https://wa.me/${finalPhone}?text=${message}`
 }
 
 export default function OrderDetailPage() {
@@ -267,6 +284,15 @@ export default function OrderDetailPage() {
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <span>{order.clientPhone}</span>
               </div>
+              <a
+                href={getWhatsAppUrl(order)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Enviar WhatsApp
+              </a>
               {order.clientEmail && (
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
