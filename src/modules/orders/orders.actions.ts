@@ -116,6 +116,7 @@ export async function createOrder(formData: FormData) {
     clientName: formData.get('clientName'),
     clientPhone: formData.get('clientPhone'),
     clientEmail: formData.get('clientEmail') || null,
+    clientCity: formData.get('clientCity') || null,
     clientAddress: formData.get('clientAddress') || null,
     clientNotes: formData.get('clientNotes') || null,
     subtotal: formData.get('subtotal'),
@@ -129,6 +130,13 @@ export async function createOrder(formData: FormData) {
     return { error: getZodErrorMessage(validatedFields) }
   }
 
+  for (const item of validatedFields.data.items) {
+    const product = await prisma.product.findUnique({ where: { id: item.productId } })
+    if (!product || product.stock < item.quantity) {
+      return { error: `Stock insuficiente para ${product?.name || 'producto'}` }
+    }
+  }
+
   try {
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
@@ -136,6 +144,7 @@ export async function createOrder(formData: FormData) {
           clientName: validatedFields.data.clientName,
           clientPhone: validatedFields.data.clientPhone,
           clientEmail: validatedFields.data.clientEmail,
+          clientCity: validatedFields.data.clientCity,
           clientAddress: validatedFields.data.clientAddress,
           clientNotes: validatedFields.data.clientNotes,
           subtotal: validatedFields.data.subtotal,
@@ -184,10 +193,9 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
         data: { status },
       })
 
-      const wasConfirmed =
-        status === 'CONFIRMED' || status === 'PREPARING'
+      const becomesConfirmed = status === 'CONFIRMED' && order.status === 'PENDING'
 
-      if (wasConfirmed && !order.externalReference) {
+      if (becomesConfirmed) {
         for (const item of order.items) {
           await tx.product.update({
             where: { id: item.productId },
@@ -206,7 +214,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
         }
       }
 
-      if (status === 'CANCELLED' && order.externalReference) {
+      if (status === 'CANCELLED') {
         for (const item of order.items) {
           await tx.product.update({
             where: { id: item.productId },
@@ -231,6 +239,19 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
     return { success: 'Estado actualizado exitosamente' }
   } catch (error: any) {
     return { error: error.message || 'Error al actualizar el estado' }
+  }
+}
+
+export async function updateOrderNotes(orderId: string, internalNotes: string) {
+  try {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { internalNotes: internalNotes || null },
+    })
+    revalidatePath(`/orders/${orderId}`)
+    return { success: 'Notas actualizadas' }
+  } catch (error: any) {
+    return { error: error.message || 'Error al actualizar las notas' }
   }
 }
 

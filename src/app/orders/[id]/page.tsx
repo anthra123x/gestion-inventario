@@ -8,12 +8,14 @@ import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck } from 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
-import { getOrderById, updateOrderStatus } from '@/modules/orders/orders.actions'
+import { Textarea } from '@/components/ui/textarea'
+import { getOrderById, updateOrderStatus, updateOrderNotes } from '@/modules/orders/orders.actions'
 import { OrderStatus } from '@prisma/client'
 
 const statusInfo: Record<OrderStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }> = {
@@ -40,6 +42,9 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [changingStatus, setChangingStatus] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [internalNotes, setInternalNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
 
   useEffect(() => {
     loadOrder()
@@ -54,10 +59,27 @@ export default function OrderDetailPage() {
         return
       }
       setOrder(data)
+      setInternalNotes(data.internalNotes || '')
     } catch {
       toast.error('Error al cargar el pedido')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleSaveNotes() {
+    setSavingNotes(true)
+    try {
+      const result = await updateOrderNotes(id, internalNotes)
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Notas guardadas')
+      }
+    } catch {
+      toast.error('Error al guardar notas')
+    } finally {
+      setSavingNotes(false)
     }
   }
 
@@ -139,15 +161,51 @@ export default function OrderDetailPage() {
                 <div className="flex flex-wrap gap-2">
                   {nextStatuses.map((status) => {
                     const nextInfo = statusInfo[status]
+                    if (status === 'CANCELLED') {
+                      return (
+                        <Dialog key={status} open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                          <DialogTrigger>
+                            <Button variant="destructive" size="sm" disabled={changingStatus}>
+                              Cancelar Pedido
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Cancelar Pedido</DialogTitle>
+                              <DialogDescription>
+                                Esta acción devolverá {order.items?.length || 0} producto(s) al inventario.
+                                {order.externalReference && (
+                                  <span className="block mt-1">El pedido en la tienda online también será afectado.</span>
+                                )}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+                                No, mantener pedido
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={() => {
+                                  setCancelDialogOpen(false)
+                                  handleStatusChange('CANCELLED')
+                                }}
+                              >
+                                Sí, cancelar pedido
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      )
+                    }
                     return (
                       <Button
                         key={status}
-                        variant={status === 'CANCELLED' ? 'destructive' : 'default'}
+                        variant="default"
                         size="sm"
                         onClick={() => handleStatusChange(status)}
                         disabled={changingStatus}
                       >
-                        {status === 'CANCELLED' ? 'Cancelar Pedido' : `Marcar como ${nextInfo.label}`}
+                        Marcar como {nextInfo.label}
                       </Button>
                     )
                   })}
@@ -207,6 +265,12 @@ export default function OrderDetailPage() {
                   <span>{order.clientEmail}</span>
                 </div>
               )}
+              {order.clientCity && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span>{order.clientCity}</span>
+                </div>
+              )}
               {order.clientAddress && (
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -264,6 +328,33 @@ export default function OrderDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Internal Notes */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Notas Internas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
+                placeholder="Notas internas del pedido (solo visible en backoffice)"
+                rows={3}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveNotes}
+                disabled={savingNotes}
+                className="w-full"
+              >
+                {savingNotes ? 'Guardando...' : 'Guardar Notas'}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -1,18 +1,21 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { CreateOrderSchema } from '@/lib/validations'
+import { getZodErrorMessage } from '@/lib/zod-error'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const { clientName, clientPhone, clientEmail, clientAddress, clientNotes, subtotal, shipping, total, externalReference, items } = body
-
-    if (!clientName || !clientPhone || !items?.length) {
+    const validated = CreateOrderSchema.safeParse(body)
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: clientName, clientPhone, items' },
+        { error: getZodErrorMessage(validated) },
         { status: 400 }
       )
     }
+
+    const { clientName, clientPhone, clientEmail, clientCity, clientAddress, clientNotes, subtotal, shipping, total, externalReference, items } = validated.data
 
     for (const item of items) {
       const product = await prisma.product.findUnique({ where: { id: item.productId } })
@@ -42,6 +45,7 @@ export async function POST(request: Request) {
           clientName,
           clientPhone,
           clientEmail: clientEmail || null,
+          clientCity: clientCity || null,
           clientAddress: clientAddress || null,
           clientNotes: clientNotes || null,
           subtotal: subtotal || 0,
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
           total,
           externalReference: externalReference || null,
           items: {
-            create: items.map((item: any) => ({
+            create: items.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,

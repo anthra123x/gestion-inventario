@@ -183,6 +183,45 @@ model SystemSettings {
   @@map("system_settings")
 }
 
+model Order {
+  id                 String      @id @default(cuid())
+  clientName         String
+  clientPhone        String
+  clientCity         String?
+  clientEmail        String?
+  clientAddress      String?
+  clientNotes        String?
+  status             OrderStatus @default(PENDING)
+  subtotal           Float       @default(0)
+  shipping           Float       @default(0)
+  total              Float       @default(0)
+  externalReference  String?     @unique
+  internalNotes      String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  items              OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([clientPhone])
+  @@index([externalReference])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Float
+  total     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
 enum UserRole {
   ADMIN
   EMPLOYEE
@@ -221,42 +260,4 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
-}
-
-model Order {
-  id                String      @id @default(cuid())
-  clientName        String
-  clientPhone       String
-  clientEmail       String?
-  clientAddress     String?
-  clientNotes       String?
-  status            OrderStatus @default(PENDING)
-  subtotal          Float       @default(0)
-  shipping          Float       @default(0)
-  total             Float       @default(0)
-  externalReference String?     @unique
-  internalNotes     String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  items             OrderItem[]
-
-  @@index([status])
-  @@index([createdAt])
-  @@index([clientPhone])
-  @@index([externalReference])
-  @@map("orders")
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  unitPrice Float
-  total     Float
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
-  @@map("order_items")
 }

@@ -107,6 +107,7 @@ export const CreateOrderSchema = z.object({
   clientName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   clientPhone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
   clientEmail: z.string().email('Email inválido').optional().nullable(),
+  clientCity: z.string().optional().nullable(),
   clientAddress: z.string().optional().nullable(),
   clientNotes: z.string().optional().nullable(),
   subtotal: z.coerce.number().min(0).default(0),
