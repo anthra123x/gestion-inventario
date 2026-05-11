@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache'
 import { CreateOrderSchema, UpdateOrderStatusSchema } from '@/lib/validations'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { OrderStatus } from '@prisma/client'
-import { sendOrderStatusEmail } from './order-email'
 
 export async function getOrders(search?: string, status?: OrderStatus, page = 1, take = 20) {
   const where = {
@@ -183,7 +182,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { product: { select: { id: true, name: true, salePrice: true } } } } },
+      include: { items: true },
     })
 
     if (!order) return { error: 'Pedido no encontrado' }
@@ -237,21 +236,6 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
-
-    sendOrderStatusEmail({
-      id: order.id,
-      clientName: order.clientName,
-      clientEmail: order.clientEmail,
-      status,
-      total: order.total,
-      items: order.items.map((item) => ({
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.total,
-        product: item.product ? { name: item.product.name } : undefined,
-      })),
-    })
-
     return { success: 'Estado actualizado exitosamente' }
   } catch (error: any) {
     return { error: error.message || 'Error al actualizar el estado' }

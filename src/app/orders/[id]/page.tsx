@@ -8,7 +8,7 @@ import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck, Layout
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -189,11 +189,9 @@ export default function OrderDetailPage() {
                     if (status === 'CANCELLED') {
                       return (
                         <Dialog key={status} open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-                          <DialogTrigger>
-                            <Button variant="destructive" size="sm" disabled={changingStatus}>
-                              Cancelar Pedido
-                            </Button>
-                          </DialogTrigger>
+                          <Button variant="destructive" size="sm" onClick={() => setCancelDialogOpen(true)} disabled={changingStatus}>
+                            Cancelar Pedido
+                          </Button>
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Cancelar Pedido</DialogTitle>
