@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck } from 'lucide-react'
+import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -137,12 +137,20 @@ export default function OrderDetailPage() {
         title={`Pedido #${order.id.slice(-6).toUpperCase()}`}
         description={`Recibido el ${new Date(order.createdAt).toLocaleDateString('es-CO')} a las ${new Date(order.createdAt).toLocaleTimeString('es-CO')}`}
         actions={
-          <Link href="/orders">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/orders">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Pedidos
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Button>
+            </Link>
+          </div>
         }
       />
 

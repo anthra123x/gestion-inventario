@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Globe, Eye } from 'lucide-react'
+import { Globe, Eye, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -113,6 +113,14 @@ export default function OrdersPage() {
       <PageHeader
         title="Tienda Online"
         description="Administra los pedidos recibidos desde Tecnicell Store"
+        actions={
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+        }
       />
 
       {stats && (
