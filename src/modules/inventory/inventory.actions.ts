@@ -304,7 +304,7 @@ export async function addInventoryMovement(formData: FormData) {
     revalidatePath(`/inventory/${validatedFields.data.productId}`)
 
     return {
-      success: `Movimiento de inventario registrado. Stock actual: $${updatedProduct.stock}`,
+      success: `Movimiento de inventario registrado. Stock actual: ${updatedProduct.stock}`,
       movement,
     }
   } catch (error: any) {
@@ -352,13 +352,11 @@ export async function getInventorySummary() {
 }
 
 export async function getLowStockProducts() {
-  return await prisma.product.findMany({
-    where: {
-      deletedAt: null,
-    },
-    orderBy: {
-      stock: 'asc',
-    },
-    take: 10,
+  const products = await prisma.product.findMany({
+    where: { deletedAt: null },
+    select: { id: true, name: true, stock: true, minStock: true, category: true, salePrice: true },
+    orderBy: { stock: 'asc' },
+    take: 50,
   })
+  return products.filter(p => p.stock <= p.minStock).slice(0, 10)
 }

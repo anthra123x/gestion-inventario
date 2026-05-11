@@ -282,7 +282,7 @@ export default function SalesPage() {
                       <div className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleTimeString('es-CO')}</div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/print/${sale.id}`}>
+                      <Link href={`/sales/${sale.id}`}>
                         <Button variant="ghost" size="icon-sm">
                           <Eye className="h-4 w-4" />
                         </Button>
