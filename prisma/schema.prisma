@@ -57,6 +57,7 @@ model Product {
   orderItems         OrderItem[]
   repairParts        RepairPart[]
   saleItems          SaleItem[]
+  ecommerce          EcommerceProduct?
 
   @@index([category])
   @@index([stock])
@@ -64,6 +65,54 @@ model Product {
   @@index([supplier])
   @@index([deletedAt])
   @@map("products")
+}
+
+model EcommerceProduct {
+  id               String           @id @default(cuid())
+  productId        String           @unique @map("product_id")
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ecommercePrice   Float?           @map("ecommerce_price")
+  compareAtPrice   Float?           @map("compare_at_price")
+  visible          Boolean          @default(true)
+  featured         Boolean          @default(false)
+  publishedAt      DateTime?        @map("published_at")
+  slug             String?          @unique
+  metaTitle        String?          @map("meta_title")
+  metaDescription  String?          @map("meta_description")
+  shortDescription String?          @map("short_description")
+  longDescription  String?          @map("long_description")
+  badges           String[]
+  tags             String[]
+  sortOrder        Int              @default(0) @map("sort_order")
+  showStock        Boolean          @default(true) @map("show_stock")
+  media            ProductMedia[]
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@index([visible])
+  @@index([featured])
+  @@index([sortOrder])
+  @@index([publishedAt])
+  @@map("product_ecommerce")
+}
+
+model ProductMedia {
+  id              String           @id @default(cuid())
+  ecommerceId     String           @map("ecommerce_id")
+  ecommerce       EcommerceProduct @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+  url             String
+  alt             String?
+  width           Int?
+  height          Int?
+  sortOrder       Int              @default(0) @map("sort_order")
+  isPrimary       Boolean          @default(false) @map("is_primary")
+  storageProvider String           @default("placeholder") @map("storage_provider")
+  storageId       String?          @map("storage_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@index([ecommerceId])
+  @@index([isPrimary])
+  @@map("product_media")
 }
 
 model Sale {

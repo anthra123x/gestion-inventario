@@ -8,10 +8,13 @@ export async function GET(request: Request) {
     const search = searchParams.get('search')
     const page = parseInt(searchParams.get('page') || '1')
     const take = parseInt(searchParams.get('limit') || '50')
+    const ecommerce = searchParams.get('ecommerce') === 'true'
 
     const where: any = {
       deletedAt: null,
-      stock: { gt: 0 },
+      ...(ecommerce
+        ? { ecommerce: { visible: true }, stock: { gt: 0 } }
+        : { stock: { gt: 0 } }),
       ...(category && { category }),
       ...(search && {
         OR: [
@@ -21,30 +24,78 @@ export async function GET(request: Request) {
       }),
     }
 
+    const select: any = {
+      id: true,
+      name: true,
+      description: true,
+      category: true,
+      salePrice: true,
+      stock: true,
+      ...(ecommerce && {
+        ecommerce: {
+          select: {
+            id: true,
+            ecommercePrice: true,
+            compareAtPrice: true,
+            slug: true,
+            shortDescription: true,
+            longDescription: true,
+            badges: true,
+            tags: true,
+            showStock: true,
+            featured: true,
+            media: {
+              where: { isPrimary: true },
+              take: 1,
+              select: { url: true, alt: true },
+            },
+          },
+        },
+      }),
+    }
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          category: true,
-          salePrice: true,
-          stock: true,
-        },
+        select,
         skip: (page - 1) * take,
         take,
-        orderBy: { name: 'asc' },
+        orderBy: ecommerce
+          ? [{ ecommerce: { sortOrder: 'asc' } }, { name: 'asc' }]
+          : { name: 'asc' },
       }),
       prisma.product.count({ where }),
     ])
 
-    return NextResponse.json({
-      products,
-      total,
-      page,
-      totalPages: Math.ceil(total / take),
+    const result = products.map((p: any) => {
+      const base = {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        category: p.category,
+        stock: p.stock,
+        salePrice: p.salePrice,
+      }
+      if (ecommerce && p.ecommerce) {
+        return {
+          ...base,
+          ecommerceId: p.ecommerce.id,
+          ecommercePrice: p.ecommerce.ecommercePrice,
+          compareAtPrice: p.ecommerce.compareAtPrice,
+          slug: p.ecommerce.slug,
+          shortDescription: p.ecommerce.shortDescription,
+          longDescription: p.ecommerce.longDescription,
+          badges: p.ecommerce.badges,
+          tags: p.ecommerce.tags,
+          showStock: p.ecommerce.showStock,
+          featured: p.ecommerce.featured,
+          image: p.ecommerce.media[0] || null,
+        }
+      }
+      return base
     })
+
+    return NextResponse.json({ products: result, total, page, totalPages: Math.ceil(total / take) })
   } catch (error) {
     return NextResponse.json(
       { error: 'Error al obtener productos' },
