@@ -78,7 +78,7 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   async function loadInitialData() {
     setIsLoadingData(true)
     try {
-      const productsData = await getProducts(undefined, undefined, 1, 100)
+      const productsData = await getProducts(undefined, undefined, 1, 1000)
       setProducts(productsData.products)
     } catch (error) {
       toast.error('Error al cargar datos', {
