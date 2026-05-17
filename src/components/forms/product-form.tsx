@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CreateProductSchema, UpdateProductSchema } from '@/lib/validations'
@@ -17,9 +18,11 @@ interface ProductFormProps {
   product?: Product
   onSubmit: (data: FormData) => Promise<{ error?: string; success?: string }>
   isLoading?: boolean
+  redirectTo?: string
 }
 
-export function ProductForm({ product, onSubmit, isLoading = false }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }: ProductFormProps) {
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -94,6 +97,9 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         toast.success('Producto guardado exitosamente', {
           description: product ? 'Los cambios se han guardado' : 'El producto ha sido creado',
         })
+        if (redirectTo) {
+          router.push(redirectTo)
+        }
       }
     } catch (err: any) {
       setError(err?.message || 'Error al guardar producto')

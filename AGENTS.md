@@ -61,16 +61,23 @@ src/
 │   └── format.ts           # Formateo de moneda/fechas
 ├── modules/                # Server actions (negocio)
 │   ├── auth/               # Autenticación
+│   ├── cleanup/            # Backup/restore de datos
 │   ├── clients/            # Clientes
 │   ├── dashboard/          # Estadísticas dashboard
 │   ├── ecommerce/          # Catálogo online CRUD
+│   ├── export/             # Exportaciones Excel
 │   ├── inventory/          # Productos y stock
 │   ├── orders/             # Pedidos online
 │   ├── repairs/            # Reparaciones
 │   ├── reports/            # Reportes
 │   ├── sales/              # Ventas POS
 │   └── settings/           # Configuración del sistema
-└── middleware.ts            # Supabase Auth middleware
+├── components/
+│   ├── ui/
+│   │   └── error-fallback.tsx  # Error boundary reusable
+│   └── ...
+├── middleware.ts            # Supabase Auth middleware
+└── next.config.ts           # serverActions.bodySizeLimit: 10mb
 ```
 
 ## Convenciones de código
@@ -95,6 +102,8 @@ src/
 | Ecommerce | `ecommerce.actions.ts` | Catálogo online, imágenes, badges, precios |
 | Reparaciones | `repairs.actions.ts` | CRUD reparaciones, gestión de partes, stock |
 | Reportes | `reports.actions.ts` | Reportes de ventas, inventario, reparaciones, clientes |
+| Export | `export.actions.ts` | Exportación Excel de productos, clientes, reportes |
+| Cleanup | `cleanup.actions.ts` | Backup y restore de datos |
 
 ## Reglas de negocio importantes
 
@@ -104,6 +113,10 @@ src/
 4. **Pedidos online**: El stock se descuenta en `PENDING → CONFIRMED`, no al crear el pedido.
 5. **Soft delete**: Productos y clientes tienen `deletedAt`. Siempre filtrar `deletedAt: null` en queries.
 6. **Enums**: Todos en UPPERCASE. La DB tiene datos legacy en lowercase.
+7. **Órdenes**: Máquina de estados `ALLOWED_TRANSITIONS` valida transiciones. Stock solo se restaura si el estado previo era ≥ CONFIRMED.
+8. **Admin auth**: Toda server action administrativa debe llamar `requireAdmin()` al inicio.
+9. **Error boundaries**: Cada ruta del dashboard debe tener su `error.tsx` que renderice `ErrorFallback`.
+10. **Middleware**: Cookie handler usa `getAll()`/`setAll()` + `applyCookies()` para persistir session en redirects.
 
 ## Documentación compartida
 

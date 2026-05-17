@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CreateSaleSchema } from '@/lib/validations'
@@ -33,9 +34,11 @@ interface SaleItem {
 interface SaleFormProps {
   onSubmit: (data: FormData) => Promise<{ error?: string; success?: string }>
   isLoading?: boolean
+  redirectTo?: string
 }
 
-export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
+export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormProps) {
+  const router = useRouter()
   const [items, setItems] = useState<SaleItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -204,41 +207,50 @@ export function SaleForm({ onSubmit, isLoading = false }: SaleFormProps) {
   async function handleFormSubmit() {
     setIsSubmitting(true)
 
-    const formData = new FormData()
-    formData.append('clientId', '')
-    formData.append('clientName', clientName || '')
-    formData.append('clientPhone', clientPhone || '')
-    formData.append('clientEmail', clientEmail || '')
-    formData.append('clientAddress', clientAddress || '')
-    formData.append('paymentMethod', paymentMethod || 'CASH')
-    formData.append('notes', notes || '')
-    formData.append('items', JSON.stringify(items))
-    formData.append('discountPercent', String(discountPercent))
+    try {
+      const formData = new FormData()
+      formData.append('clientId', '')
+      formData.append('clientName', clientName || '')
+      formData.append('clientPhone', clientPhone || '')
+      formData.append('clientEmail', clientEmail || '')
+      formData.append('clientAddress', clientAddress || '')
+      formData.append('paymentMethod', paymentMethod || 'CASH')
+      formData.append('notes', notes || '')
+      formData.append('items', JSON.stringify(items))
+      formData.append('discountPercent', String(discountPercent))
 
-    const result = await onSubmit(formData)
+      const result = await onSubmit(formData)
 
-    if (result?.error) {
+      if (result?.error) {
+        toast.error('Error al registrar venta', {
+          description: result.error,
+        })
+      } else {
+        toast.success('Factura generada exitosamente', {
+          description: 'La venta ha sido guardada en el sistema.',
+        })
+        setItems([])
+        setSelectedProduct(null)
+        setQuantity(1)
+        setProductSearch('')
+        setDiscountPercent(0)
+        setValue('paymentMethod', 'CASH')
+        setValue('notes', '')
+        setValue('clientName', '')
+        setValue('clientPhone', '')
+        setValue('clientEmail', '')
+        setValue('clientAddress', '')
+        if (redirectTo) {
+          router.push(redirectTo)
+        }
+      }
+    } catch (err: any) {
       toast.error('Error al registrar venta', {
-        description: result.error,
+        description: err?.message || 'Error desconocido',
       })
-    } else {
-      toast.success('Factura generada exitosamente', {
-        description: 'La venta ha sido guardada en el sistema.',
-      })
-      setItems([])
-      setSelectedProduct(null)
-      setQuantity(1)
-      setProductSearch('')
-      setDiscountPercent(0)
-      setValue('paymentMethod', 'CASH')
-      setValue('notes', '')
-      setValue('clientName', '')
-      setValue('clientPhone', '')
-      setValue('clientEmail', '')
-      setValue('clientAddress', '')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setIsSubmitting(false)
   }
 
   const filteredProducts = products.filter(product =>
