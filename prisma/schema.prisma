@@ -152,6 +152,8 @@ model SaleItem {
   product             Product @relation(fields: [productId], references: [id])
   sale                Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
+  @@index([saleId])
   @@map("sale_items")
 }
 
@@ -194,6 +196,8 @@ model RepairPart {
   product             Product @relation(fields: [productId], references: [id])
   repair              Repair  @relation(fields: [repairId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
+  @@index([repairId])
   @@map("repair_parts")
 }
 
@@ -268,6 +272,7 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
+  @@index([productId])
   @@map("order_items")
 }
 

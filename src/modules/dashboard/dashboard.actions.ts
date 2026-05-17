@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getLowStockProducts } from '@/modules/inventory/inventory.actions'
-import { getSalesStats, getDailySales } from '@/modules/sales/sales.actions'
+import { getSalesStats } from '@/modules/sales/sales.actions'
 import { getRepairStats } from '@/modules/repairs/repairs.actions'
 import { getClientStats } from '@/modules/clients/clients.actions'
 
@@ -12,7 +12,6 @@ export async function getDashboardStats() {
     repairStats,
     clientStats,
     lowStockProducts,
-    dailySales,
     recentSales,
     recentRepairs,
   ] = await Promise.all([
@@ -20,7 +19,6 @@ export async function getDashboardStats() {
     getRepairStats(),
     getClientStats(),
     getLowStockProducts(),
-    getDailySales(30),
     getRecentSales(),
     getRecentRepairs(),
   ])
@@ -30,7 +28,6 @@ export async function getDashboardStats() {
     repairStats,
     clientStats,
     lowStockProducts,
-    dailySales,
     recentSales,
     recentRepairs,
   }
