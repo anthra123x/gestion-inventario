@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
-import { getProducts, deleteProduct } from '@/modules/inventory/inventory.actions'
+import { getProducts, deleteProduct, getInventoryStockBreakdown } from '@/modules/inventory/inventory.actions'
 import { Product, ProductCategory } from '@prisma/client'
 
 export default function InventoryPage() {
@@ -31,6 +31,7 @@ export default function InventoryPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [stockBreakdown, setStockBreakdown] = useState<{ total: number; inStock: number; lowStock: number; outOfStock: number } | null>(null)
   const pageSize = 20
 
   useEffect(() => {
@@ -45,10 +46,14 @@ export default function InventoryPage() {
   async function loadProducts() {
     try {
       setLoading(true)
-      const result = await getProducts(debouncedSearch || undefined, categoryFilter !== 'ALL' ? categoryFilter as ProductCategory : undefined, page, pageSize)
+      const [result, breakdown] = await Promise.all([
+        getProducts(debouncedSearch || undefined, categoryFilter !== 'ALL' ? categoryFilter as ProductCategory : undefined, page, pageSize),
+        getInventoryStockBreakdown(),
+      ])
       setProducts(result.products)
       setTotalProducts(result.total)
       setTotalPages(result.totalPages)
+      setStockBreakdown(breakdown)
     } catch (error) {
       console.error('Error loading products:', error)
     } finally {
@@ -92,11 +97,11 @@ export default function InventoryPage() {
     return labels[category]
   }
 
-  const stockCounts = {
-    total: products.length,
-    inStock: products.filter(p => p.stock > p.minStock).length,
-    lowStock: products.filter(p => p.stock > 0 && p.stock <= p.minStock).length,
-    outOfStock: products.filter(p => p.stock === 0).length,
+  const stockCounts = stockBreakdown || {
+    total: 0,
+    inStock: 0,
+    lowStock: 0,
+    outOfStock: 0,
   }
 
   if (loading && products.length === 0) {

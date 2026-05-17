@@ -351,6 +351,24 @@ export async function getInventorySummary() {
   }
 }
 
+export async function getInventoryStockBreakdown() {
+  const products = await prisma.product.findMany({
+    where: { deletedAt: null },
+    select: { stock: true, minStock: true },
+  })
+
+  const inStock = products.filter(p => p.stock > p.minStock).length
+  const lowStock = products.filter(p => p.stock > 0 && p.stock <= p.minStock).length
+  const outOfStock = products.filter(p => p.stock === 0).length
+
+  return {
+    total: products.length,
+    inStock,
+    lowStock,
+    outOfStock,
+  }
+}
+
 export async function getLowStockProducts() {
   const products = await prisma.product.findMany({
     where: { deletedAt: null },

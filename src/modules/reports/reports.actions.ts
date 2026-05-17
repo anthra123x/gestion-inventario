@@ -137,7 +137,8 @@ export async function getInventoryReport(filters?: {
   const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
   const totalValue = products.reduce((sum, product) => sum + (product.stock * product.salePrice), 0)
   const totalCostValue = products.reduce((sum, product) => sum + (product.stock * product.purchasePrice), 0)
-  const lowStockCount = products.filter(product => product.stock <= product.minStock).length
+  const inStockCount = products.filter(product => product.stock > product.minStock).length
+  const lowStockCount = products.filter(product => product.stock > 0 && product.stock <= product.minStock).length
   const outOfStockCount = products.filter(product => product.stock === 0).length
 
   const categoryStats = products.reduce((acc, product) => {
@@ -161,6 +162,7 @@ export async function getInventoryReport(filters?: {
       totalStock,
       totalValue,
       totalCostValue,
+      inStockCount,
       lowStockCount,
       outOfStockCount,
     },

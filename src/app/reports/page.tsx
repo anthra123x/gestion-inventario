@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Download, Calendar, Filter, BarChart3, Package, Users, Wrench, TrendingUp, DollarSign, TrendingDown, PiggyBank } from 'lucide-react'
+import { FileText, Download, Calendar, Filter, BarChart3, Package, Users, Wrench, TrendingUp, DollarSign, TrendingDown, PiggyBank, AlertTriangle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { generateReportData } from '@/modules/reports/reports.actions'
@@ -360,8 +360,38 @@ export default function ReportsPage() {
                         </Card>
                         <Card>
                           <CardContent className="p-4">
-                            <div className="text-2xl font-bold text-orange-600">{reportData.summary.lowStockCount}</div>
-                            <p className="text-sm text-gray-600">Stock Bajo</p>
+                            <div className="text-2xl font-bold text-orange-600">{formatCurrency(reportData.summary.totalCostValue)}</div>
+                            <p className="text-sm text-gray-600">Valor de Costo</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-5 w-5 text-green-600" />
+                              <span className="text-2xl font-bold text-green-600">{reportData.summary.inStockCount}</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">En Stock</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="h-5 w-5 text-amber-600" />
+                              <span className="text-2xl font-bold text-amber-600">{reportData.summary.lowStockCount}</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Stock Bajo</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2">
+                              <XCircle className="h-5 w-5 text-red-600" />
+                              <span className="text-2xl font-bold text-red-600">{reportData.summary.outOfStockCount}</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">Agotados</p>
                           </CardContent>
                         </Card>
                       </div>
@@ -679,7 +709,56 @@ export default function ReportsPage() {
                     </TabsContent>
                   )}
 
-                  {(selectedReport === 'inventory' || selectedReport === 'clients') && (
+                  {selectedReport === 'inventory' && reportData.products && reportData.products.length > 0 && (
+                    <TabsContent value="details" className="space-y-4">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Detalle de Inventario</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left py-2 px-3 font-medium text-gray-500">Producto</th>
+                                  <th className="text-center py-2 px-3 font-medium text-gray-500">Stock</th>
+                                  <th className="text-center py-2 px-3 font-medium text-gray-500">Mínimo</th>
+                                  <th className="text-center py-2 px-3 font-medium text-gray-500">Estado</th>
+                                  <th className="text-right py-2 px-3 font-medium text-gray-500">Precio</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {reportData.products.slice(0, 50).map((product: any) => {
+                                  const isOutOfStock = product.stock === 0
+                                  const isLowStock = product.stock > 0 && product.stock <= product.minStock
+                                  const stockVariant = isOutOfStock ? 'destructive' : isLowStock ? 'warning' : 'default' as const
+                                  const stockLabel = isOutOfStock ? 'Agotado' : isLowStock ? 'Stock Bajo' : 'En Stock'
+                                  return (
+                                    <tr key={product.id} className="border-b hover:bg-gray-50">
+                                      <td className="py-2 px-3 font-medium">{product.name}</td>
+                                      <td className="py-2 px-3 text-center">{product.stock}</td>
+                                      <td className="py-2 px-3 text-center text-muted-foreground">{product.minStock}</td>
+                                      <td className="py-2 px-3 text-center">
+                                        <Badge variant={stockVariant}>{stockLabel}</Badge>
+                                      </td>
+                                      <td className="py-2 px-3 text-right font-medium">{formatCurrency(product.salePrice)}</td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                            {reportData.products.length > 50 && (
+                              <p className="text-sm text-muted-foreground text-center pt-4">
+                                Mostrando 50 de {reportData.products.length} productos
+                              </p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
+
+                  {selectedReport === 'clients' && (
                     <TabsContent value="details" className="text-center py-8">
                       <p className="text-gray-600">Los detalles completos se muestran en las tablas del resumen.</p>
                     </TabsContent>
