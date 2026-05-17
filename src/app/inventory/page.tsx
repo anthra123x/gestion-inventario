@@ -78,7 +78,7 @@ export default function InventoryPage() {
 
   function getStockStatus(stock: number, minStock: number) {
     if (stock === 0) return { label: 'Agotado', variant: 'destructive' as const }
-    if (stock <= minStock) return { label: 'Stock Bajo', variant: 'secondary' as const }
+    if (stock <= minStock) return { label: 'Stock Bajo', variant: 'warning' as const }
     return { label: 'En Stock', variant: 'default' as const }
   }
 
