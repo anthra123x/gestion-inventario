@@ -2,9 +2,12 @@
 
 import { prisma } from '@/lib/prisma'
 
+const TS = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+
 export async function exportProductsToExcel() {
   try {
     const products = await prisma.product.findMany({
+      where: { deletedAt: null },
       orderBy: { name: 'asc' },
     })
 
@@ -22,7 +25,7 @@ export async function exportProductsToExcel() {
     return {
       success: true,
       data,
-      filename: `productos_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filename: `productos_${TS()}.xlsx`,
     }
   } catch (error) {
     return {
@@ -47,9 +50,9 @@ export async function exportSalesToExcel() {
     })
 
     const data = sales.map(s => ({
-      ID: s.id,
+      ID: s.id.slice(-8).toUpperCase(),
       Fecha: new Date(s.createdAt).toLocaleDateString('es-CO'),
-      Cliente: s.client?.name || 'Sin cliente',
+      Cliente: s.client?.name || s.clientName || 'Sin cliente',
       Total: s.total,
       MétodoPago: s.paymentMethod,
       Notas: s.notes || '',
@@ -58,7 +61,7 @@ export async function exportSalesToExcel() {
     return {
       success: true,
       data,
-      filename: `ventas_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filename: `ventas_${TS()}.xlsx`,
     }
   } catch (error) {
     return {
@@ -83,7 +86,7 @@ export async function exportRepairsToExcel() {
     })
 
     const data = repairs.map(r => ({
-      ID: r.id,
+      ID: r.id.slice(-8).toUpperCase(),
       Fecha: new Date(r.createdAt).toLocaleDateString('es-CO'),
       Cliente: r.client?.name || 'Sin cliente',
       Dispositivo: r.device,
@@ -98,7 +101,7 @@ export async function exportRepairsToExcel() {
     return {
       success: true,
       data,
-      filename: `reparaciones_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filename: `reparaciones_${TS()}.xlsx`,
     }
   } catch (error) {
     return {
@@ -111,6 +114,7 @@ export async function exportRepairsToExcel() {
 export async function exportClientsToExcel() {
   try {
     const clients = await prisma.client.findMany({
+      where: { deletedAt: null },
       orderBy: { name: 'asc' },
     })
 
@@ -125,7 +129,7 @@ export async function exportClientsToExcel() {
     return {
       success: true,
       data,
-      filename: `clientes_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filename: `clientes_${TS()}.xlsx`,
     }
   } catch (error) {
     return {

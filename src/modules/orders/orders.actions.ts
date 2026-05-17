@@ -173,6 +173,17 @@ export async function createOrder(formData: FormData) {
   }
 }
 
+const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['PREPARING', 'CANCELLED'],
+  PREPARING: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: [],
+  CANCELLED: [],
+}
+
+const STATUS_WITH_STOCK_DECREMENTED: OrderStatus[] = ['CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED']
+
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   const validated = UpdateOrderStatusSchema.safeParse({ status })
   if (!validated.success) {
@@ -187,6 +198,11 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
     if (!order) return { error: 'Pedido no encontrado' }
 
+    const allowed = ALLOWED_TRANSITIONS[order.status]
+    if (!allowed.includes(status)) {
+      return { error: `Transición inválida: ${order.status} → ${status}` }
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: orderId },
@@ -197,6 +213,13 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
       if (becomesConfirmed) {
         for (const item of order.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { stock: true },
+          })
+          if (!product || product.stock < item.quantity) {
+            throw new Error(`Stock insuficiente para confirmar pedido`)
+          }
           await tx.product.update({
             where: { id: item.productId },
             data: { stock: { decrement: item.quantity } },
@@ -215,21 +238,24 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
       }
 
       if (status === 'CANCELLED') {
-        for (const item of order.items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { increment: item.quantity } },
-          })
-          await tx.inventoryMovement.create({
-            data: {
-              productId: item.productId,
-              type: 'ENTRY',
-              quantity: item.quantity,
-              reason: `Cancelación pedido #${orderId.slice(-6)}`,
-              referenceId: orderId,
-              referenceType: 'order',
-            },
-          })
+        const hadStockDecremented = STATUS_WITH_STOCK_DECREMENTED.includes(order.status)
+        if (hadStockDecremented) {
+          for (const item of order.items) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            })
+            await tx.inventoryMovement.create({
+              data: {
+                productId: item.productId,
+                type: 'ENTRY',
+                quantity: item.quantity,
+                reason: `Cancelación pedido #${orderId.slice(-6)}`,
+                referenceId: orderId,
+                referenceType: 'order',
+              },
+            })
+          }
         }
       }
     })

@@ -27,6 +27,8 @@ export default function AdminPage() {
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
   const [cleanupType, setCleanupType] = useState<string | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [exportExcelLoading, setExportExcelLoading] = useState<string | null>(null)
+  const [backupLoading, setBackupLoading] = useState(false)
 
   useEffect(() => {
     async function loadUsers() {
@@ -120,19 +122,27 @@ export default function AdminPage() {
   }
 
   async function handleExportData() {
-    const result = await exportData()
-    if (result.success && result.data) {
-      const dataStr = JSON.stringify(result.data, null, 2)
-      const dataBlob = new Blob([dataStr], { type: 'application/json' })
-      const url = URL.createObjectURL(dataBlob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `backup_tecnicell_${new Date().toISOString().split('T')[0]}.json`
-      link.click()
-      URL.revokeObjectURL(url)
-      toast.success('Backup exportado exitosamente')
-    } else {
-      toast.error(result.error || 'Error al exportar backup')
+    setBackupLoading(true)
+    try {
+      const result = await exportData()
+      if (result.success && result.data) {
+        const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+        const dataStr = JSON.stringify(result.data, null, 2)
+        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        const url = URL.createObjectURL(dataBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `backup_tecnicell_${ts}.json`
+        link.click()
+        URL.revokeObjectURL(url)
+        toast.success('Backup exportado exitosamente')
+      } else {
+        toast.error(result.error || 'Error al exportar backup')
+      }
+    } catch (error) {
+      toast.error('Error al exportar backup')
+    } finally {
+      setBackupLoading(false)
     }
   }
 
@@ -157,12 +167,13 @@ export default function AdminPage() {
 
       // Descargar backup automáticamente
       if (backupResult.data) {
+        const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
         const dataStr = JSON.stringify(backupResult.data, null, 2)
         const dataBlob = new Blob([dataStr], { type: 'application/json' })
         const url = URL.createObjectURL(dataBlob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `backup_before_cleanup_${new Date().toISOString().split('T')[0]}.json`
+        link.download = `backup_before_cleanup_${ts}.json`
         link.click()
         URL.revokeObjectURL(url)
       }
@@ -206,32 +217,39 @@ export default function AdminPage() {
   }
 
   async function handleExportExcel(type: string) {
-    let result
-    switch (type) {
-      case 'products':
-        result = await exportProductsToExcel()
-        break
-      case 'sales':
-        result = await exportSalesToExcel()
-        break
-      case 'repairs':
-        result = await exportRepairsToExcel()
-        break
-      case 'clients':
-        result = await exportClientsToExcel()
-        break
-      default:
-        result = { error: 'Tipo de exportación no válido' }
-    }
+    setExportExcelLoading(type)
+    try {
+      let result
+      switch (type) {
+        case 'products':
+          result = await exportProductsToExcel()
+          break
+        case 'sales':
+          result = await exportSalesToExcel()
+          break
+        case 'repairs':
+          result = await exportRepairsToExcel()
+          break
+        case 'clients':
+          result = await exportClientsToExcel()
+          break
+        default:
+          result = { error: 'Tipo de exportación no válido' }
+      }
 
-    if (result.success && result.data && result.filename) {
-      const worksheet = XLSX.utils.json_to_sheet(result.data)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos')
-      XLSX.writeFile(workbook, result.filename)
-      toast.success('Archivo Excel exportado exitosamente')
-    } else {
-      toast.error(result.error || 'Error al exportar')
+      if (result.success && result.data && result.filename) {
+        const worksheet = XLSX.utils.json_to_sheet(result.data)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos')
+        XLSX.writeFile(workbook, result.filename)
+        toast.success('Archivo Excel exportado exitosamente')
+      } else {
+        toast.error(result.error || 'Error al exportar')
+      }
+    } catch (error) {
+      toast.error('Error al exportar')
+    } finally {
+      setExportExcelLoading(null)
     }
   }
 
@@ -490,33 +508,37 @@ export default function AdminPage() {
                 onClick={() => handleExportExcel('products')}
                 variant="outline"
                 className="w-full"
+                disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Productos
+                {exportExcelLoading === 'products' ? 'Exportando...' : 'Exportar Productos'}
               </Button>
               <Button
                 onClick={() => handleExportExcel('sales')}
                 variant="outline"
                 className="w-full"
+                disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Ventas
+                {exportExcelLoading === 'sales' ? 'Exportando...' : 'Exportar Ventas'}
               </Button>
               <Button
                 onClick={() => handleExportExcel('repairs')}
                 variant="outline"
                 className="w-full"
+                disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Reparaciones
+                {exportExcelLoading === 'repairs' ? 'Exportando...' : 'Exportar Reparaciones'}
               </Button>
               <Button
                 onClick={() => handleExportExcel('clients')}
                 variant="outline"
                 className="w-full"
+                disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Clientes
+                {exportExcelLoading === 'clients' ? 'Exportando...' : 'Exportar Clientes'}
               </Button>
             </div>
           </CardContent>
@@ -542,9 +564,9 @@ export default function AdminPage() {
                 <p className="text-sm text-blue-800 mb-3">
                   Exporta todos los datos del sistema antes de realizar cualquier limpieza.
                 </p>
-                <Button onClick={handleExportData} variant="default" className="w-full">
+                <Button onClick={handleExportData} variant="default" className="w-full" disabled={backupLoading}>
                   <Download className="h-4 w-4 mr-2" />
-                  Generar Backup Completo
+                  {backupLoading ? 'Generando backup...' : 'Generar Backup Completo'}
                 </Button>
               </div>
 

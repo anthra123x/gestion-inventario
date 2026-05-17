@@ -8,6 +8,7 @@ import { getCurrentUser } from '@/modules/auth/auth.actions'
 
 export async function getClients(search?: string) {
   const where = {
+    deletedAt: null,
     ...(search && {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
@@ -51,8 +52,8 @@ export async function getClients(search?: string) {
 }
 
 export async function getClientById(id: string) {
-  return await prisma.client.findUnique({
-    where: { id },
+  return await prisma.client.findFirst({
+    where: { id, deletedAt: null },
     include: {
       sales: {
         orderBy: { createdAt: 'desc' },
@@ -193,15 +194,17 @@ export async function deleteClient(id: string) {
 
 export async function getClientStats() {
   const [totalClients, newClientsThisMonth, topClients] = await Promise.all([
-    prisma.client.count(),
+    prisma.client.count({ where: { deletedAt: null } }),
     prisma.client.count({
       where: {
+        deletedAt: null,
         createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
         },
       },
     }),
     prisma.client.findMany({
+      where: { deletedAt: null },
       take: 10,
       orderBy: {
         sales: {

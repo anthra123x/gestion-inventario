@@ -16,7 +16,7 @@ export async function getDashboardStats() {
     recentSales,
     recentRepairs,
   ] = await Promise.all([
-    getSalesStats(),
+    getSalesStats(new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()),
     getRepairStats(),
     getClientStats(),
     getLowStockProducts(),
@@ -166,6 +166,7 @@ export async function getTopProducts(days: number = 30) {
 export async function getProductsByCategory() {
   const products = await prisma.product.groupBy({
     by: ['category'],
+    where: { deletedAt: null },
     _count: {
       id: true,
     },

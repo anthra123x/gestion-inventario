@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import * as XLSX from 'xlsx'
 import { FileText, Download, Calendar, Filter, BarChart3, Package, Users, Wrench, TrendingUp, DollarSign, TrendingDown, PiggyBank, AlertTriangle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
@@ -19,6 +20,7 @@ export default function ReportsPage() {
   const [filters, setFilters] = useState<any>({})
   const [reportData, setReportData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: '',
@@ -46,7 +48,88 @@ export default function ReportsPage() {
   }
 
   function exportToExcel() {
-    toast.info('Exportación Excel en desarrollo')
+    if (!reportData) return
+
+    setExportLoading(true)
+    try {
+      let rows: any[] = []
+      let filename = ''
+
+      switch (selectedReport) {
+        case 'sales': {
+          const salesData = reportData.sales || []
+          rows = salesData.map((s: any) => ({
+            ID: s.id.slice(-8).toUpperCase(),
+            Fecha: new Date(s.createdAt).toLocaleDateString('es-CO'),
+            Cliente: s.client?.name || s.clientName || 'Ocasional',
+            Total: s.total,
+            'Método Pago': s.paymentMethod,
+            Notas: s.notes || '',
+          }))
+          filename = `reporte_ventas_${new Date().toISOString().split('T')[0]}.xlsx`
+          break
+        }
+        case 'inventory': {
+          const products = reportData.products || []
+          rows = products.map((p: any) => {
+            const status = p.stock === 0 ? 'Agotado' : p.stock <= p.minStock ? 'Stock Bajo' : 'En Stock'
+            return {
+              Producto: p.name,
+              Stock: p.stock,
+              Mínimo: p.minStock,
+              Estado: status,
+              'Precio Venta': p.salePrice,
+              'Precio Compra': p.purchasePrice,
+            }
+          })
+          filename = `reporte_inventario_${new Date().toISOString().split('T')[0]}.xlsx`
+          break
+        }
+        case 'repairs': {
+          const repairs = reportData.repairs || []
+          rows = repairs.map((r: any) => ({
+            ID: r.id.slice(-8).toUpperCase(),
+            Fecha: new Date(r.createdAt).toLocaleDateString('es-CO'),
+            Cliente: r.client?.name || 'N/A',
+            Dispositivo: r.device,
+            Problema: r.problem,
+            Estado: r.status,
+            Costo: r.cost,
+            Ganancia: r.profit || 0,
+          }))
+          filename = `reporte_reparaciones_${new Date().toISOString().split('T')[0]}.xlsx`
+          break
+        }
+        case 'clients': {
+          const clients = reportData.clients || []
+          rows = clients.map((c: any) => ({
+            Nombre: c.name,
+            Teléfono: c.phone,
+            Email: c.email || '',
+            'Total Gastado': c.totalSpent || 0,
+            Transacciones: c.totalTransactions || 0,
+          }))
+          filename = `reporte_clientes_${new Date().toISOString().split('T')[0]}.xlsx`
+          break
+        }
+      }
+
+      if (rows.length === 0) {
+        toast.error('No hay datos para exportar')
+        return
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(rows)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte')
+      XLSX.writeFile(workbook, filename)
+      toast.success('Reporte exportado exitosamente')
+    } catch (error) {
+      console.error('Error exporting report:', error)
+      toast.error('Error al exportar el reporte')
+    } finally {
+      setExportLoading(false)
+    }
   }
 
   function getReportIcon(type: string) {
@@ -184,9 +267,9 @@ export default function ReportsPage() {
               
               {reportData && (
                 <div className="space-y-2">
-                  <Button onClick={exportToExcel} variant="outline" className="w-full">
+                  <Button onClick={exportToExcel} variant="outline" className="w-full" disabled={exportLoading}>
                     <Download className="mr-2 h-4 w-4" />
-                    Exportar Excel
+                    {exportLoading ? 'Exportando...' : 'Exportar Excel'}
                   </Button>
                 </div>
               )}

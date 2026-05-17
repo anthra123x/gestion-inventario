@@ -2,20 +2,26 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/modules/auth/auth.actions'
+
+async function getOrCreateSettings() {
+  const existing = await prisma.systemSettings.findFirst()
+  if (existing) return existing
+  return await prisma.systemSettings.create({ data: {} })
+}
 
 export async function getSystemSettings() {
-  let settings = await prisma.systemSettings.findFirst()
-
-  if (!settings) {
-    settings = await prisma.systemSettings.create({
-      data: {},
-    })
+  try {
+    return await getOrCreateSettings()
+  } catch (error) {
+    console.error('getSystemSettings error:', error)
+    return null
   }
-
-  return settings
 }
 
 export async function updateSystemSettings(formData: FormData) {
+  await requireAdmin()
+
   const companyName = formData.get('companyName') as string
   const companyAddress = formData.get('companyAddress') as string
   const companyPhone = formData.get('companyPhone') as string
@@ -27,47 +33,29 @@ export async function updateSystemSettings(formData: FormData) {
   const receiptFooter = formData.get('receiptFooter') as string
 
   try {
-    let settings = await prisma.systemSettings.findFirst()
-
-    if (!settings) {
-      settings = await prisma.systemSettings.create({
-        data: {
-          companyName,
-          companyAddress,
-          companyPhone,
-          companyEmail,
-          defaultMinStock,
-          lowStockAlert,
-          currency,
-          taxRate,
-          receiptFooter,
-        },
-      })
-    } else {
-      settings = await prisma.systemSettings.update({
-        where: { id: settings.id },
-        data: {
-          companyName,
-          companyAddress,
-          companyPhone,
-          companyEmail,
-          defaultMinStock,
-          lowStockAlert,
-          currency,
-          taxRate,
-          receiptFooter,
-        },
-      })
-    }
+    const settings = await getOrCreateSettings()
+    const updated = await prisma.systemSettings.update({
+      where: { id: settings.id },
+      data: {
+        companyName,
+        companyAddress,
+        companyPhone,
+        companyEmail,
+        defaultMinStock,
+        lowStockAlert,
+        currency,
+        taxRate,
+        receiptFooter,
+      },
+    })
 
     revalidatePath('/admin')
     return {
       success: 'Configuración actualizada exitosamente',
-      settings,
+      settings: updated,
     }
   } catch (error) {
-    return {
-      error: 'Error al actualizar configuración',
-    }
+    console.error('updateSystemSettings error:', error)
+    return { error: 'Error al actualizar configuración' }
   }
 }

@@ -100,6 +100,7 @@ export async function requireAdmin() {
 }
 
 export async function getUsers() {
+  await requireAdmin()
   return await prisma.user.findMany({
     select: {
       id: true,
@@ -115,6 +116,7 @@ export async function getUsers() {
 }
 
 export async function updateUserRole(userId: string, role: UserRole) {
+  await requireAdmin()
   await prisma.user.update({
     where: { id: userId },
     data: { role },
@@ -127,6 +129,7 @@ export async function updateUserRole(userId: string, role: UserRole) {
 }
 
 export async function deleteUser(userId: string) {
+  await requireAdmin()
   await prisma.user.delete({
     where: { id: userId },
   })
@@ -138,14 +141,14 @@ export async function deleteUser(userId: string) {
 }
 
 export async function createUserByAdmin(formData: FormData) {
+  await requireAdmin()
+
   const email = formData.get('email') as string
   const name = formData.get('name') as string
   const role = formData.get('role') as UserRole
 
   if (!email || !name || !role) {
-    return {
-      error: 'Todos los campos son requeridos',
-    }
+    return { error: 'Todos los campos son requeridos' }
   }
 
   try {
@@ -154,43 +157,34 @@ export async function createUserByAdmin(formData: FormData) {
     })
 
     if (existingUser) {
-      return {
-        error: 'El usuario ya existe',
-      }
+      return { error: 'El usuario ya existe' }
     }
 
+    // Crear registro en DB primero
+    await prisma.user.create({
+      data: { email, name, role },
+    })
+
+    // Luego crear auth user en Supabase
     const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.admin.createUser({
       email,
       password: tempPassword,
-      options: {
-        data: {
-          name,
-        },
-      },
+      email_confirm: true,
+      user_metadata: { name },
     })
 
     if (authError) {
-      return {
-        error: authError.message,
-      }
+      await prisma.user.delete({ where: { email } }).catch(() => {})
+      return { error: authError.message }
     }
-
-    await prisma.user.create({
-      data: {
-        email,
-        name,
-        role,
-      },
-    })
 
     revalidatePath('/admin')
     return {
       success: 'Usuario creado exitosamente. La contraseña temporal se ha generado y debe ser comunicada de forma segura.',
     }
   } catch (error) {
-    return {
-      error: 'Error al crear usuario',
-    }
+    console.error('createUserByAdmin error:', error)
+    return { error: 'Error al crear usuario' }
   }
 }

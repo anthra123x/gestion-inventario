@@ -120,11 +120,11 @@ export default function DashboardPage() {
           color="success"
         />
         <StatCard
-          title="Productos en Stock"
+          title="Stock Bajo"
           value={formatNumber(stats.lowStockProducts?.length || 0)}
-          change={`${formatNumber(lowStockProducts.filter((p: any) => p.stock <= p.minStock).length)} con stock bajo`}
+          change="Productos por reabastecer"
           icon={Package}
-          color="info"
+          color="warning"
         />
         <StatCard
           title="Reparaciones Activas"
