@@ -121,17 +121,16 @@ export async function getInventoryReport(filters?: {
   const where = {
     deletedAt: null,
     ...(filters?.category && { category: filters.category }),
-    ...(filters?.lowStock && {
-      stock: {
-        lte: prisma.product.fields.minStock,
-      },
-    }),
   }
 
-  const products = await prisma.product.findMany({
+  let products = await prisma.product.findMany({
     where,
     orderBy: { name: 'asc' },
   })
+
+  if (filters?.lowStock) {
+    products = products.filter(p => p.stock <= p.minStock)
+  }
 
   const totalProducts = products.length
   const totalStock = products.reduce((sum, product) => sum + product.stock, 0)

@@ -24,20 +24,19 @@ export default function PrintPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    async function loadSale() {
+      try {
+        const data = await getSaleById(params.id as string)
+        setSale(data)
+      } catch (err) {
+        setError('Error al cargar la venta')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
     loadSale()
   }, [params.id])
-
-  async function loadSale() {
-    try {
-      const data = await getSaleById(params.id as string)
-      setSale(data)
-    } catch (err: any) {
-      setError('Error al cargar la venta')
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   function handlePrint() {
     window.print()

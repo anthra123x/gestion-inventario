@@ -36,26 +36,25 @@ export default function SalesPage() {
   }, [search])
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true)
+        const [salesResult, statsData] = await Promise.all([
+          getSales(debouncedSearch || undefined, undefined, undefined, page, pageSize),
+          page === 1 ? getSalesStats() : Promise.resolve(null),
+        ])
+        setSales(salesResult.sales)
+        setTotalSales(salesResult.total)
+        setTotalPages(salesResult.totalPages)
+        if (statsData) setStats(statsData)
+      } catch (error) {
+        console.error('Error loading sales:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     loadData()
   }, [debouncedSearch, paymentFilter, page])
-
-  async function loadData() {
-    try {
-      setLoading(true)
-      const [salesResult, statsData] = await Promise.all([
-        getSales(debouncedSearch || undefined, undefined, undefined, page, pageSize),
-        page === 1 ? getSalesStats() : Promise.resolve(null),
-      ])
-      setSales(salesResult.sales)
-      setTotalSales(salesResult.total)
-      setTotalPages(salesResult.totalPages)
-      if (statsData) setStats(statsData)
-    } catch (error) {
-      console.error('Error loading sales:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   function getPaymentMethodLabel(method: string) {
     const labels: Record<string, string> = {

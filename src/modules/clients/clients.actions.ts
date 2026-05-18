@@ -177,8 +177,9 @@ export async function deleteClient(id: string) {
   if (!user) throw new Error('No autorizado')
 
   try {
-    await prisma.client.delete({
+    await prisma.client.update({
       where: { id },
+      data: { deletedAt: new Date() },
     })
 
     revalidatePath('/clients')

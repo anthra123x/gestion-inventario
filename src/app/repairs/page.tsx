@@ -42,6 +42,7 @@ export default function RepairsPage() {
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, debouncedStatus, page])
 
   async function loadData() {

@@ -44,26 +44,25 @@ export default function OrdersPage() {
   }, [search])
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true)
+        const [result, statsData] = await Promise.all([
+          getOrders(debouncedSearch || undefined, statusFilter !== 'ALL' ? statusFilter : undefined, page, pageSize),
+          page === 1 ? getOrderStats() : Promise.resolve(null),
+        ])
+        setOrders(result.orders)
+        setTotal(result.total)
+        setTotalPages(result.totalPages)
+        if (statsData) setStats(statsData)
+      } catch (error) {
+        console.error('Error loading orders:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     loadData()
   }, [debouncedSearch, statusFilter, page])
-
-  async function loadData() {
-    try {
-      setLoading(true)
-      const [result, statsData] = await Promise.all([
-        getOrders(debouncedSearch || undefined, statusFilter !== 'ALL' ? statusFilter : undefined, page, pageSize),
-        page === 1 ? getOrderStats() : Promise.resolve(null),
-      ])
-      setOrders(result.orders)
-      setTotal(result.total)
-      setTotalPages(result.totalPages)
-      if (statsData) setStats(statsData)
-    } catch (error) {
-      console.error('Error loading orders:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading && orders.length === 0) {
     return (

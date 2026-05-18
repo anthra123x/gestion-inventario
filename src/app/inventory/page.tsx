@@ -41,6 +41,7 @@ export default function InventoryPage() {
 
   useEffect(() => {
     loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, categoryFilter, page])
 
   async function loadProducts() {

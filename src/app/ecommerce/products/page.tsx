@@ -47,6 +47,7 @@ export default function EcommerceProductsPage() {
 
   useEffect(() => {
     loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, page])
 
   async function loadProducts() {
