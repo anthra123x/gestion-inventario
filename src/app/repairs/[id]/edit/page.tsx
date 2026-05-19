@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { editRepair, getRepairById } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
-import { ProductCategory } from '@prisma/client'
+
 
 interface RepairPart {
   productId: string
@@ -34,6 +35,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
   const [error, setError] = useState('')
   const [products, setProducts] = useState<any[]>([])
   const [selectedProducts, setSelectedProducts] = useState<RepairPart[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [cost, setCost] = useState<number>(0)
   const [currentStatus, setCurrentStatus] = useState<string>('')
 
@@ -53,7 +55,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
       try {
         const [repairData, productsData] = await Promise.all([
           getRepairById(id),
-          getProducts(undefined, ProductCategory.REPAIR_PART, 1, 100),
+          getProducts(undefined, undefined, 1, 1000),
         ])
 
         if (!repairData) {
@@ -107,6 +109,14 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
   const estimatedProfit = cost - partsCost
 
   const hasLoss = cost > 0 && partsCost > cost
+
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm) return products
+    const term = searchTerm.toLowerCase()
+    return products.filter(
+      p => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term)
+    )
+  }, [searchTerm, products])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -369,49 +379,149 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label>Repuestos</Label>
-              <Select onValueChange={(value: string | null) => value && addProduct(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Agregar repuesto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} — {formatCurrency(product.salePrice)} (Stock: {product.stock})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
 
-              {selectedProducts.length > 0 && (
-                <div className="space-y-2 mt-2">
-                  {selectedProducts.map((item, index) => {
-                    const product = products.find(p => p.id === item.productId)
-                    return (
-                      <div key={index} className="flex items-center gap-2 p-2 border rounded">
-                        <span className="flex-1">{product?.name}</span>
-                        <span className="text-sm text-gray-500">
-                          Costo: {formatCurrency(product?.purchasePrice || 0)}
-                        </span>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateProductQuantity(index, parseInt(e.target.value))}
-                          className="w-20"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeProduct(index)}
-                        >
-                          Eliminar
-                        </Button>
+              {/* Buscador de productos */}
+              <Input
+                placeholder="Buscar producto por nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+
+              {/* Resultados de búsqueda */}
+              {searchTerm && (
+                <Card>
+                  <CardContent className="p-1 max-h-64 overflow-y-auto">
+                    {filteredProducts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground p-3">
+                        No se encontraron productos
+                      </p>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {filteredProducts.map((product) => {
+                          const alreadyAdded = selectedProducts.some(
+                            (p) => p.productId === product.id
+                          )
+                          return (
+                            <button
+                              key={product.id}
+                              type="button"
+                              disabled={alreadyAdded}
+                              onClick={() => {
+                                addProduct(product.id)
+                                setSearchTerm('')
+                              }}
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded text-left transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium truncate">
+                                  {product.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatCurrency(product.salePrice)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge
+                                  variant={
+                                    product.stock === 0
+                                      ? 'destructive'
+                                      : product.stock <= 3
+                                        ? 'warning'
+                                        : 'default'
+                                  }
+                                >
+                                  {product.stock} uds.
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  Costo: {formatCurrency(product.purchasePrice || 0)}
+                                </span>
+                              </div>
+                            </button>
+                          )
+                        })}
                       </div>
-                    )
-                  })}
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Lista de repuestos seleccionados */}
+              {selectedProducts.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left px-3 py-2 font-medium">Producto</th>
+                        <th className="text-right px-3 py-2 font-medium">Costo unit.</th>
+                        <th className="text-center px-3 py-2 font-medium w-24">Cant.</th>
+                        <th className="text-right px-3 py-2 font-medium">Subtotal</th>
+                        <th className="w-10 px-2 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedProducts.map((item, index) => {
+                        const product = products.find(p => p.id === item.productId)
+                        const subtotal = (product?.purchasePrice || 0) * item.quantity
+                        return (
+                          <tr key={index} className="border-b last:border-0">
+                            <td className="px-3 py-2">
+                              <p className="font-medium truncate max-w-48">
+                                {product?.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Stock: {product?.stock ?? 0}
+                              </p>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {formatCurrency(product?.purchasePrice || 0)}
+                            </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value)
+                                  if (val > 0) updateProductQuantity(index, val)
+                                }}
+                                className="w-20 h-8 mx-auto text-center"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium">
+                              {formatCurrency(subtotal)}
+                            </td>
+                            <td className="px-2 py-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeProduct(index)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                </svg>
+                              </Button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
