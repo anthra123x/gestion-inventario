@@ -51,6 +51,30 @@ export async function getClients(search?: string) {
   })
 }
 
+export async function searchClients(search: string) {
+  if (!search || search.length < 2) return []
+
+  return await prisma.client.findMany({
+    where: {
+      deletedAt: null,
+      OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { phone: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+      ],
+    },
+    take: 10,
+    orderBy: { name: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      address: true,
+    },
+  })
+}
+
 export async function getClientById(id: string) {
   return await prisma.client.findFirst({
     where: { id, deletedAt: null },

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { ClientAutocomplete } from '@/components/forms/client-autocomplete'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { createRepair } from '@/modules/repairs/repairs.actions'
@@ -23,6 +24,10 @@ export default function NewRepairPage() {
   const [selectedProducts, setSelectedProducts] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [cost, setCost] = useState<number>(0)
+  const [clientName, setClientName] = useState('')
+  const [clientPhone, setClientPhone] = useState('')
+  const [clientEmail, setClientEmail] = useState('')
+  const [clientAddress, setClientAddress] = useState('')
 
   useEffect(() => {
     async function loadProducts() {
@@ -113,6 +118,13 @@ export default function NewRepairPage() {
     }
   }
 
+  function handleClientSelect(client: { name: string; phone: string; email: string | null; address: string | null }) {
+    setClientName(client.name)
+    setClientPhone(client.phone)
+    setClientEmail(client.email || '')
+    setClientAddress(client.address || '')
+  }
+
   function addProduct(productId: string) {
     const product = products.find(p => p.id === productId)
     if (product) {
@@ -149,11 +161,11 @@ export default function NewRepairPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="clientName">Nombre del Cliente *</Label>
-                  <Input
-                    id="clientName"
-                    name="clientName"
+                  <ClientAutocomplete
+                    value={clientName}
+                    onChange={setClientName}
+                    onSelect={handleClientSelect}
                     placeholder="Nombre completo del cliente"
-                    required
                   />
                 </div>
 
@@ -164,6 +176,8 @@ export default function NewRepairPage() {
                     name="clientPhone"
                     type="tel"
                     placeholder="Ej: 300 123 4567"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
                     required
                   />
                 </div>
@@ -175,6 +189,8 @@ export default function NewRepairPage() {
                     name="clientEmail"
                     type="email"
                     placeholder="Ej: cliente@email.com"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
                   />
                 </div>
 
@@ -184,6 +200,8 @@ export default function NewRepairPage() {
                     id="clientAddress"
                     name="clientAddress"
                     placeholder="Dirección del cliente"
+                    value={clientAddress}
+                    onChange={(e) => setClientAddress(e.target.value)}
                   />
                 </div>
               </div>

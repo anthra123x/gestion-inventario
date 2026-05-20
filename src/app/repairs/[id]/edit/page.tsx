@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { ClientAutocomplete } from '@/components/forms/client-autocomplete'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { editRepair, getRepairById } from '@/modules/repairs/repairs.actions'
@@ -109,6 +110,13 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
   const estimatedProfit = cost - partsCost
 
   const hasLoss = cost > 0 && partsCost > cost
+
+  function handleClientSelect(client: { name: string; phone: string; email: string | null; address: string | null }) {
+    setClientName(client.name)
+    setClientPhone(client.phone)
+    setClientEmail(client.email || '')
+    setClientAddress(client.address || '')
+  }
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products
@@ -228,13 +236,11 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="clientName">Nombre del Cliente *</Label>
-                  <Input
-                    id="clientName"
-                    name="clientName"
-                    placeholder="Nombre completo del cliente"
+                  <ClientAutocomplete
                     value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    required
+                    onChange={setClientName}
+                    onSelect={handleClientSelect}
+                    placeholder="Nombre completo del cliente"
                   />
                 </div>
 
