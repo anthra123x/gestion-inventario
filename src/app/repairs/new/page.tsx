@@ -118,9 +118,9 @@ export default function NewRepairPage() {
     }
   }
 
-  function handleClientSelect(client: { name: string; phone: string; email: string | null; address: string | null }) {
+  function handleClientSelect(client: { name: string; phone: string | null; email: string | null; address: string | null }) {
     setClientName(client.name)
-    setClientPhone(client.phone)
+    setClientPhone(client.phone || '')
     setClientEmail(client.email || '')
     setClientAddress(client.address || '')
   }
@@ -170,7 +170,7 @@ export default function NewRepairPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="clientPhone">Teléfono *</Label>
+                  <Label htmlFor="clientPhone">Teléfono (Opcional)</Label>
                   <Input
                     id="clientPhone"
                     name="clientPhone"
@@ -178,7 +178,6 @@ export default function NewRepairPage() {
                     placeholder="Ej: 300 123 4567"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
-                    required
                   />
                 </div>
 

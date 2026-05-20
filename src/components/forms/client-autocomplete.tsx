@@ -8,7 +8,7 @@ import { searchClients } from '@/modules/clients/clients.actions'
 interface ClientResult {
   id: string
   name: string
-  phone: string
+  phone: string | null
   email: string | null
   address: string | null
 }
@@ -155,21 +155,21 @@ export function ClientAutocomplete({
               }`}
             >
               <div className="font-medium">{client.name}</div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                <span>{client.phone}</span>
-                {client.email && (
-                  <>
-                    <span>·</span>
-                    <span>{client.email}</span>
-                  </>
-                )}
-                {client.address && (
-                  <>
-                    <span>·</span>
-                    <span className="truncate max-w-40">{client.address}</span>
-                  </>
-                )}
-              </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <span>{client.phone || 'Sin teléfono'}</span>
+                      {client.email && (
+                        <>
+                          <span>·</span>
+                          <span>{client.email}</span>
+                        </>
+                      )}
+                      {client.address && (
+                        <>
+                          <span>·</span>
+                          <span className="truncate max-w-40">{client.address}</span>
+                        </>
+                      )}
+                    </div>
             </button>
           ))}
         </div>

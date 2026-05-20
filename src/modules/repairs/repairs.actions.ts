@@ -108,27 +108,30 @@ export async function createRepair(formData: FormData) {
   }))
 
   const clientName = formData.get('clientName') as string
-  const clientPhone = formData.get('clientPhone') as string
+  const clientPhone = formData.get('clientPhone') as string | null
   const clientEmail = formData.get('clientEmail') as string
   const clientAddress = formData.get('clientAddress') as string
+
+  const finalPhone = clientPhone?.trim() || null
 
   // Always create or find client by phone
   let finalClientId: string
 
-  // Always create or find client by phone using transaction
   const clientId = await prisma.$transaction(async (tx) => {
-    const existingClient = await tx.client.findUnique({
-      where: { phone: clientPhone },
-    })
+    if (finalPhone) {
+      const existingClient = await tx.client.findFirst({
+        where: { phone: finalPhone, deletedAt: null },
+      })
 
-    if (existingClient) {
-      return existingClient.id
+      if (existingClient) {
+        return existingClient.id
+      }
     }
 
     const newClient = await tx.client.create({
       data: {
         name: clientName,
-        phone: clientPhone,
+        phone: finalPhone,
         email: clientEmail || null,
         address: clientAddress || null,
       },
@@ -356,16 +359,18 @@ export async function editRepair(id: string, formData: FormData) {
   }))
 
   const clientName = formData.get('clientName') as string
-  const clientPhone = formData.get('clientPhone') as string
+  const clientPhone = formData.get('clientPhone') as string | null
   const clientEmail = formData.get('clientEmail') as string
   const clientAddress = formData.get('clientAddress') as string
+
+  const finalPhone = clientPhone?.trim() || null
 
   const costValue = parseFloat(formData.get('cost') as string)
   const statusValue = formData.get('status') as RepairStatus | null
 
   const validatedFields = EditRepairSchema.safeParse({
     clientName,
-    clientPhone,
+    clientPhone: finalPhone,
     clientEmail: clientEmail || null,
     clientAddress: clientAddress || null,
     device: formData.get('device'),
@@ -547,21 +552,33 @@ export async function editRepair(id: string, formData: FormData) {
       }
 
       const clientId = existingRepair.clientId
-      if (existingRepair.client.phone !== clientPhone) {
-        const existingClient = await tx.client.findFirst({
-          where: { phone: clientPhone, id: { not: existingRepair.clientId } },
-        })
-        if (existingClient) {
-          await tx.repair.update({
-            where: { id },
-            data: { clientId: existingClient.id },
+      if (finalPhone !== existingRepair.client.phone) {
+        if (finalPhone) {
+          const existingClient = await tx.client.findFirst({
+            where: { phone: finalPhone, id: { not: existingRepair.clientId } },
           })
+          if (existingClient) {
+            await tx.repair.update({
+              where: { id },
+              data: { clientId: existingClient.id },
+            })
+          } else {
+            await tx.client.update({
+              where: { id: existingRepair.clientId },
+              data: {
+                name: clientName,
+                phone: finalPhone,
+                email: clientEmail || null,
+                address: clientAddress || null,
+              },
+            })
+          }
         } else {
           await tx.client.update({
             where: { id: existingRepair.clientId },
             data: {
               name: clientName,
-              phone: clientPhone,
+              phone: null,
               email: clientEmail || null,
               address: clientAddress || null,
             },
