@@ -237,6 +237,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
                 <div className="space-y-2">
                   <Label htmlFor="clientName">Nombre del Cliente *</Label>
                   <ClientAutocomplete
+                    name="clientName"
                     value={clientName}
                     onChange={setClientName}
                     onSelect={handleClientSelect}

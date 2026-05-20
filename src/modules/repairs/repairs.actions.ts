@@ -114,31 +114,36 @@ export async function createRepair(formData: FormData) {
 
   const finalPhone = clientPhone?.trim() || null
 
-  // Always create or find client by phone
-  let finalClientId: string
+  let clientId: string
 
-  const clientId = await prisma.$transaction(async (tx) => {
-    if (finalPhone) {
-      const existingClient = await tx.client.findFirst({
-        where: { phone: finalPhone, deletedAt: null },
+  try {
+    clientId = await prisma.$transaction(async (tx) => {
+      if (finalPhone) {
+        const existingClient = await tx.client.findFirst({
+          where: { phone: finalPhone, deletedAt: null },
+        })
+
+        if (existingClient) {
+          return existingClient.id
+        }
+      }
+
+      const newClient = await tx.client.create({
+        data: {
+          name: clientName,
+          phone: finalPhone,
+          email: clientEmail || null,
+          address: clientAddress || null,
+        },
       })
 
-      if (existingClient) {
-        return existingClient.id
-      }
-    }
-
-    const newClient = await tx.client.create({
-      data: {
-        name: clientName,
-        phone: finalPhone,
-        email: clientEmail || null,
-        address: clientAddress || null,
-      },
+      return newClient.id
     })
-
-    return newClient.id
-  })
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Error al procesar el cliente',
+    }
+  }
 
   const costValue = parseFloat(formData.get('cost') as string)
 

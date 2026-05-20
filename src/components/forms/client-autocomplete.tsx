@@ -17,6 +17,7 @@ interface ClientAutocompleteProps {
   value: string
   onChange: (value: string) => void
   onSelect: (client: ClientResult) => void
+  name?: string
   placeholder?: string
 }
 
@@ -24,6 +25,7 @@ export function ClientAutocomplete({
   value,
   onChange,
   onSelect,
+  name,
   placeholder = 'Nombre del cliente',
 }: ClientAutocompleteProps) {
   const [results, setResults] = useState<ClientResult[]>([])
@@ -117,21 +119,22 @@ export function ClientAutocomplete({
     <div ref={containerRef} className="relative">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            setIsFocused(true)
-            if (results.length > 0) setIsOpen(true)
-          }}
-          onBlur={() => {
-            setTimeout(() => setIsFocused(false), 200)
-          }}
-          placeholder={placeholder}
-          className="pl-10"
-        />
+          <Input
+            ref={inputRef}
+            name={name}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              setIsFocused(true)
+              if (results.length > 0) setIsOpen(true)
+            }}
+            onBlur={() => {
+              setTimeout(() => setIsFocused(false), 200)
+            }}
+            placeholder={placeholder}
+            className="pl-10"
+          />
         {isLoading && (
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
