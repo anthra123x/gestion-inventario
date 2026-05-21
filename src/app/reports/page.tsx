@@ -90,6 +90,16 @@ export default function ReportsPage() {
   const [exportLoading, setExportLoading] = useState(false)
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' })
 
+  function handleReportChange(value: string) {
+    if (value !== selectedReport) {
+      setSelectedReport(value)
+      setReportData(null)
+      setDetailSearch('')
+      setSortKey('')
+      setSortDir('desc')
+    }
+  }
+
   const [sortKey, setSortKey] = useState<string>('')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [detailSearch, setDetailSearch] = useState('')
@@ -298,7 +308,7 @@ export default function ReportsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="reportType">Tipo de Reporte</Label>
-              <Select value={selectedReport} onValueChange={(value: string | null) => value && setSelectedReport(value)}>
+              <Select value={selectedReport} onValueChange={(value: string | null) => value && handleReportChange(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>

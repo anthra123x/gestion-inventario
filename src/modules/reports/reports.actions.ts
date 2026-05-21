@@ -351,6 +351,28 @@ export async function getClientsReport(filters?: {
     filteredClients = filteredClients.filter(client => client.repairs.length > 0)
   }
 
+  const saleIds = filteredClients.flatMap(c => c.sales.map(s => s.id))
+  const salesProfitMap: Record<string, number> = {}
+  if (saleIds.length > 0) {
+    const saleProfits = await prisma.saleItem.groupBy({
+      by: ['saleId'],
+      where: { saleId: { in: saleIds } },
+      _sum: { profit: true },
+    })
+    for (const sp of saleProfits) {
+      salesProfitMap[sp.saleId] = sp._sum.profit || 0
+    }
+  }
+
+  const clientSalesProfitMap: Record<string, number> = {}
+  for (const c of filteredClients) {
+    let totalProfit = 0
+    for (const s of c.sales) {
+      totalProfit += salesProfitMap[s.id] || 0
+    }
+    clientSalesProfitMap[c.id] = totalProfit
+  }
+
   const clientStats = filteredClients.map(client => {
     const totalSalesSpent = client.sales.reduce((sum, sale) => sum + sale.total, 0)
     const totalRepairsCost = client.repairs.reduce((sum, repair) => sum + repair.cost, 0)
@@ -359,7 +381,7 @@ export async function getClientsReport(filters?: {
     return {
       ...client,
       totalSpent: totalSalesSpent,
-      totalSalesProfit: 0,
+      totalSalesProfit: clientSalesProfitMap[client.id] || 0,
       totalRepairsCost,
       totalRepairsProfit,
       totalTransactions: client.sales.length + client.repairs.length,
