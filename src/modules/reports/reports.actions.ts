@@ -28,12 +28,19 @@ export async function getSalesReport(filters?: {
       discountPercent: true,
       discountAmount: true,
       paymentMethod: true,
+      notes: true,
       createdAt: true,
       client: {
         select: {
           id: true,
           name: true,
           phone: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
         },
       },
       saleItems: {
@@ -192,11 +199,13 @@ export async function getRepairsReport(filters?: {
       id: true,
       device: true,
       problem: true,
+      diagnosis: true,
       status: true,
       cost: true,
       partsCost: true,
       profit: true,
       createdAt: true,
+      dateDelivered: true,
       client: {
         select: {
           id: true,
@@ -204,9 +213,25 @@ export async function getRepairsReport(filters?: {
           phone: true,
         },
       },
-      _count: {
+      user: {
         select: {
-          repairParts: true,
+          id: true,
+          name: true,
+        },
+      },
+      repairParts: {
+        select: {
+          id: true,
+          quantity: true,
+          unitCost: true,
+          total: true,
+          purchasePriceAtPart: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
     },
@@ -283,6 +308,7 @@ export async function getClientsReport(filters?: {
   } : undefined
 
   const clients = await prisma.client.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       name: true,
