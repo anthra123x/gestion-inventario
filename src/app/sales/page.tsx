@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   Plus,
   Eye,
+  Trash2,
   ShoppingCart,
   TrendingUp,
   DollarSign,
@@ -25,8 +26,17 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
 import { StatusBadge } from '@/components/ui/status-badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { formatCurrency } from '@/lib/format'
-import { getSales, getSalesStats } from '@/modules/sales/sales.actions'
+import { getSales, getSalesStats, deleteSale } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
@@ -42,6 +52,8 @@ export default function SalesPage() {
   const [totalSales, setTotalSales] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const pageSize = 20
 
   useEffect(() => {
@@ -69,6 +81,22 @@ export default function SalesPage() {
     }
     loadData()
   }, [debouncedSearch, paymentFilter, page])
+
+  async function handleDelete(id: string) {
+    setIsDeleting(true)
+    try {
+      const result = await deleteSale(id)
+      if (result.success) {
+        setSales((prev) => prev.filter((s) => s.id !== id))
+        setTotalSales((prev) => prev - 1)
+      }
+    } catch (_error) {
+      console.error('Error deleting sale')
+    } finally {
+      setIsDeleting(false)
+      setDeleteId(null)
+    }
+  }
 
   if (loading && sales.length === 0) {
     return (
@@ -285,11 +313,38 @@ export default function SalesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/sales/${sale.id}`}>
-                        <Button variant="ghost" size="icon-sm" aria-label="Ver detalle">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/sales/${sale.id}`}>
+                          <Button variant="ghost" size="icon-sm" aria-label="Ver detalle">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Dialog>
+                          <DialogTrigger>
+                            <Button variant="ghost" size="icon-sm" aria-label="Eliminar venta" className="text-red-500 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Eliminar Venta</DialogTitle>
+                              <DialogDescription>
+                                ¿Estás seguro de eliminar esta venta? El stock de los productos será restaurado automáticamente. Esta acción no se puede deshacer.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <DialogTrigger>
+                                <Button variant="outline" disabled={isDeleting}>
+                                  Cancelar
+                                </Button>
+                              </DialogTrigger>
+                              <Button variant="destructive" onClick={() => handleDelete(sale.id)} disabled={isDeleting}>
+                                {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

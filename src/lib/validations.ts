@@ -39,21 +39,19 @@ export const CreateClientSchema = z.object({
 export const UpdateClientSchema = CreateClientSchema.partial()
 
 // Sale schemas
+const SaleItemSchema = z.object({
+  productId: z.string(),
+  quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
+  unitPrice: z.number().min(0, 'El precio debe ser positivo'),
+})
+
 export const CreateSaleSchema = z.object({
   clientId: z.string().optional().nullable(),
   clientName: z.string().optional().nullable(),
   clientPhone: z.string().optional().nullable(),
   clientEmail: z.string().email('Email inválido').optional().nullable(),
   clientAddress: z.string().optional().nullable(),
-  items: z
-    .array(
-      z.object({
-        productId: z.string(),
-        quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
-        unitPrice: z.number().min(0, 'El precio debe ser positivo'),
-      }),
-    )
-    .min(1, 'Debe agregar al menos un producto'),
+  items: z.array(SaleItemSchema).min(1, 'Debe agregar al menos un producto'),
   discountPercent: z.coerce
     .number()
     .min(0, 'El descuento debe ser positivo')
@@ -62,6 +60,8 @@ export const CreateSaleSchema = z.object({
   paymentMethod: PaymentMethodSchema,
   notes: z.string().optional().nullable(),
 })
+
+export const UpdateSaleSchema = CreateSaleSchema
 
 // Repair schemas
 export const CreateRepairSchema = z.object({

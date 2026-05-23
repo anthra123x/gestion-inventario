@@ -53,34 +53,84 @@ interface SaleItem {
   product?: Product
 }
 
+interface SaleItemType {
+  productId: string
+  quantity: number
+  unitPrice: number
+  product?: {
+    id: string
+    name: string
+    purchasePrice: number
+    salePrice: number
+    stock: number
+  }
+}
+
 interface SaleFormProps {
   onSubmit: (data: FormData) => Promise<{ error?: string; success?: string }>
   isLoading?: boolean
   redirectTo?: string
+  initialData?: {
+    id: string
+    paymentMethod: string
+    notes: string | null
+    discountPercent: number
+    clientId: string | null
+    clientName: string | null
+    clientPhone: string | null
+    clientEmail: string | null
+    clientAddress: string | null
+    saleItems: Array<{
+      productId: string
+      quantity: number
+      unitPrice: number
+      product: {
+        id: string
+        name: string
+        purchasePrice: number
+        salePrice: number
+        stock: number
+      }
+    }>
+    client?: {
+      id: string
+      name: string
+      phone: string | null
+      email: string | null
+      address: string | null
+    } | null
+  }
 }
 
-export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormProps) {
+export function SaleForm({ onSubmit, isLoading = false, redirectTo, initialData }: SaleFormProps) {
   const router = useRouter()
-  const [items, setItems] = useState<SaleItem[]>([])
+  const [items, setItems] = useState<SaleItemType[]>(
+    initialData?.saleItems.map((si) => ({
+      productId: si.productId,
+      quantity: si.quantity,
+      unitPrice: si.unitPrice,
+      product: si.product,
+    })) || [],
+  )
   const [products, setProducts] = useState<Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [productSearch, setProductSearch] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [_isLoadingData, setIsLoadingData] = useState(false)
-  const [discountPercent, setDiscountPercent] = useState(0)
+  const [discountPercent, setDiscountPercent] = useState(initialData?.discountPercent || 0)
   const [lowMarginWarnings, setLowMarginWarnings] = useState<string[]>([])
-  const [clientId, setClientId] = useState('')
+  const [clientId, setClientId] = useState(initialData?.clientId || '')
 
   const { register, setValue, watch } = useForm({
     resolver: zodResolver(CreateSaleSchema),
     defaultValues: {
-      paymentMethod: 'CASH' as PaymentMethod,
-      notes: '',
-      clientName: '',
-      clientPhone: '',
-      clientEmail: '',
-      clientAddress: '',
+      paymentMethod: (initialData?.paymentMethod as PaymentMethod) || 'CASH',
+      notes: initialData?.notes || '',
+      clientName: initialData?.clientName || '',
+      clientPhone: initialData?.clientPhone || '',
+      clientEmail: initialData?.clientEmail || '',
+      clientAddress: initialData?.clientAddress || '',
     },
   })
 
@@ -250,12 +300,12 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
       const result = await onSubmit(formData)
 
       if (result?.error) {
-        toast.error('Error al registrar venta', {
+        toast.error(initialData ? 'Error al actualizar venta' : 'Error al registrar venta', {
           description: result.error,
         })
       } else {
-        toast.success('Factura generada exitosamente', {
-          description: 'La venta ha sido guardada en el sistema.',
+        toast.success(initialData ? 'Factura actualizada exitosamente' : 'Factura generada exitosamente', {
+          description: initialData ? 'La venta ha sido actualizada en el sistema.' : 'La venta ha sido guardada en el sistema.',
         })
         setItems([])
         setSelectedProduct(null)
@@ -296,9 +346,9 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
       {/* Client Data */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-lg">
             <User className="h-5 w-5" />
-            Datos del Cliente
+            {initialData ? 'Editar Venta' : 'Datos del Cliente'}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -711,7 +761,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                   ) : (
                     <TrendingUp className="mr-2 h-4 w-4" />
                   )}
-                  {isSubmitting ? 'Procesando...' : 'Generar Factura'}
+                  {isSubmitting ? 'Procesando...' : initialData ? 'Actualizar Factura' : 'Generar Factura'}
                 </Button>
               </div>
             </CardContent>

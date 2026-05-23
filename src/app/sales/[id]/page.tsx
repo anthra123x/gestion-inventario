@@ -6,8 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Printer, FileText } from 'lucide-react'
-import { getSaleById } from '@/modules/sales/sales.actions'
+import { ArrowLeft, Printer, FileText, Pencil, Trash2 } from 'lucide-react'
+import { getSaleById, deleteSale } from '@/modules/sales/sales.actions'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { formatCurrency } from '@/lib/format'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
@@ -18,6 +27,8 @@ export default function SaleDetailPage() {
   const [sale, setSale] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     async function loadSale() {
@@ -34,8 +45,22 @@ export default function SaleDetailPage() {
     loadSale()
   }, [params.id])
 
-  function _handlePrint() {
-    window.print()
+  async function handleDelete() {
+    setIsDeleting(true)
+    try {
+      const result = await deleteSale(params.id as string)
+      if (result.error) {
+        console.error(result.error)
+        setDeleteDialogOpen(false)
+        setIsDeleting(false)
+        return
+      }
+      router.push('/sales')
+    } catch (_error) {
+      console.error('Error deleting sale')
+      setDeleteDialogOpen(false)
+      setIsDeleting(false)
+    }
   }
 
   if (loading) {
@@ -85,10 +110,38 @@ export default function SaleDetailPage() {
             Volver
           </Button>
           <div className="flex gap-2 no-print">
+            <Button onClick={() => router.push(`/sales/${params.id}/edit`)} variant="outline">
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
             <Button onClick={() => router.push(`/print/${params.id}`)} variant="outline">
               <Printer className="mr-2 h-4 w-4" />
-              Imprimir Factura
+              Imprimir
             </Button>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Eliminar Venta</DialogTitle>
+                  <DialogDescription>
+                    ¿Estás seguro de eliminar esta venta? El stock de los productos será restaurado automáticamente. Esta acción no se puede deshacer.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+                    Cancelar
+                  </Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
