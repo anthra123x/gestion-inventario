@@ -71,7 +71,7 @@ export function useKeyboardShortcuts() {
       // Escape: Cerrar modales
       if (e.key === 'Escape') {
         const dialogs = document.querySelectorAll('[role="dialog"]')
-        dialogs.forEach(dialog => {
+        dialogs.forEach((dialog) => {
           const closeButton = dialog.querySelector('button[aria-label="Close"]') as HTMLButtonElement
           if (closeButton) {
             closeButton.click()

@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { getEcommerceStats } from '@/modules/ecommerce/ecommerce.actions'
 
 export default function EcommercePage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -54,10 +55,34 @@ export default function EcommercePage() {
       />
 
       <StatCardGrid columns={4}>
-        <StatCard title="Publicados" value={stats?.totalPublished || 0} change="Productos en tienda" icon={Store} color="success" />
-        <StatCard title="Visibles" value={stats?.totalVisible || 0} change="Con stock disponible" icon={Eye} color="info" />
-        <StatCard title="Destacados" value={stats?.featured || 0} change="En vitrina principal" icon={Star} color="warning" />
-        <StatCard title="En Oferta" value={stats?.withDiscount || 0} change="Con precio rebajado" icon={Tag} color="purple" />
+        <StatCard
+          title="Publicados"
+          value={stats?.totalPublished || 0}
+          change="Productos en tienda"
+          icon={Store}
+          color="success"
+        />
+        <StatCard
+          title="Visibles"
+          value={stats?.totalVisible || 0}
+          change="Con stock disponible"
+          icon={Eye}
+          color="info"
+        />
+        <StatCard
+          title="Destacados"
+          value={stats?.featured || 0}
+          change="En vitrina principal"
+          icon={Star}
+          color="warning"
+        />
+        <StatCard
+          title="En Oferta"
+          value={stats?.withDiscount || 0}
+          change="Con precio rebajado"
+          icon={Tag}
+          color="purple"
+        />
       </StatCardGrid>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -72,15 +97,23 @@ export default function EcommercePage() {
             {stats?.totalInventory > 0 ? (
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium">{stats.totalInventory} productos del inventario no están en la tienda</p>
-                  <p className="text-xs text-muted-foreground mt-1">Agrégalos al catálogo para que aparezcan en Tecnicell Store</p>
+                  <p className="text-sm font-medium">
+                    {stats.totalInventory} productos del inventario no están en la tienda
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Agrégalos al catálogo para que aparezcan en Tecnicell Store
+                  </p>
                 </div>
                 <Link href="/ecommerce/products">
-                  <Button variant="outline" size="sm">Agregar</Button>
+                  <Button variant="outline" size="sm">
+                    Agregar
+                  </Button>
                 </Link>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">Todos los productos del inventario están en la tienda</p>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Todos los productos del inventario están en la tienda
+              </p>
             )}
           </CardContent>
         </Card>

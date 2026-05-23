@@ -59,11 +59,11 @@ export async function getProductById(id: string) {
         orderBy: { createdAt: 'desc' },
         include: {
           user: {
-            select: { name: true }
-          }
-        }
-      }
-    }
+            select: { name: true },
+          },
+        },
+      },
+    },
   })
 }
 
@@ -100,6 +100,7 @@ export async function createProduct(formData: FormData) {
       purchasePrice: validatedFields.data.purchasePrice,
       salePrice: validatedFields.data.salePrice,
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (validationError: any) {
     return {
       error: validationError.message,
@@ -127,6 +128,7 @@ export async function createProduct(formData: FormData) {
       success: 'Producto creado exitosamente',
       product,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.code === 'P2002') {
       return {
@@ -188,6 +190,7 @@ export async function updateProduct(id: string, formData: FormData) {
     if (validatedFields.data.purchasePrice !== undefined && validatedFields.data.salePrice !== undefined) {
       validatePriceMargin(validatedFields.data.purchasePrice, validatedFields.data.salePrice)
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (validationError: any) {
     return {
       error: validationError.message,
@@ -206,6 +209,7 @@ export async function updateProduct(id: string, formData: FormData) {
       success: 'Producto actualizado exitosamente',
       product,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.code === 'P2002') {
       return {
@@ -258,10 +262,12 @@ export async function deleteProduct(id: string) {
     return {
       success: 'Producto eliminado exitosamente',
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.code === 'P2003') {
       return {
-        error: 'No se puede eliminar el producto porque está relacionado con ventas o reparaciones. Usa la función de limpieza del sistema.',
+        error:
+          'No se puede eliminar el producto porque está relacionado con ventas o reparaciones. Usa la función de limpieza del sistema.',
       }
     }
 
@@ -314,7 +320,8 @@ export async function addInventoryMovement(formData: FormData) {
         where: { id: validatedFields.data.productId },
         data: {
           stock: {
-            increment: validatedFields.data.type === 'ENTRY' ? validatedFields.data.quantity : -validatedFields.data.quantity,
+            increment:
+              validatedFields.data.type === 'ENTRY' ? validatedFields.data.quantity : -validatedFields.data.quantity,
           },
         },
       }),
@@ -327,6 +334,7 @@ export async function addInventoryMovement(formData: FormData) {
       success: `Movimiento de inventario registrado. Stock actual: ${updatedProduct.stock}`,
       movement,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return {
       error: error.message || 'Error al registrar movimiento de inventario',
@@ -362,7 +370,7 @@ export async function getInventorySummary() {
     }),
   ])
 
-  const lowStockProducts = lowStockCount.filter(p => p.stock <= p.minStock).length
+  const lowStockProducts = lowStockCount.filter((p) => p.stock <= p.minStock).length
 
   return {
     totalProducts,
@@ -379,9 +387,9 @@ export async function getInventoryStockBreakdown() {
     select: { stock: true, minStock: true },
   })
 
-  const inStock = products.filter(p => p.stock > p.minStock).length
-  const lowStock = products.filter(p => p.stock > 0 && p.stock <= p.minStock).length
-  const outOfStock = products.filter(p => p.stock === 0).length
+  const inStock = products.filter((p) => p.stock > p.minStock).length
+  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock).length
+  const outOfStock = products.filter((p) => p.stock === 0).length
 
   return {
     total: products.length,
@@ -399,5 +407,5 @@ export async function getLowStockProducts() {
     orderBy: { stock: 'asc' },
     take: 50,
   })
-  return products.filter(p => p.stock <= p.minStock).slice(0, 10)
+  return products.filter((p) => p.stock <= p.minStock).slice(0, 10)
 }

@@ -2,9 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Eye, ShoppingCart, TrendingUp, DollarSign, CreditCard, PiggyBank, TrendingDown, Receipt } from 'lucide-react'
+import {
+  Plus,
+  Eye,
+  ShoppingCart,
+  TrendingUp,
+  DollarSign,
+  CreditCard,
+  PiggyBank,
+  TrendingDown,
+  Receipt,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -21,7 +31,9 @@ import { PaymentMethod } from '@prisma/client'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
 export default function SalesPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sales, setSales] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -147,9 +159,11 @@ export default function SalesPage() {
             />
             <StatCard
               title="Método Popular"
-              value={stats.salesByPaymentMethod.length > 0 
-                ? getPaymentMethodLabel(stats.salesByPaymentMethod[0].paymentMethod)
-                : 'N/A'}
+              value={
+                stats.salesByPaymentMethod.length > 0
+                  ? getPaymentMethodLabel(stats.salesByPaymentMethod[0].paymentMethod)
+                  : 'N/A'
+              }
               change={`${stats.salesByPaymentMethod[0]?._count || 0} ventas`}
               icon={CreditCard}
               color="purple"
@@ -178,7 +192,9 @@ export default function SalesPage() {
                 <DollarSign className="h-4 w-4" />
                 Promedio/Venta
               </div>
-              <div className="text-xl font-bold">{formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}</div>
+              <div className="text-xl font-bold">
+                {formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}
+              </div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
@@ -197,11 +213,7 @@ export default function SalesPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Buscar ventas..."
-              />
+              <SearchInput value={search} onChange={setSearch} placeholder="Buscar ventas..." />
             </div>
             <Select value={paymentFilter} onValueChange={(value) => setPaymentFilter(value as PaymentMethod | 'ALL')}>
               <SelectTrigger className="w-full sm:w-[180px]">
@@ -243,9 +255,7 @@ export default function SalesPage() {
                       ) : sale.clientName ? (
                         <div>
                           <div className="font-medium">{sale.clientName}</div>
-                          {sale.clientPhone && (
-                            <div className="text-xs text-muted-foreground">{sale.clientPhone}</div>
-                          )}
+                          {sale.clientPhone && <div className="text-xs text-muted-foreground">{sale.clientPhone}</div>}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">Cliente ocasional</span>
@@ -256,13 +266,23 @@ export default function SalesPage() {
                     </TableCell>
                     <TableCell className="font-semibold text-emerald-600">{formatCurrency(sale.total)}</TableCell>
                     <TableCell>
-                      <Badge variant={getPaymentMethodColor(sale.paymentMethod) as 'default' | 'secondary' | 'outline' | 'destructive'}>
+                      <Badge
+                        variant={
+                          getPaymentMethodColor(sale.paymentMethod) as
+                            | 'default'
+                            | 'secondary'
+                            | 'outline'
+                            | 'destructive'
+                        }
+                      >
                         {getPaymentMethodLabel(sale.paymentMethod)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">{new Date(sale.createdAt).toLocaleDateString('es-CO')}</div>
-                      <div className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleTimeString('es-CO')}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(sale.createdAt).toLocaleTimeString('es-CO')}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/sales/${sale.id}`}>
@@ -281,7 +301,11 @@ export default function SalesPage() {
             <EmptyState
               icon={Receipt}
               title={search || paymentFilter !== 'ALL' ? 'Sin resultados' : 'Sin ventas'}
-              description={search || paymentFilter !== 'ALL' ? 'No hay ventas que coincidan con tu búsqueda' : 'Registra tu primera venta para comenzar'}
+              description={
+                search || paymentFilter !== 'ALL'
+                  ? 'No hay ventas que coincidan con tu búsqueda'
+                  : 'Registra tu primera venta para comenzar'
+              }
               action={search || paymentFilter !== 'ALL' ? undefined : { label: 'Crear venta', href: '/sales/new' }}
             />
           )}

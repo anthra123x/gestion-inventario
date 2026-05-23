@@ -13,7 +13,7 @@ export async function exportProductsToExcel() {
       orderBy: { name: 'asc' },
     })
 
-    const data = products.map(p => ({
+    const data = products.map((p) => ({
       Nombre: p.name,
       Descripción: p.description || '',
       Categoría: p.category,
@@ -29,7 +29,7 @@ export async function exportProductsToExcel() {
       data,
       filename: `productos_${TS()}.xlsx`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: 'Error al exportar productos',
@@ -51,7 +51,7 @@ export async function exportSalesToExcel() {
       orderBy: { createdAt: 'desc' },
     })
 
-    const data = sales.map(s => ({
+    const data = sales.map((s) => ({
       ID: s.id.slice(-8).toUpperCase(),
       Fecha: new Date(s.createdAt).toLocaleDateString('es-CO'),
       Cliente: s.client?.name || s.clientName || 'Sin cliente',
@@ -65,7 +65,7 @@ export async function exportSalesToExcel() {
       data,
       filename: `ventas_${TS()}.xlsx`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: 'Error al exportar ventas',
@@ -87,7 +87,7 @@ export async function exportRepairsToExcel() {
       orderBy: { createdAt: 'desc' },
     })
 
-    const data = repairs.map(r => ({
+    const data = repairs.map((r) => ({
       ID: r.id.slice(-8).toUpperCase(),
       Fecha: new Date(r.createdAt).toLocaleDateString('es-CO'),
       Cliente: r.client?.name || 'Sin cliente',
@@ -105,7 +105,7 @@ export async function exportRepairsToExcel() {
       data,
       filename: `reparaciones_${TS()}.xlsx`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: 'Error al exportar reparaciones',
@@ -120,7 +120,7 @@ export async function exportClientsToExcel() {
       orderBy: { name: 'asc' },
     })
 
-    const data = clients.map(c => ({
+    const data = clients.map((c) => ({
       Nombre: c.name,
       Teléfono: c.phone,
       Email: c.email || '',
@@ -133,7 +133,7 @@ export async function exportClientsToExcel() {
       data,
       filename: `clientes_${TS()}.xlsx`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: 'Error al exportar clientes',

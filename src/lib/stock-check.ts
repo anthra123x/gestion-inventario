@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
-type Tx = PrismaClient['$extends'] extends never
+type _Tx = PrismaClient['$extends'] extends never
   ? ReturnType<Parameters<PrismaClient['$transaction']>[0] extends (tx: infer T) => unknown ? () => T : never>
   : never
 
@@ -12,7 +12,7 @@ interface StockItem {
 
 export async function checkStockAvailability(
   tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>,
-  items: StockItem[]
+  items: StockItem[],
 ): Promise<void> {
   for (const item of items) {
     const product = await tx.product.findUnique({
@@ -26,7 +26,7 @@ export async function checkStockAvailability(
 
     if (product.stock < item.quantity) {
       throw new Error(
-        `Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}`
+        `Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}`,
       )
     }
   }

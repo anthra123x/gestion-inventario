@@ -36,7 +36,7 @@ export async function exportData() {
       success: true,
       data,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: 'Error al exportar datos',
@@ -63,7 +63,7 @@ export async function cleanupProducts() {
     return {
       success: `Limpieza completada: ${deletedProducts.count} productos y ${deletedMovements.count} movimientos eliminados`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al limpiar productos',
     }
@@ -89,7 +89,7 @@ export async function cleanupSales() {
     return {
       success: `Limpieza completada: ${deletedSales.count} ventas y ${deletedSaleItems.count} items eliminados`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al limpiar ventas',
     }
@@ -115,7 +115,7 @@ export async function cleanupRepairs() {
     return {
       success: `Limpieza completada: ${deletedRepairs.count} reparaciones y ${deletedRepairParts.count} repuestos eliminados`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al limpiar reparaciones',
     }
@@ -135,7 +135,7 @@ export async function cleanupClients() {
     return {
       success: `Limpieza completada: ${deletedClients.count} clientes eliminados`,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al limpiar clientes',
     }
@@ -145,7 +145,7 @@ export async function cleanupClients() {
 export async function cleanupAll() {
   await requireAdmin()
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const _result = await prisma.$transaction(async (tx) => {
       const deletedSaleItems = await tx.saleItem.deleteMany({})
       const deletedRepairParts = await tx.repairPart.deleteMany({})
       const deletedMovements = await tx.inventoryMovement.deleteMany({})
@@ -153,7 +153,15 @@ export async function cleanupAll() {
       const deletedRepairs = await tx.repair.deleteMany({})
       const deletedProducts = await tx.product.deleteMany({})
       const deletedClients = await tx.client.deleteMany({})
-      return { deletedSaleItems, deletedRepairParts, deletedMovements, deletedSales, deletedRepairs, deletedProducts, deletedClients }
+      return {
+        deletedSaleItems,
+        deletedRepairParts,
+        deletedMovements,
+        deletedSales,
+        deletedRepairs,
+        deletedProducts,
+        deletedClients,
+      }
     })
 
     revalidatePath('/inventory')
@@ -165,7 +173,7 @@ export async function cleanupAll() {
     return {
       success: 'Limpieza completa del sistema ejecutada exitosamente',
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al limpiar el sistema',
     }

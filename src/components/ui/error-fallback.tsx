@@ -23,14 +23,8 @@ export function ErrorFallback({
         <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
       <h1 className="text-2xl font-bold mb-2">{title}</h1>
-      <p className="text-muted-foreground text-center max-w-md mb-6">
-        {description}
-      </p>
-      {error?.digest && (
-        <p className="text-xs text-muted-foreground mb-4 font-mono">
-          Error ID: {error.digest}
-        </p>
-      )}
+      <p className="text-muted-foreground text-center max-w-md mb-6">{description}</p>
+      {error?.digest && <p className="text-xs text-muted-foreground mb-4 font-mono">Error ID: {error.digest}</p>}
       <div className="flex gap-3">
         {reset && (
           <Button onClick={reset} variant="default">

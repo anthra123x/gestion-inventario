@@ -29,12 +29,13 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
         { notes: { contains: search, mode: 'insensitive' as const } },
       ],
     }),
-    ...(startDate && endDate && {
-      createdAt: {
-        gte: startDate,
-        lte: endDate,
-      },
-    }),
+    ...(startDate &&
+      endDate && {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      }),
   }
 
   const [sales, total] = await Promise.all([
@@ -162,6 +163,7 @@ export async function createSale(formData: FormData) {
         total: item.unitPrice * item.quantity,
       })
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (validationError: any) {
     return {
       error: validationError.message,
@@ -169,7 +171,17 @@ export async function createSale(formData: FormData) {
   }
 
   try {
-    let { clientId, clientName, clientPhone, clientEmail, clientAddress, items, discountPercent: discountPct, paymentMethod, notes } = validatedFields.data
+    const {
+      clientName,
+      clientPhone,
+      clientEmail,
+      clientAddress,
+      items,
+      discountPercent: discountPct,
+      paymentMethod,
+      notes,
+    } = validatedFields.data
+    let { clientId } = validatedFields.data
 
     // Find or create client by phone (same pattern as createRepair)
     if (!clientId && (clientName || clientPhone)) {
@@ -193,18 +205,19 @@ export async function createSale(formData: FormData) {
           })
           clientId = newClient.id
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         return { error: `Error al procesar el cliente: ${err.message}` }
       }
     }
 
     // Fetch all product costs upfront
-    const productIds = items.map(item => item.productId)
+    const productIds = items.map((item) => item.productId)
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, deletedAt: null },
       select: { id: true, purchasePrice: true, name: true },
     })
-    const productMap = new Map(products.map(p => [p.id, { purchasePrice: p.purchasePrice, name: p.name }]))
+    const productMap = new Map(products.map((p) => [p.id, { purchasePrice: p.purchasePrice, name: p.name }]))
 
     // Validate no item generates loss
     for (const item of items) {
@@ -220,10 +233,12 @@ export async function createSale(formData: FormData) {
     const subtotal = calcSubtotal(items)
     const discountAmount = calcDiscountAmount(subtotal, discountPct)
     const total = calcTotal(subtotal, discountPct)
-    const cost = calcCost(items.map(item => ({
-      unitCost: productMap.get(item.productId)?.purchasePrice || 0,
-      quantity: item.quantity,
-    })))
+    const cost = calcCost(
+      items.map((item) => ({
+        unitCost: productMap.get(item.productId)?.purchasePrice || 0,
+        quantity: item.quantity,
+      })),
+    )
 
     const saleProfit = calcProfit(subtotal, cost, discountPct)
     if (saleProfit < 0) {
@@ -233,10 +248,13 @@ export async function createSale(formData: FormData) {
     // Use transaction for atomicity
     const sale = await prisma.$transaction(async (tx) => {
       // Check stock availability
-      await checkStockAvailability(tx, items.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-      })))
+      await checkStockAvailability(
+        tx,
+        items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      )
 
       // Create sale with client data
       const newSale = await tx.sale.create({
@@ -252,12 +270,12 @@ export async function createSale(formData: FormData) {
           paymentMethod,
           notes,
           saleItems: {
-            create: items.map(item => {
+            create: items.map((item) => {
               const purchasePrice = productMap.get(item.productId)?.purchasePrice || 0
               const itemSubtotal = item.unitPrice * item.quantity
               const itemDiscount = discountPct > 0 ? discountAmount * (itemSubtotal / subtotal) : 0
               const effectiveItemTotal = itemSubtotal - itemDiscount
-              const itemProfit = effectiveItemTotal - (purchasePrice * item.quantity)
+              const itemProfit = effectiveItemTotal - purchasePrice * item.quantity
 
               return {
                 productId: item.productId,
@@ -311,10 +329,9 @@ export async function createSale(formData: FormData) {
       success: 'Venta registrada exitosamente',
       sale,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    return {
-      error: error.message || 'Error al registrar la venta',
-    }
+    return { error: error.message || 'Error al crear la venta' }
   }
 }
 
@@ -327,12 +344,13 @@ export async function createSale(formData: FormData) {
 export async function getSalesStats(startDate?: Date, endDate?: Date) {
   await requireAdmin()
   const where = {
-    ...(startDate && endDate && {
-      createdAt: {
-        gte: startDate,
-        lte: endDate,
-      },
-    }),
+    ...(startDate &&
+      endDate && {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      }),
   }
 
   const [totalSales, totalRevenue, salesByPaymentMethod, topProducts, profitData] = await Promise.all([
@@ -384,7 +402,7 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
   ])
 
   // Get product details for top products
-  const productIds = topProducts.map(item => item.productId)
+  const productIds = topProducts.map((item) => item.productId)
   const products = await prisma.product.findMany({
     where: {
       id: {
@@ -398,9 +416,9 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
     },
   })
 
-  const topProductsWithDetails = topProducts.map(item => ({
+  const topProductsWithDetails = topProducts.map((item) => ({
     ...item,
-    product: products.find(p => p.id === item.productId),
+    product: products.find((p) => p.id === item.productId),
   }))
 
   // Calculate total cost: sum of (purchasePriceAtSale * quantity)

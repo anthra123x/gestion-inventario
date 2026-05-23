@@ -1,4 +1,4 @@
-import { PaymentMethod, ProductCategory } from '@prisma/client'
+import { ProductCategory } from '@prisma/client'
 
 export function getPaymentMethodLabel(method: string): string {
   const labels: Record<string, string> = {
@@ -40,7 +40,10 @@ export function getRepairStatusColor(status: string): string {
   return colors[status] || 'default'
 }
 
-export function getStockStatus(stock: number, minStock: number): { label: string; variant: 'default' | 'destructive' | 'warning' } {
+export function getStockStatus(
+  stock: number,
+  minStock: number,
+): { label: string; variant: 'default' | 'destructive' | 'warning' } {
   if (stock === 0) return { label: 'Agotado', variant: 'destructive' }
   if (stock <= minStock) return { label: 'Stock Bajo', variant: 'warning' }
   return { label: 'En Stock', variant: 'default' }

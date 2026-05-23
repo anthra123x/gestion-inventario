@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { ClientAutocomplete } from '@/components/forms/client-autocomplete'
 import { toast } from 'sonner'
@@ -15,12 +14,13 @@ import { formatCurrency } from '@/lib/format'
 import { createRepair } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 
-
 export default function NewRepairPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [products, setProducts] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedProducts, setSelectedProducts] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [cost, setCost] = useState<number>(0)
@@ -34,7 +34,7 @@ export default function NewRepairPage() {
       try {
         const productsData = await getProducts(undefined, undefined, 1, 1000)
         setProducts(productsData.products)
-      } catch (err) {
+      } catch (_err) {
         toast.error('Error al cargar productos', {
           description: 'No se pudieron cargar los productos disponibles',
         })
@@ -45,8 +45,8 @@ export default function NewRepairPage() {
 
   const partsCost = useMemo(() => {
     return selectedProducts.reduce((sum, item) => {
-      const product = products.find(p => p.id === item.productId)
-      return sum + ((product?.purchasePrice || 0) * item.quantity)
+      const product = products.find((p) => p.id === item.productId)
+      return sum + (product?.purchasePrice || 0) * item.quantity
     }, 0)
   }, [selectedProducts, products])
 
@@ -57,9 +57,7 @@ export default function NewRepairPage() {
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products
     const term = searchTerm.toLowerCase()
-    return products.filter(
-      p => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term)
-    )
+    return products.filter((p) => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
   }, [searchTerm, products])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -118,7 +116,12 @@ export default function NewRepairPage() {
     }
   }
 
-  function handleClientSelect(client: { name: string; phone: string | null; email: string | null; address: string | null }) {
+  function handleClientSelect(client: {
+    name: string
+    phone: string | null
+    email: string | null
+    address: string | null
+  }) {
     setClientName(client.name)
     setClientPhone(client.phone || '')
     setClientEmail(client.email || '')
@@ -126,7 +129,7 @@ export default function NewRepairPage() {
   }
 
   function addProduct(productId: string) {
-    const product = products.find(p => p.id === productId)
+    const product = products.find((p) => p.id === productId)
     if (product) {
       setSelectedProducts([...selectedProducts, { productId, quantity: 1 }])
     }
@@ -212,22 +215,12 @@ export default function NewRepairPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="device">Dispositivo</Label>
-                  <Input
-                    id="device"
-                    name="device"
-                    placeholder="Ej: iPhone 11, Samsung S21"
-                    required
-                  />
+                  <Input id="device" name="device" placeholder="Ej: iPhone 11, Samsung S21" required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="problem">Problema Reportado</Label>
-                  <Textarea
-                    id="problem"
-                    name="problem"
-                    placeholder="Describe el problema del dispositivo"
-                    required
-                  />
+                  <Textarea id="problem" name="problem" placeholder="Describe el problema del dispositivo" required />
                 </div>
 
                 <div className="space-y-2">
@@ -246,11 +239,7 @@ export default function NewRepairPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="estimatedDate">Fecha Estimada de Entrega</Label>
-                  <Input
-                    id="estimatedDate"
-                    name="estimatedDate"
-                    type="date"
-                  />
+                  <Input id="estimatedDate" name="estimatedDate" type="date" />
                 </div>
               </div>
             </div>
@@ -266,11 +255,7 @@ export default function NewRepairPage() {
 
             <div className="space-y-2">
               <Label htmlFor="clientNotes">Notas para el Cliente</Label>
-              <Textarea
-                id="clientNotes"
-                name="clientNotes"
-                placeholder="Notas visibles para el cliente"
-              />
+              <Textarea id="clientNotes" name="clientNotes" placeholder="Notas visibles para el cliente" />
             </div>
 
             <div className="space-y-4">
@@ -288,15 +273,11 @@ export default function NewRepairPage() {
                 <Card>
                   <CardContent className="p-1 max-h-64 overflow-y-auto">
                     {filteredProducts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground p-3">
-                        No se encontraron productos
-                      </p>
+                      <p className="text-sm text-muted-foreground p-3">No se encontraron productos</p>
                     ) : (
                       <div className="space-y-0.5">
                         {filteredProducts.map((product) => {
-                          const alreadyAdded = selectedProducts.some(
-                            (p) => p.productId === product.id
-                          )
+                          const alreadyAdded = selectedProducts.some((p) => p.productId === product.id)
                           return (
                             <button
                               key={product.id}
@@ -309,21 +290,13 @@ export default function NewRepairPage() {
                               className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded text-left transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium truncate">
-                                  {product.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatCurrency(product.salePrice)}
-                                </p>
+                                <p className="text-sm font-medium truncate">{product.name}</p>
+                                <p className="text-xs text-muted-foreground">{formatCurrency(product.salePrice)}</p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 <Badge
                                   variant={
-                                    product.stock === 0
-                                      ? 'destructive'
-                                      : product.stock <= 3
-                                        ? 'warning'
-                                        : 'default'
+                                    product.stock === 0 ? 'destructive' : product.stock <= 3 ? 'warning' : 'default'
                                   }
                                 >
                                   {product.stock} uds.
@@ -356,21 +329,15 @@ export default function NewRepairPage() {
                     </thead>
                     <tbody>
                       {selectedProducts.map((item, index) => {
-                        const product = products.find(p => p.id === item.productId)
+                        const product = products.find((p) => p.id === item.productId)
                         const subtotal = (product?.purchasePrice || 0) * item.quantity
                         return (
                           <tr key={index} className="border-b last:border-0">
                             <td className="px-3 py-2">
-                              <p className="font-medium truncate max-w-48">
-                                {product?.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Stock: {product?.stock ?? 0}
-                              </p>
+                              <p className="font-medium truncate max-w-48">{product?.name}</p>
+                              <p className="text-xs text-muted-foreground">Stock: {product?.stock ?? 0}</p>
                             </td>
-                            <td className="px-3 py-2 text-right">
-                              {formatCurrency(product?.purchasePrice || 0)}
-                            </td>
+                            <td className="px-3 py-2 text-right">{formatCurrency(product?.purchasePrice || 0)}</td>
                             <td className="px-3 py-2">
                               <Input
                                 type="number"
@@ -383,9 +350,7 @@ export default function NewRepairPage() {
                                 className="w-20 h-8 mx-auto text-center"
                               />
                             </td>
-                            <td className="px-3 py-2 text-right font-medium">
-                              {formatCurrency(subtotal)}
-                            </td>
+                            <td className="px-3 py-2 text-right font-medium">{formatCurrency(subtotal)}</td>
                             <td className="px-2 py-2">
                               <Button
                                 type="button"
@@ -448,19 +413,13 @@ export default function NewRepairPage() {
               </CardContent>
             </Card>
 
-            {error && (
-              <div className="text-red-500 text-sm">{error}</div>
-            )}
+            {error && <div className="text-red-500 text-sm">{error}</div>}
 
             <div className="flex gap-2">
               <Button type="submit" disabled={isLoading || hasLoss}>
                 {isLoading ? 'Creando...' : 'Crear Reparación'}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/repairs')}
-              >
+              <Button type="button" variant="outline" onClick={() => router.push('/repairs')}>
                 Cancelar
               </Button>
             </div>

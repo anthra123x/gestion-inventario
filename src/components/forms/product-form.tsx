@@ -34,30 +34,32 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
     formState: { errors },
   } = useForm({
     resolver: zodResolver(product ? UpdateProductSchema : CreateProductSchema),
-    defaultValues: product ? {
-      name: product.name,
-      description: product.description || '',
-      category: product.category,
-      stock: product.stock,
-      minStock: product.minStock,
-      purchasePrice: product.purchasePrice,
-      salePrice: product.salePrice,
-      supplier: product.supplier || '',
-    } : {
-      name: '',
-      description: '',
-      category: 'ACCESSORY' as ProductCategory,
-      stock: 0,
-      minStock: 5,
-      purchasePrice: 0,
-      salePrice: 0,
-      supplier: '',
-    }
+    defaultValues: product
+      ? {
+          name: product.name,
+          description: product.description || '',
+          category: product.category,
+          stock: product.stock,
+          minStock: product.minStock,
+          purchasePrice: product.purchasePrice,
+          salePrice: product.salePrice,
+          supplier: product.supplier || '',
+        }
+      : {
+          name: '',
+          description: '',
+          category: 'ACCESSORY' as ProductCategory,
+          stock: 0,
+          minStock: 5,
+          purchasePrice: 0,
+          salePrice: 0,
+          supplier: '',
+        },
   })
 
   const selectedCategory = watch('category')
 
-  const formatPrice = (value: number) => {
+  const _formatPrice = (value: number) => {
     return new Intl.NumberFormat('es-CO').format(value)
   }
 
@@ -66,6 +68,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
     setValue(fieldName, numericValue || 0)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function handleFormSubmit(data: any) {
     setIsSubmitting(true)
     setError(null)
@@ -101,6 +104,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
           router.push(redirectTo)
         }
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err?.message || 'Error al guardar producto')
       toast.error('Error al guardar producto', {
@@ -129,9 +133,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
               placeholder="Ej: Cable USB Tipo C"
               disabled={isSubmitting || isLoading}
             />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message?.toString()}</p>
-            )}
+            {errors.name && <p className="text-sm text-red-500">{errors.name.message?.toString()}</p>}
           </div>
 
           <div className="space-y-2">
@@ -161,9 +163,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
                 <SelectItem value="OTHER">Otro</SelectItem>
               </SelectContent>
             </Select>
-            {errors.category && (
-              <p className="text-sm text-red-500">{errors.category.message?.toString()}</p>
-            )}
+            {errors.category && <p className="text-sm text-red-500">{errors.category.message?.toString()}</p>}
           </div>
 
           <div className="space-y-2">
@@ -186,9 +186,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
               placeholder="0"
               disabled={isSubmitting || isLoading}
             />
-            {errors.stock && (
-              <p className="text-sm text-red-500">{errors.stock.message?.toString()}</p>
-            )}
+            {errors.stock && <p className="text-sm text-red-500">{errors.stock.message?.toString()}</p>}
           </div>
 
           <div className="space-y-2">
@@ -201,9 +199,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
               placeholder="5"
               disabled={isSubmitting || isLoading}
             />
-            {errors.minStock && (
-              <p className="text-sm text-red-500">{errors.minStock.message?.toString()}</p>
-            )}
+            {errors.minStock && <p className="text-sm text-red-500">{errors.minStock.message?.toString()}</p>}
           </div>
 
           <div className="space-y-2">
@@ -216,9 +212,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
               disabled={isSubmitting || isLoading}
               onChange={(e) => handlePriceChange(e.target.value, 'purchasePrice')}
             />
-            {errors.purchasePrice && (
-              <p className="text-sm text-red-500">{errors.purchasePrice.message?.toString()}</p>
-            )}
+            {errors.purchasePrice && <p className="text-sm text-red-500">{errors.purchasePrice.message?.toString()}</p>}
           </div>
 
           <div className="space-y-2">
@@ -231,14 +225,10 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
               disabled={isSubmitting || isLoading}
               onChange={(e) => handlePriceChange(e.target.value, 'salePrice')}
             />
-            {errors.salePrice && (
-              <p className="text-sm text-red-500">{errors.salePrice.message?.toString()}</p>
-            )}
+            {errors.salePrice && <p className="text-sm text-red-500">{errors.salePrice.message?.toString()}</p>}
           </div>
 
-          {error && (
-            <div className="text-red-500 text-sm">{error}</div>
-          )}
+          {error && <div className="text-red-500 text-sm">{error}</div>}
 
           <div className="flex gap-2">
             <Button type="submit" disabled={isSubmitting || isLoading}>

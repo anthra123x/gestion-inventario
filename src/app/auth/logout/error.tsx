@@ -2,13 +2,7 @@
 
 import { ErrorFallback } from '@/components/ui/error-fallback'
 
-export default function LogoutError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function LogoutError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <ErrorFallback
       error={error}

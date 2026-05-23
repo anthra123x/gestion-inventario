@@ -4,19 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { ProductCategory, RepairStatus, PaymentMethod } from '@prisma/client'
 import { requireAdmin } from '@/modules/auth/auth.actions'
 
-export async function getSalesReport(filters?: {
-  startDate?: Date
-  endDate?: Date
-  clientId?: string
-}) {
+export async function getSalesReport(filters?: { startDate?: Date; endDate?: Date; clientId?: string }) {
   await requireAdmin()
   const where = {
-    ...(filters?.startDate && filters?.endDate && {
-      createdAt: {
-        gte: filters.startDate,
-        lte: filters.endDate,
-      },
-    }),
+    ...(filters?.startDate &&
+      filters?.endDate && {
+        createdAt: {
+          gte: filters.startDate,
+          lte: filters.endDate,
+        },
+      }),
     ...(filters?.clientId && {
       clientId: filters.clientId,
     }),
@@ -68,45 +65,55 @@ export async function getSalesReport(filters?: {
 
   const totalSales = sales.length
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0)
-  const totalCost = sales.reduce((sum, sale) =>
-    sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.purchasePriceAtSale * item.quantity), 0)
-  , 0)
-  const totalProfit = sales.reduce((sum, sale) =>
-    sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.profit || 0), 0)
-  , 0)
+  const totalCost = sales.reduce(
+    (sum, sale) =>
+      sum + sale.saleItems.reduce((itemSum, item) => itemSum + item.purchasePriceAtSale * item.quantity, 0),
+    0,
+  )
+  const totalProfit = sales.reduce(
+    (sum, sale) => sum + sale.saleItems.reduce((itemSum, item) => itemSum + (item.profit || 0), 0),
+    0,
+  )
   const averageSale = totalSales > 0 ? totalRevenue / totalSales : 0
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
-  const paymentMethodStats = sales.reduce((acc, sale) => {
-    if (!acc[sale.paymentMethod]) {
-      acc[sale.paymentMethod] = {
-        count: 0,
-        total: 0,
+  const paymentMethodStats = sales.reduce(
+    (acc, sale) => {
+      if (!acc[sale.paymentMethod]) {
+        acc[sale.paymentMethod] = {
+          count: 0,
+          total: 0,
+        }
       }
-    }
-    acc[sale.paymentMethod].count += 1
-    acc[sale.paymentMethod].total += sale.total
-    return acc
-  }, {} as Record<PaymentMethod, { count: number; total: number }>)
+      acc[sale.paymentMethod].count += 1
+      acc[sale.paymentMethod].total += sale.total
+      return acc
+    },
+    {} as Record<PaymentMethod, { count: number; total: number }>,
+  )
 
-  const productSales = sales.flatMap(sale => sale.saleItems)
-  const topProducts = productSales.reduce((acc, item) => {
-    const productId = item.productId
-    if (!acc[productId]) {
-      acc[productId] = {
-        product: item.product,
-        quantity: 0,
-        revenue: 0,
-        cost: 0,
-        profit: 0,
+  const productSales = sales.flatMap((sale) => sale.saleItems)
+  const topProducts = productSales.reduce(
+    (acc, item) => {
+      const productId = item.productId
+      if (!acc[productId]) {
+        acc[productId] = {
+          product: item.product,
+          quantity: 0,
+          revenue: 0,
+          cost: 0,
+          profit: 0,
+        }
       }
-    }
-    acc[productId].quantity += item.quantity
-    acc[productId].revenue += item.total
-    acc[productId].cost += item.purchasePriceAtSale * item.quantity
-    acc[productId].profit += item.profit || 0
-    return acc
-  }, {} as Record<string, any>)
+      acc[productId].quantity += item.quantity
+      acc[productId].revenue += item.total
+      acc[productId].cost += item.purchasePriceAtSale * item.quantity
+      acc[productId].profit += item.profit || 0
+      return acc
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    {} as Record<string, any>,
+  )
 
   return {
     sales,
@@ -123,10 +130,7 @@ export async function getSalesReport(filters?: {
   }
 }
 
-export async function getInventoryReport(filters?: {
-  category?: ProductCategory
-  lowStock?: boolean
-}) {
+export async function getInventoryReport(filters?: { category?: ProductCategory; lowStock?: boolean }) {
   await requireAdmin()
   const where = {
     deletedAt: null,
@@ -139,30 +143,33 @@ export async function getInventoryReport(filters?: {
   })
 
   if (filters?.lowStock) {
-    products = products.filter(p => p.stock <= p.minStock)
+    products = products.filter((p) => p.stock <= p.minStock)
   }
 
   const totalProducts = products.length
   const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
-  const totalValue = products.reduce((sum, product) => sum + (product.stock * product.salePrice), 0)
-  const totalCostValue = products.reduce((sum, product) => sum + (product.stock * product.purchasePrice), 0)
-  const inStockCount = products.filter(product => product.stock > product.minStock).length
-  const lowStockCount = products.filter(product => product.stock > 0 && product.stock <= product.minStock).length
-  const outOfStockCount = products.filter(product => product.stock === 0).length
+  const totalValue = products.reduce((sum, product) => sum + product.stock * product.salePrice, 0)
+  const totalCostValue = products.reduce((sum, product) => sum + product.stock * product.purchasePrice, 0)
+  const inStockCount = products.filter((product) => product.stock > product.minStock).length
+  const lowStockCount = products.filter((product) => product.stock > 0 && product.stock <= product.minStock).length
+  const outOfStockCount = products.filter((product) => product.stock === 0).length
 
-  const categoryStats = products.reduce((acc, product) => {
-    if (!acc[product.category]) {
-      acc[product.category] = {
-        count: 0,
-        stock: 0,
-        value: 0,
+  const categoryStats = products.reduce(
+    (acc, product) => {
+      if (!acc[product.category]) {
+        acc[product.category] = {
+          count: 0,
+          stock: 0,
+          value: 0,
+        }
       }
-    }
-    acc[product.category].count += 1
-    acc[product.category].stock += product.stock
-    acc[product.category].value += product.stock * product.salePrice
-    return acc
-  }, {} as Record<ProductCategory, { count: number; stock: number; value: number }>)
+      acc[product.category].count += 1
+      acc[product.category].stock += product.stock
+      acc[product.category].value += product.stock * product.salePrice
+      return acc
+    },
+    {} as Record<ProductCategory, { count: number; stock: number; value: number }>,
+  )
 
   return {
     products,
@@ -187,12 +194,13 @@ export async function getRepairsReport(filters?: {
 }) {
   await requireAdmin()
   const where = {
-    ...(filters?.startDate && filters?.endDate && {
-      createdAt: {
-        gte: filters.startDate,
-        lte: filters.endDate,
-      },
-    }),
+    ...(filters?.startDate &&
+      filters?.endDate && {
+        createdAt: {
+          gte: filters.startDate,
+          lte: filters.endDate,
+        },
+      }),
     ...(filters?.status && { status: filters.status }),
     ...(filters?.clientId && { clientId: filters.clientId }),
   }
@@ -249,38 +257,45 @@ export async function getRepairsReport(filters?: {
   const averageRepair = totalRepairs > 0 ? totalRevenue / totalRepairs : 0
   const avgProfit = totalRepairs > 0 ? totalProfit / totalRepairs : 0
 
-  const statusStats = repairs.reduce((acc, repair) => {
-    if (!acc[repair.status]) {
-      acc[repair.status] = {
-        count: 0,
-        revenue: 0,
-        profit: 0,
+  const statusStats = repairs.reduce(
+    (acc, repair) => {
+      if (!acc[repair.status]) {
+        acc[repair.status] = {
+          count: 0,
+          revenue: 0,
+          profit: 0,
+        }
       }
-    }
-    acc[repair.status].count += 1
-    acc[repair.status].revenue += repair.cost
-    acc[repair.status].profit += repair.profit || 0
-    return acc
-  }, {} as Record<RepairStatus, { count: number; revenue: number; profit: number }>)
+      acc[repair.status].count += 1
+      acc[repair.status].revenue += repair.cost
+      acc[repair.status].profit += repair.profit || 0
+      return acc
+    },
+    {} as Record<RepairStatus, { count: number; revenue: number; profit: number }>,
+  )
 
-  const deviceStats = repairs.reduce((acc, repair) => {
-    const device = repair.device
-    if (!acc[device]) {
-      acc[device] = {
-        count: 0,
-        revenue: 0,
-        profit: 0,
+  const deviceStats = repairs.reduce(
+    (acc, repair) => {
+      const device = repair.device
+      if (!acc[device]) {
+        acc[device] = {
+          count: 0,
+          revenue: 0,
+          profit: 0,
+        }
       }
-    }
-    acc[device].count += 1
-    acc[device].revenue += repair.cost
-    acc[device].profit += repair.profit || 0
-    return acc
-  }, {} as Record<string, { count: number; revenue: number; profit: number }>)
+      acc[device].count += 1
+      acc[device].revenue += repair.cost
+      acc[device].profit += repair.profit || 0
+      return acc
+    },
+    {} as Record<string, { count: number; revenue: number; profit: number }>,
+  )
 
-  const mostProfitable = repairs.length > 0
-    ? repairs.reduce((max, repair) => (repair.profit || 0) > (max.profit || 0) ? repair : max, repairs[0])
-    : null
+  const mostProfitable =
+    repairs.length > 0
+      ? repairs.reduce((max, repair) => ((repair.profit || 0) > (max.profit || 0) ? repair : max), repairs[0])
+      : null
 
   return {
     repairs,
@@ -305,12 +320,15 @@ export async function getClientsReport(filters?: {
   hasRepairs?: boolean
 }) {
   await requireAdmin()
-  const dateFilter = filters?.startDate && filters?.endDate ? {
-    createdAt: {
-      gte: filters.startDate,
-      lte: filters.endDate,
-    },
-  } : undefined
+  const dateFilter =
+    filters?.startDate && filters?.endDate
+      ? {
+          createdAt: {
+            gte: filters.startDate,
+            lte: filters.endDate,
+          },
+        }
+      : undefined
 
   const clients = await prisma.client.findMany({
     where: { deletedAt: null },
@@ -350,13 +368,13 @@ export async function getClientsReport(filters?: {
 
   let filteredClients = clients
   if (filters?.hasSales) {
-    filteredClients = filteredClients.filter(client => client.sales.length > 0)
+    filteredClients = filteredClients.filter((client) => client.sales.length > 0)
   }
   if (filters?.hasRepairs) {
-    filteredClients = filteredClients.filter(client => client.repairs.length > 0)
+    filteredClients = filteredClients.filter((client) => client.repairs.length > 0)
   }
 
-  const saleIds = filteredClients.flatMap(c => c.sales.map(s => s.id))
+  const saleIds = filteredClients.flatMap((c) => c.sales.map((s) => s.id))
   const salesProfitMap: Record<string, number> = {}
   if (saleIds.length > 0) {
     const saleProfits = await prisma.saleItem.groupBy({
@@ -378,7 +396,7 @@ export async function getClientsReport(filters?: {
     clientSalesProfitMap[c.id] = totalProfit
   }
 
-  const clientStats = filteredClients.map(client => {
+  const clientStats = filteredClients.map((client) => {
     const totalSalesSpent = client.sales.reduce((sum, sale) => sum + sale.total, 0)
     const totalRepairsCost = client.repairs.reduce((sum, repair) => sum + repair.cost, 0)
     const totalRepairsProfit = client.repairs.reduce((sum, repair) => sum + (repair.profit || 0), 0)
@@ -398,12 +416,15 @@ export async function getClientsReport(filters?: {
   const totalClients = clientStats.length
   const totalSpent = clientStats.reduce((sum, client) => sum + client.totalSpent, 0)
   const averageSpent = totalClients > 0 ? totalSpent / totalClients : 0
-  const totalProfit = clientStats.reduce((sum, client) => sum + (client.totalSalesProfit || 0) + (client.totalRepairsProfit || 0), 0)
-  const newClients = filters?.startDate && filters?.endDate
-    ? clientStats.filter(client =>
-        client.createdAt >= filters.startDate! && client.createdAt <= filters.endDate!
-      ).length
-    : 0
+  const totalProfit = clientStats.reduce(
+    (sum, client) => sum + (client.totalSalesProfit || 0) + (client.totalRepairsProfit || 0),
+    0,
+  )
+  const newClients =
+    filters?.startDate && filters?.endDate
+      ? clientStats.filter((client) => client.createdAt >= filters.startDate! && client.createdAt <= filters.endDate!)
+          .length
+      : 0
 
   return {
     clients: clientStats,
@@ -434,6 +455,7 @@ export async function generateReportData(reportType: string, filters: ReportFilt
       })
     case 'inventory':
       return await getInventoryReport({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         category: filters.category as any,
         lowStock: false,
       })
@@ -441,6 +463,7 @@ export async function generateReportData(reportType: string, filters: ReportFilt
       return await getRepairsReport({
         startDate: filters.startDate,
         endDate: filters.endDate,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: filters.status as any,
         clientId: undefined,
       })

@@ -11,7 +11,10 @@ const UpdateSettingsSchema = z.object({
   companyPhone: z.string().optional().default(''),
   companyEmail: z.string().email('Email inválido').optional().or(z.literal('')),
   defaultMinStock: z.coerce.number().int().min(0).max(999999).default(5),
-  lowStockAlert: z.string().optional().transform(v => v === 'true'),
+  lowStockAlert: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true'),
   currency: z.enum(['COP', 'USD', 'EUR']).default('COP'),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   receiptFooter: z.string().optional().default(''),

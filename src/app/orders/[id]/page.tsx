@@ -4,11 +4,28 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Globe, Phone, Mail, MapPin, Package, FileText, Truck, LayoutDashboard, MessageCircle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Globe,
+  Phone,
+  Mail,
+  MapPin,
+  Package,
+  FileText,
+  Truck,
+  LayoutDashboard,
+  MessageCircle,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -18,7 +35,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { getOrderById, updateOrderStatus, updateOrderNotes } from '@/modules/orders/orders.actions'
 import { OrderStatus } from '@prisma/client'
 
-const statusInfo: Record<OrderStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }> = {
+const statusInfo: Record<
+  OrderStatus,
+  { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }
+> = {
   PENDING: { label: 'Pendiente', variant: 'warning' },
   CONFIRMED: { label: 'Confirmado', variant: 'info' },
   PREPARING: { label: 'Preparando', variant: 'info' },
@@ -45,6 +65,7 @@ const statusMessages: Record<OrderStatus, string> = {
   CANCELLED: 'lamentamos informarte que tu pedido fue cancelado.',
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getWhatsAppUrl(order: any): string {
   const cleanPhone = order.clientPhone.replace(/[^0-9]/g, '')
   const finalPhone = cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`
@@ -56,6 +77,7 @@ function getWhatsAppUrl(order: any): string {
 export default function OrderDetailPage() {
   const router = useRouter()
   const { id } = useParams() as { id: string }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [changingStatus, setChangingStatus] = useState(false)
@@ -124,7 +146,9 @@ export default function OrderDetailPage() {
         <Skeleton className="h-9 w-48" />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
-            <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+            <CardHeader>
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
             <CardContent className="space-y-4">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -132,7 +156,9 @@ export default function OrderDetailPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+            <CardHeader>
+              <Skeleton className="h-5 w-24" />
+            </CardHeader>
             <CardContent className="space-y-3">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
@@ -179,7 +205,9 @@ export default function OrderDetailPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Estado del Pedido</CardTitle>
-                <StatusBadge variant={info.variant} dot className="text-sm px-3 py-1">{info.label}</StatusBadge>
+                <StatusBadge variant={info.variant} dot className="text-sm px-3 py-1">
+                  {info.label}
+                </StatusBadge>
               </div>
             </CardHeader>
             {nextStatuses.length > 0 && (
@@ -190,7 +218,12 @@ export default function OrderDetailPage() {
                     if (status === 'CANCELLED') {
                       return (
                         <Dialog key={status} open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-                          <Button variant="destructive" size="sm" onClick={() => setCancelDialogOpen(true)} disabled={changingStatus}>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setCancelDialogOpen(true)}
+                            disabled={changingStatus}
+                          >
                             Cancelar Pedido
                           </Button>
                           <DialogContent>
@@ -199,7 +232,9 @@ export default function OrderDetailPage() {
                               <DialogDescription>
                                 Esta acción devolverá {order.items?.length || 0} producto(s) al inventario.
                                 {order.externalReference && (
-                                  <span className="block mt-1">El pedido en la tienda online también será afectado.</span>
+                                  <span className="block mt-1">
+                                    El pedido en la tienda online también será afectado.
+                                  </span>
                                 )}
                               </DialogDescription>
                             </DialogHeader>
@@ -248,6 +283,7 @@ export default function OrderDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="divide-y">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {order.items?.map((item: any) => (
                   <div key={item.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                     <div>
@@ -377,13 +413,7 @@ export default function OrderDetailPage() {
                 placeholder="Notas internas del pedido (solo visible en backoffice)"
                 rows={3}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveNotes}
-                disabled={savingNotes}
-                className="w-full"
-              >
+              <Button variant="outline" size="sm" onClick={handleSaveNotes} disabled={savingNotes} className="w-full">
                 {savingNotes ? 'Guardando...' : 'Guardar Notas'}
               </Button>
             </CardContent>

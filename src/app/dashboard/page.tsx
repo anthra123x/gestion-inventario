@@ -8,12 +8,24 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency, formatNumber } from '@/lib/format'
-import { Package, ShoppingCart, Wrench, Users, TrendingUp, TrendingDown, AlertTriangle, ArrowRight, Clock, CheckCircle2, Globe } from 'lucide-react'
+import {
+  Package,
+  ShoppingCart,
+  Wrench,
+  Users,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Globe,
+} from 'lucide-react'
 import { getDashboardStats } from '@/modules/dashboard/dashboard.actions'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 export default function DashboardPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -174,7 +186,10 @@ export default function DashboardPage() {
                 </div>
                 Stock Bajo
               </CardTitle>
-              <Link href="/inventory?filter=low" className="text-xs text-primary hover:underline flex items-center gap-1">
+              <Link
+                href="/inventory?filter=low"
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
                 Ver todos <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -185,15 +200,21 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">Todo el stock está en niveles seguros</p>
             ) : (
               <div className="space-y-3">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {lowStockProducts.slice(0, 5).map((product: any) => (
-                  <div key={product.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                  >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground">
                         Stock: {product.stock} / Min: {product.minStock}
                       </p>
                     </div>
-                    <StatusBadge variant="warning" dot>{product.stock} und</StatusBadge>
+                    <StatusBadge variant="warning" dot>
+                      {product.stock} und
+                    </StatusBadge>
                   </div>
                 ))}
               </div>
@@ -222,11 +243,17 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">No hay ventas registradas</p>
             ) : (
               <div className="space-y-3">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {recentSales.map((sale: any) => (
-                  <div key={sale.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                  <div
+                    key={sale.id}
+                    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                  >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{sale.client?.name || 'Cliente ocasional'}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleDateString('es-CO')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(sale.createdAt).toLocaleDateString('es-CO')}
+                      </p>
                     </div>
                     <span className="text-sm font-semibold text-emerald-600">{formatCurrency(sale.total || 0)}</span>
                   </div>
@@ -257,26 +284,37 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">No hay reparaciones activas</p>
             ) : (
               <div className="space-y-3">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {recentRepairs.map((repair: any) => (
-                  <div key={repair.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                  <div
+                    key={repair.id}
+                    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                  >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{repair.client?.name || 'Cliente'}</p>
                       <p className="text-xs text-muted-foreground">{repair.device}</p>
                     </div>
-                    <StatusBadge 
+                    <StatusBadge
                       variant={
-                        repair.status === 'READY' ? 'success' :
-                        repair.status === 'IN_PROGRESS' ? 'info' :
-                        repair.status === 'DELIVERED' ? 'purple' :
-                        'neutral'
+                        repair.status === 'READY'
+                          ? 'success'
+                          : repair.status === 'IN_PROGRESS'
+                            ? 'info'
+                            : repair.status === 'DELIVERED'
+                              ? 'purple'
+                              : 'neutral'
                       }
                       dot
                     >
-                      {repair.status === 'READY' ? 'Listo' :
-                       repair.status === 'IN_PROGRESS' ? 'En progreso' :
-                       repair.status === 'RECEIVED' ? 'Recibido' :
-                       repair.status === 'DELIVERED' ? 'Entregado' :
-                       repair.status}
+                      {repair.status === 'READY'
+                        ? 'Listo'
+                        : repair.status === 'IN_PROGRESS'
+                          ? 'En progreso'
+                          : repair.status === 'RECEIVED'
+                            ? 'Recibido'
+                            : repair.status === 'DELIVERED'
+                              ? 'Entregado'
+                              : repair.status}
                     </StatusBadge>
                   </div>
                 ))}
@@ -307,7 +345,10 @@ export default function DashboardPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-4 space-y-2">
                 <div className="text-4xl font-bold text-indigo-600">{formatNumber(stats.pendingOrders)}</div>
-                <p className="text-sm text-muted-foreground">pedido{stats.pendingOrders !== 1 ? 's' : ''} pendiente{stats.pendingOrders !== 1 ? 's' : ''} de procesar</p>
+                <p className="text-sm text-muted-foreground">
+                  pedido{stats.pendingOrders !== 1 ? 's' : ''} pendiente{stats.pendingOrders !== 1 ? 's' : ''} de
+                  procesar
+                </p>
                 <Link href="/orders">
                   <Button variant="outline" size="sm" className="mt-2">
                     Ir a pedidos <ArrowRight className="ml-2 h-4 w-4" />

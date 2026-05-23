@@ -9,16 +9,25 @@ export async function POST(request: Request) {
 
     const validated = CreateOrderSchema.safeParse(body)
     if (!validated.success) {
-      return NextResponse.json(
-        { error: getZodErrorMessage(validated) },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: getZodErrorMessage(validated) }, { status: 400 })
     }
 
-    const { clientName, clientPhone, clientEmail, clientCity, clientAddress, clientNotes, subtotal, shipping, total, externalReference, items } = validated.data
+    const {
+      clientName,
+      clientPhone,
+      clientEmail,
+      clientCity,
+      clientAddress,
+      clientNotes,
+      subtotal: _subtotal,
+      shipping,
+      total,
+      externalReference,
+      items,
+    } = validated.data
 
     // Fetch all products in one query
-    const productIds = items.map(i => i.productId)
+    const productIds = items.map((i) => i.productId)
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, deletedAt: null },
       select: {
@@ -31,7 +40,7 @@ export async function POST(request: Request) {
       },
     })
 
-    const productMap = new Map(products.map(p => [p.id, p]))
+    const productMap = new Map(products.map((p) => [p.id, p]))
 
     for (const item of items) {
       const product = productMap.get(item.productId)
@@ -39,22 +48,19 @@ export async function POST(request: Request) {
       if (!product) {
         return NextResponse.json(
           { error: `Producto no encontrado o no disponible: ${item.productId}` },
-          { status: 404 }
+          { status: 404 },
         )
       }
 
       if (!product.ecommerce || !product.ecommerce.visible) {
         return NextResponse.json(
           { error: `Producto no disponible para venta online: ${product.name}` },
-          { status: 409 }
+          { status: 409 },
         )
       }
 
       if (product.stock < item.quantity) {
-        return NextResponse.json(
-          { error: `Stock insuficiente para ${product.name}` },
-          { status: 409 }
-        )
+        return NextResponse.json({ error: `Stock insuficiente para ${product.name}` }, { status: 409 })
       }
 
       // Validate unitPrice against DB price (prevent price manipulation)
@@ -62,7 +68,7 @@ export async function POST(request: Request) {
       if (item.unitPrice !== expectedPrice) {
         return NextResponse.json(
           { error: `Precio inválido para ${product.name}. El precio debe ser ${expectedPrice}` },
-          { status: 400 }
+          { status: 400 },
         )
       }
     }
@@ -72,10 +78,7 @@ export async function POST(request: Request) {
     const computedTotal = computedSubtotal + (shipping || 0)
 
     if (Math.abs(computedTotal - total) > 1) {
-      return NextResponse.json(
-        { error: 'El total no coincide con el subtotal más el envío' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'El total no coincide con el subtotal más el envío' }, { status: 400 })
     }
 
     if (externalReference) {
@@ -85,7 +88,7 @@ export async function POST(request: Request) {
       if (existing) {
         return NextResponse.json(
           { error: `Ya existe un pedido con la referencia: ${externalReference}` },
-          { status: 409 }
+          { status: 409 },
         )
       }
     }
@@ -135,9 +138,6 @@ export async function POST(request: Request) {
     if (message?.startsWith('Stock insuficiente')) {
       return NextResponse.json({ error: message }, { status: 409 })
     }
-    return NextResponse.json(
-      { error: 'Error al crear el pedido' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al crear el pedido' }, { status: 500 })
   }
 }

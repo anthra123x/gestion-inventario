@@ -9,12 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import * as XLSX from 'xlsx'
-import { FileText, Download, Filter, BarChart3, Package, Users, Wrench, TrendingUp, DollarSign, TrendingDown, PiggyBank, AlertTriangle, XCircle, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { FileText, Download, Filter, BarChart3, Package, Users, Wrench, TrendingUp, DollarSign, PiggyBank, AlertTriangle, XCircle, Search, ChevronUp, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { generateReportData } from '@/modules/reports/reports.actions'
 import { getRepairStatusLabel, getStockStatus } from '@/lib/labels'
-import { ProductCategory, RepairStatus, PaymentMethod } from '@prisma/client'
 
 type SortDir = 'asc' | 'desc'
 
@@ -68,7 +67,9 @@ function EmptyState({ message }: { message: string }) {
 
 export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<string>('sales')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [filters, setFilters] = useState<any>({ status: '', category: '' })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reportData, setReportData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
@@ -122,19 +123,24 @@ export default function ReportsPage() {
 
     setExportLoading(true)
     try {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       let rows: any[] = []
       let filename = ''
 
       switch (selectedReport) {
         case 'sales': {
           const salesData = reportData.sales || []
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
           rows = salesData.map((s: any) => {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             const cost = s.saleItems.reduce((sum: number, i: any) => sum + (i.purchasePriceAtSale * i.quantity), 0)
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             const profit = s.saleItems.reduce((sum: number, i: any) => sum + (i.profit || 0), 0)
             return {
               ID: s.id.slice(-8).toUpperCase(),
               Fecha: new Date(s.createdAt).toLocaleDateString('es-CO'),
               Cliente: s.client?.name || s.clientName || 'Ocasional',
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
               Productos: s.saleItems.map((i: any) => i.product?.name).join(', '),
               'Método Pago': s.paymentMethod,
               Subtotal: s.total + (s.discountAmount || 0),
@@ -150,6 +156,7 @@ export default function ReportsPage() {
         }
         case 'inventory': {
           const products = reportData.products || []
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
           rows = products.map((p: any) => ({
             Producto: p.name,
             Categoria: p.category,
@@ -165,6 +172,7 @@ export default function ReportsPage() {
         }
         case 'repairs': {
           const repairs = reportData.repairs || []
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
           rows = repairs.map((r: any) => ({
             ID: r.id.slice(-8).toUpperCase(),
             Fecha: new Date(r.createdAt).toLocaleDateString('es-CO'),
@@ -182,6 +190,7 @@ export default function ReportsPage() {
         }
         case 'clients': {
           const clients = reportData.clients || []
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
           rows = clients.map((c: any) => ({
             Nombre: c.name,
             Teléfono: c.phone,
@@ -317,6 +326,7 @@ export default function ReportsPage() {
             {selectedReport === 'inventory' && (
               <div>
                 <Label htmlFor="category">Categoría</Label>
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Select value={filters.category} onValueChange={(value) => setFilters((prev: any) => ({ ...prev, category: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todas" />
@@ -335,6 +345,7 @@ export default function ReportsPage() {
             {selectedReport === 'repairs' && (
               <div>
                 <Label htmlFor="status">Estado</Label>
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Select value={filters.status} onValueChange={(value) => setFilters((prev: any) => ({ ...prev, status: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todos" />
@@ -421,6 +432,7 @@ export default function ReportsPage() {
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SalesSummary({ data, formatCurrency }: { data: any; formatCurrency: (n: number) => string }) {
   const s = data.summary
   return (
@@ -445,6 +457,7 @@ function SalesSummary({ data, formatCurrency }: { data: any; formatCurrency: (n:
       )}
       {data.topProducts?.length > 0 && (
         <BreakdownCard title="Productos Más Vendidos">
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {data.topProducts.slice(0, 10).map((p: any, i: number) => (
             <div key={p.product?.id || i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
@@ -466,6 +479,7 @@ function SalesSummary({ data, formatCurrency }: { data: any; formatCurrency: (n:
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function InventorySummary({ data, formatCurrency }: { data: any; formatCurrency: (n: number) => string }) {
   const s = data.summary
   return (
@@ -492,6 +506,7 @@ function InventorySummary({ data, formatCurrency }: { data: any; formatCurrency:
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function RepairsSummary({ data, formatCurrency }: { data: any; formatCurrency: (n: number) => string }) {
   const s = data.summary
   return (
@@ -541,6 +556,7 @@ function RepairsSummary({ data, formatCurrency }: { data: any; formatCurrency: (
       )}
       {data.deviceStats?.length > 0 && (
         <BreakdownCard title="Por Tipo de Dispositivo">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {data.deviceStats.slice(0, 10).map(([device, data]: [string, any]) => (
             <BreakdownRow key={device} label={device} sub={`${data.count} reparaciones`} value={formatCurrency(data.revenue)} extra={`Ganancia: ${formatCurrency(data.profit || 0)}`} />
           ))}
@@ -550,6 +566,7 @@ function RepairsSummary({ data, formatCurrency }: { data: any; formatCurrency: (
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ClientsSummary({ data, formatCurrency }: { data: any; formatCurrency: (n: number) => string }) {
   const s = data.summary
   return (
@@ -563,6 +580,7 @@ function ClientsSummary({ data, formatCurrency }: { data: any; formatCurrency: (
       <MetricCard icon={<DollarSign className="h-5 w-5 text-purple-600" />} title="Gasto Promedio por Cliente" value={formatCurrency(s.averageSpent)} className="text-purple-600" />
       {data.clients?.length > 0 && (
         <BreakdownCard title="Top Clientes">
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {data.clients.slice(0, 15).map((client: any, i: number) => (
             <div key={client.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
@@ -584,23 +602,28 @@ function ClientsSummary({ data, formatCurrency }: { data: any; formatCurrency: (
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SalesDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, onToggle }: any) {
   const filtered = useMemo(() => {
     if (!detailSearch) return data
     const q = detailSearch.toLowerCase()
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return data.filter((s: any) =>
       (s.client?.name || '').toLowerCase().includes(q) ||
       s.id.toLowerCase().includes(q) ||
       (s.user?.name || '').toLowerCase().includes(q) ||
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
       s.saleItems.some((i: any) => (i.product?.name || '').toLowerCase().includes(q))
     )
   }, [data, detailSearch])
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sorted = useMemo(() => sortData(filtered, sortKey, sortDir, (s: any) => {
     switch (sortKey) {
       case 'date': return new Date(s.createdAt).getTime()
       case 'client': return s.client?.name || s.clientName || ''
       case 'total': return s.total
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
       case 'profit': return s.saleItems.reduce((sum: number, i: any) => sum + (i.profit || 0), 0)
       case 'payment': return s.paymentMethod
       default: return new Date(s.createdAt).getTime()
@@ -608,10 +631,13 @@ function SalesDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, on
   }), [filtered, sortKey, sortDir])
 
   const totals = useMemo(() => {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return filtered.reduce((acc: any, s: any) => {
       acc.total += s.total
       acc.discount += s.discountAmount || 0
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
       acc.cost += s.saleItems.reduce((sum: number, i: any) => sum + (i.purchasePriceAtSale * i.quantity), 0)
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       acc.profit += s.saleItems.reduce((sum: number, i: any) => sum + (i.profit || 0), 0)
       return acc
     }, { total: 0, discount: 0, cost: 0, profit: 0 })
@@ -639,8 +665,11 @@ function SalesDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, on
             </tr>
           </thead>
           <tbody>
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {sorted.map((sale: any) => {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               const cost = sale.saleItems.reduce((sum: number, i: any) => sum + (i.purchasePriceAtSale * i.quantity), 0)
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               const profit = sale.saleItems.reduce((sum: number, i: any) => sum + (i.profit || 0), 0)
               const subtotal = sale.total + (sale.discountAmount || 0)
               return (
@@ -650,6 +679,7 @@ function SalesDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, on
                   <td className="px-3 py-2.5 font-medium">{sale.client?.name || sale.clientName || 'Ocasional'}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex flex-wrap gap-1">
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {sale.saleItems.slice(0, 3).map((item: any, i: number) => (
                         <Badge key={i} variant="outline" className="text-xs">{item.product?.name || 'N/A'} x{item.quantity}</Badge>
                       ))}
@@ -692,10 +722,12 @@ function SalesDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, on
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function RepairsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, onToggle }: any) {
   const filtered = useMemo(() => {
     if (!detailSearch) return data
     const q = detailSearch.toLowerCase()
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return data.filter((r: any) =>
       (r.client?.name || '').toLowerCase().includes(q) ||
       r.device.toLowerCase().includes(q) ||
@@ -704,6 +736,7 @@ function RepairsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
     )
   }, [data, detailSearch])
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sorted = useMemo(() => sortData(filtered, sortKey, sortDir, (r: any) => {
     switch (sortKey) {
       case 'date': return new Date(r.createdAt).getTime()
@@ -717,6 +750,7 @@ function RepairsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
   }), [filtered, sortKey, sortDir])
 
   const totals = useMemo(() => {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return filtered.reduce((acc: any, r: any) => {
       acc.cost += r.cost
       acc.partsCost += r.partsCost || 0
@@ -747,6 +781,7 @@ function RepairsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
             </tr>
           </thead>
           <tbody>
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {sorted.map((repair: any) => (
               <tr key={repair.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                 <td className="px-3 py-2.5 font-mono text-xs">#{repair.id.slice(-6)}</td>
@@ -756,6 +791,7 @@ function RepairsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
                 <td className="px-3 py-2.5 max-w-48 truncate text-muted-foreground text-xs" title={repair.problem}>{repair.problem}</td>
                 <td className="px-3 py-2.5">
                   <div className="flex flex-wrap gap-1">
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {repair.repairParts?.length > 0 ? repair.repairParts.slice(0, 2).map((part: any, i: number) => (
                       <Badge key={i} variant="outline" className="text-xs">{part.product?.name || 'N/A'} x{part.quantity}</Badge>
                     )) : <span className="text-xs text-muted-foreground">—</span>}
@@ -793,10 +829,12 @@ function RepairsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function InventoryDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, onToggle }: any) {
   const filtered = useMemo(() => {
     if (!detailSearch) return data
     const q = detailSearch.toLowerCase()
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return data.filter((p: any) =>
       p.name.toLowerCase().includes(q) ||
       p.category?.toLowerCase().includes(q) ||
@@ -804,6 +842,7 @@ function InventoryDetails({ data, sortKey, sortDir, detailSearch, formatCurrency
     )
   }, [data, detailSearch])
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sorted = useMemo(() => sortData(filtered, sortKey, sortDir, (p: any) => {
     switch (sortKey) {
       case 'name': return p.name
@@ -817,6 +856,7 @@ function InventoryDetails({ data, sortKey, sortDir, detailSearch, formatCurrency
   }), [filtered, sortKey, sortDir])
 
   const totals = useMemo(() => {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return filtered.reduce((acc: any, p: any) => {
       acc.stock += p.stock
       acc.saleValue += p.stock * p.salePrice
@@ -846,6 +886,7 @@ function InventoryDetails({ data, sortKey, sortDir, detailSearch, formatCurrency
             </tr>
           </thead>
           <tbody>
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {sorted.map((product: any) => {
               const margin = product.salePrice > 0 ? ((product.salePrice - product.purchasePrice) / product.salePrice) * 100 : 0
               const { label, variant } = getStockStatus(product.stock, product.minStock)
@@ -891,10 +932,12 @@ function InventoryDetails({ data, sortKey, sortDir, detailSearch, formatCurrency
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ClientsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, onToggle }: any) {
   const filtered = useMemo(() => {
     if (!detailSearch) return data
     const q = detailSearch.toLowerCase()
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return data.filter((c: any) =>
       c.name.toLowerCase().includes(q) ||
       (c.phone || '').toLowerCase().includes(q) ||
@@ -902,6 +945,7 @@ function ClientsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
     )
   }, [data, detailSearch])
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sorted = useMemo(() => sortData(filtered, sortKey, sortDir, (c: any) => {
     switch (sortKey) {
       case 'name': return c.name
@@ -913,6 +957,7 @@ function ClientsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
   }), [filtered, sortKey, sortDir])
 
   const totals = useMemo(() => {
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
     return filtered.reduce((acc: any, c: any) => {
       acc.spent += c.totalSpent || 0
       acc.transactions += c.totalTransactions || 0
@@ -939,6 +984,7 @@ function ClientsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
             </tr>
           </thead>
           <tbody>
+{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {sorted.map((client: any) => {
               const clientProfit = (client.totalSalesProfit || 0) + (client.totalRepairsProfit || 0)
               return (
@@ -975,6 +1021,7 @@ function ClientsDetails({ data, sortKey, sortDir, detailSearch, formatCurrency, 
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StatCard({ title, value, className }: { title: string; value: any; className?: string }) {
   return (
     <Card>
@@ -986,6 +1033,7 @@ function StatCard({ title, value, className }: { title: string; value: any; clas
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MetricCard({ icon, title, value, className }: { icon: React.ReactNode; title: string; value: any; className?: string }) {
   return (
     <Card>

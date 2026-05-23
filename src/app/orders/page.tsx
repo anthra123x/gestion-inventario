@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Globe, Eye, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -18,7 +18,10 @@ import { formatCurrency } from '@/lib/format'
 import { getOrders, getOrderStats } from '@/modules/orders/orders.actions'
 import { OrderStatus } from '@prisma/client'
 
-const statusInfo: Record<OrderStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }> = {
+const statusInfo: Record<
+  OrderStatus,
+  { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }
+> = {
   PENDING: { label: 'Pendiente', variant: 'warning' },
   CONFIRMED: { label: 'Confirmado', variant: 'info' },
   PREPARING: { label: 'Preparando', variant: 'info' },
@@ -28,7 +31,9 @@ const statusInfo: Record<OrderStatus, { label: string; variant: 'success' | 'war
 }
 
 export default function OrdersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [orders, setOrders] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -125,10 +130,34 @@ export default function OrdersPage() {
 
       {stats && (
         <StatCardGrid columns={4}>
-          <StatCard title="Total Pedidos" value={stats.total} change={`${stats.total} pedidos`} icon={Globe} color="default" />
-          <StatCard title="Pendientes" value={stats.pending} change="Esperando confirmación" icon={Globe} color="warning" />
-          <StatCard title="En Proceso" value={stats.confirmed + stats.preparing + stats.shipped} change="Confirmados + Preparando + Enviados" icon={Globe} color="info" />
-          <StatCard title="Ingresos" value={formatCurrency(stats.totalRevenue)} change="Total no cancelados" icon={Globe} color="success" />
+          <StatCard
+            title="Total Pedidos"
+            value={stats.total}
+            change={`${stats.total} pedidos`}
+            icon={Globe}
+            color="default"
+          />
+          <StatCard
+            title="Pendientes"
+            value={stats.pending}
+            change="Esperando confirmación"
+            icon={Globe}
+            color="warning"
+          />
+          <StatCard
+            title="En Proceso"
+            value={stats.confirmed + stats.preparing + stats.shipped}
+            change="Confirmados + Preparando + Enviados"
+            icon={Globe}
+            color="info"
+          />
+          <StatCard
+            title="Ingresos"
+            value={formatCurrency(stats.totalRevenue)}
+            change="Total no cancelados"
+            icon={Globe}
+            color="success"
+          />
         </StatCardGrid>
       )}
 
@@ -188,11 +217,15 @@ export default function OrdersPage() {
                       </TableCell>
                       <TableCell className="font-semibold">{formatCurrency(order.total)}</TableCell>
                       <TableCell>
-                        <StatusBadge variant={info.variant} dot>{info.label}</StatusBadge>
+                        <StatusBadge variant={info.variant} dot>
+                          {info.label}
+                        </StatusBadge>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">{new Date(order.createdAt).toLocaleDateString('es-CO')}</div>
-                        <div className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleTimeString('es-CO')}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleTimeString('es-CO')}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/orders/${order.id}`}>
@@ -212,7 +245,11 @@ export default function OrdersPage() {
             <EmptyState
               icon={Globe}
               title={search || statusFilter !== 'ALL' ? 'Sin resultados' : 'Sin pedidos online'}
-              description={search || statusFilter !== 'ALL' ? 'No hay pedidos que coincidan' : 'Los pedidos de Tecnicell Store aparecerán aquí'}
+              description={
+                search || statusFilter !== 'ALL'
+                  ? 'No hay pedidos que coincidan'
+                  : 'Los pedidos de Tecnicell Store aparecerán aquí'
+              }
             />
           )}
 

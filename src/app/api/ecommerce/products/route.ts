@@ -32,18 +32,26 @@ export async function GET(request: Request) {
         deletedAt: null,
         stock: { gt: 0 },
       },
-      ...(category && category !== 'ALL' && {
-        product: { category: category as any },
-      }),
+      ...(category &&
+        category !== 'ALL' && {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          product: { category: category as any },
+        }),
       ...(featured === 'true' && { featured: true }),
       ...(slugsParam && {
-        slug: { in: slugsParam.split(',').map(s => s.trim()).filter(Boolean) },
+        slug: {
+          in: slugsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        },
       }),
     }
 
     if (search) {
       where.product = {
-        ...(where.product as any || {}),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...((where.product as any) || {}),
         name: { contains: search, mode: 'insensitive' as const },
       }
     }
@@ -51,10 +59,7 @@ export async function GET(request: Request) {
     const [products, total] = await Promise.all([
       prisma.ecommerceProduct.findMany({
         where,
-        orderBy: [
-          { sortOrder: 'asc' },
-          { product: { createdAt: 'desc' } },
-        ],
+        orderBy: [{ sortOrder: 'asc' }, { product: { createdAt: 'desc' } }],
         skip: (page - 1) * limit,
         take: limit,
         include: {
@@ -80,7 +85,7 @@ export async function GET(request: Request) {
 
     const mapped = products.map((ep) => {
       const price = ep.ecommercePrice ?? ep.product.salePrice
-      const primaryImage = ep.media.find(m => m.isPrimary) || ep.media[0] || null
+      const primaryImage = ep.media.find((m) => m.isPrimary) || ep.media[0] || null
 
       return {
         id: ep.product.id,
@@ -99,12 +104,14 @@ export async function GET(request: Request) {
         featured: ep.featured,
         badges: ep.badges,
         tags: ep.tags,
-        image: primaryImage ? {
-          url: primaryImage.url,
-          alt: primaryImage.alt,
-          width: primaryImage.width,
-          height: primaryImage.height,
-        } : null,
+        image: primaryImage
+          ? {
+              url: primaryImage.url,
+              alt: primaryImage.alt,
+              width: primaryImage.width,
+              height: primaryImage.height,
+            }
+          : null,
         createdAt: ep.createdAt.toISOString(),
         updatedAt: ep.updatedAt.toISOString(),
       }
@@ -118,9 +125,6 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('Error fetching ecommerce products:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener productos' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener productos' }, { status: 500 })
   }
 }

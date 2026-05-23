@@ -10,10 +10,7 @@ import { prisma } from '@/lib/prisma'
  * This is the endpoint the storefront should use to get
  * product detail data including images, pricing, badges, etc.
  */
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
 
@@ -21,10 +18,7 @@ export async function GET(
       where: {
         visible: true,
         product: { deletedAt: null },
-        OR: [
-          { productId: id },
-          { slug: id },
-        ],
+        OR: [{ productId: id }, { slug: id }],
       },
       include: {
         product: {
@@ -38,10 +32,7 @@ export async function GET(
           },
         },
         media: {
-          orderBy: [
-            { isPrimary: 'desc' },
-            { sortOrder: 'asc' },
-          ],
+          orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
           select: {
             id: true,
             url: true,
@@ -57,14 +48,11 @@ export async function GET(
     })
 
     if (!ecommerceProduct) {
-      return NextResponse.json(
-        { error: 'Producto no encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
     }
 
     const price = ecommerceProduct.ecommercePrice ?? ecommerceProduct.product.salePrice
-    const primaryImage = ecommerceProduct.media.find(m => m.isPrimary) || ecommerceProduct.media[0] || null
+    const primaryImage = ecommerceProduct.media.find((m) => m.isPrimary) || ecommerceProduct.media[0] || null
 
     return NextResponse.json({
       product: {
@@ -86,7 +74,7 @@ export async function GET(
         tags: ecommerceProduct.tags,
         metaTitle: ecommerceProduct.metaTitle,
         metaDescription: ecommerceProduct.metaDescription,
-        images: ecommerceProduct.media.map(m => ({
+        images: ecommerceProduct.media.map((m) => ({
           id: m.id,
           url: m.url,
           alt: m.alt,
@@ -95,21 +83,20 @@ export async function GET(
           sortOrder: m.sortOrder,
           isPrimary: m.isPrimary,
         })),
-        primaryImage: primaryImage ? {
-          url: primaryImage.url,
-          alt: primaryImage.alt,
-          width: primaryImage.width,
-          height: primaryImage.height,
-        } : null,
+        primaryImage: primaryImage
+          ? {
+              url: primaryImage.url,
+              alt: primaryImage.alt,
+              width: primaryImage.width,
+              height: primaryImage.height,
+            }
+          : null,
         createdAt: ecommerceProduct.createdAt.toISOString(),
         updatedAt: ecommerceProduct.updatedAt.toISOString(),
       },
     })
   } catch (error) {
     console.error('Error fetching ecommerce product:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener producto' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener producto' }, { status: 500 })
   }
 }

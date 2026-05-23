@@ -15,9 +15,7 @@ describe('CreateSaleSchema', () => {
     const result = CreateSaleSchema.safeParse({
       clientName: 'Juan Pérez',
       clientPhone: '3001234567',
-      items: [
-        { productId: 'p1', quantity: 2, unitPrice: 1000 },
-      ],
+      items: [{ productId: 'p1', quantity: 2, unitPrice: 1000 }],
       discountPercent: 10,
       paymentMethod: 'CASH',
     })

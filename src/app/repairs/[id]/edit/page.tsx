@@ -15,7 +15,6 @@ import { formatCurrency } from '@/lib/format'
 import { editRepair, getRepairById } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 
-
 interface RepairPart {
   productId: string
   quantity: number
@@ -28,12 +27,13 @@ interface EditRepairPageProps {
   }>
 }
 
-export default function EditRepairPage({ params }: EditRepairPageProps) {
+export default function EditRepairPage({ params: _params }: EditRepairPageProps) {
   const router = useRouter()
   const { id } = useParams() as { id: string }
   const [isLoading, setIsLoading] = useState(false)
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [products, setProducts] = useState<any[]>([])
   const [selectedProducts, setSelectedProducts] = useState<RepairPart[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -82,6 +82,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
         const laborCost = repairData.cost - repairData.partsCost
         setCost(isNaN(laborCost) || laborCost < 0 ? repairData.cost : laborCost)
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const existingParts: RepairPart[] = repairData.repairParts.map((rp: any) => ({
           productId: rp.productId,
           quantity: rp.quantity,
@@ -90,7 +91,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
         setSelectedProducts(existingParts)
 
         setIsInitialLoading(false)
-      } catch (err) {
+      } catch (_err) {
         toast.error('Error al cargar datos', {
           description: 'No se pudieron cargar los datos de la reparación',
         })
@@ -102,8 +103,8 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
 
   const partsCost = useMemo(() => {
     return selectedProducts.reduce((sum, item) => {
-      const product = products.find(p => p.id === item.productId)
-      return sum + ((product?.purchasePrice || 0) * item.quantity)
+      const product = products.find((p) => p.id === item.productId)
+      return sum + (product?.purchasePrice || 0) * item.quantity
     }, 0)
   }, [selectedProducts, products])
 
@@ -111,7 +112,12 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
 
   const hasLoss = cost > 0 && partsCost > cost
 
-  function handleClientSelect(client: { name: string; phone: string | null; email: string | null; address: string | null }) {
+  function handleClientSelect(client: {
+    name: string
+    phone: string | null
+    email: string | null
+    address: string | null
+  }) {
     setClientName(client.name)
     setClientPhone(client.phone || '')
     setClientEmail(client.email || '')
@@ -121,9 +127,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products
     const term = searchTerm.toLowerCase()
-    return products.filter(
-      p => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term)
-    )
+    return products.filter((p) => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
   }, [searchTerm, products])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -183,9 +187,9 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
   }
 
   function addProduct(productId: string) {
-    const product = products.find(p => p.id === productId)
+    const product = products.find((p) => p.id === productId)
     if (product) {
-      const existingIndex = selectedProducts.findIndex(p => p.productId === productId)
+      const existingIndex = selectedProducts.findIndex((p) => p.productId === productId)
       if (existingIndex >= 0) {
         const updated = [...selectedProducts]
         updated[existingIndex].quantity += 1
@@ -347,7 +351,10 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
 
                 <div className="space-y-2">
                   <Label htmlFor="status">Estado</Label>
-                  <Select value={currentStatus} onValueChange={(value: string | null) => value && setCurrentStatus(value)}>
+                  <Select
+                    value={currentStatus}
+                    onValueChange={(value: string | null) => value && setCurrentStatus(value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar estado" />
                     </SelectTrigger>
@@ -400,15 +407,11 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
                 <Card>
                   <CardContent className="p-1 max-h-64 overflow-y-auto">
                     {filteredProducts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground p-3">
-                        No se encontraron productos
-                      </p>
+                      <p className="text-sm text-muted-foreground p-3">No se encontraron productos</p>
                     ) : (
                       <div className="space-y-0.5">
                         {filteredProducts.map((product) => {
-                          const alreadyAdded = selectedProducts.some(
-                            (p) => p.productId === product.id
-                          )
+                          const alreadyAdded = selectedProducts.some((p) => p.productId === product.id)
                           return (
                             <button
                               key={product.id}
@@ -421,21 +424,13 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
                               className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded text-left transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium truncate">
-                                  {product.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatCurrency(product.salePrice)}
-                                </p>
+                                <p className="text-sm font-medium truncate">{product.name}</p>
+                                <p className="text-xs text-muted-foreground">{formatCurrency(product.salePrice)}</p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 <Badge
                                   variant={
-                                    product.stock === 0
-                                      ? 'destructive'
-                                      : product.stock <= 3
-                                        ? 'warning'
-                                        : 'default'
+                                    product.stock === 0 ? 'destructive' : product.stock <= 3 ? 'warning' : 'default'
                                   }
                                 >
                                   {product.stock} uds.
@@ -468,21 +463,15 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
                     </thead>
                     <tbody>
                       {selectedProducts.map((item, index) => {
-                        const product = products.find(p => p.id === item.productId)
+                        const product = products.find((p) => p.id === item.productId)
                         const subtotal = (product?.purchasePrice || 0) * item.quantity
                         return (
                           <tr key={index} className="border-b last:border-0">
                             <td className="px-3 py-2">
-                              <p className="font-medium truncate max-w-48">
-                                {product?.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Stock: {product?.stock ?? 0}
-                              </p>
+                              <p className="font-medium truncate max-w-48">{product?.name}</p>
+                              <p className="text-xs text-muted-foreground">Stock: {product?.stock ?? 0}</p>
                             </td>
-                            <td className="px-3 py-2 text-right">
-                              {formatCurrency(product?.purchasePrice || 0)}
-                            </td>
+                            <td className="px-3 py-2 text-right">{formatCurrency(product?.purchasePrice || 0)}</td>
                             <td className="px-3 py-2">
                               <Input
                                 type="number"
@@ -495,9 +484,7 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
                                 className="w-20 h-8 mx-auto text-center"
                               />
                             </td>
-                            <td className="px-3 py-2 text-right font-medium">
-                              {formatCurrency(subtotal)}
-                            </td>
+                            <td className="px-3 py-2 text-right font-medium">{formatCurrency(subtotal)}</td>
                             <td className="px-2 py-2">
                               <Button
                                 type="button"
@@ -559,19 +546,13 @@ export default function EditRepairPage({ params }: EditRepairPageProps) {
               </CardContent>
             </Card>
 
-            {error && (
-              <div className="text-red-500 text-sm">{error}</div>
-            )}
+            {error && <div className="text-red-500 text-sm">{error}</div>}
 
             <div className="flex gap-2">
               <Button type="submit" disabled={isLoading || hasLoss}>
                 {isLoading ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push(`/repairs/${id}`)}
-              >
+              <Button type="button" variant="outline" onClick={() => router.push(`/repairs/${id}`)}>
                 Cancelar
               </Button>
             </div>

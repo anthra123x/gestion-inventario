@@ -3,7 +3,7 @@
 import { Search, X } from 'lucide-react'
 import { Input } from './input'
 import { Button } from './button'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
 interface SearchInputProps {
   value: string
@@ -13,12 +13,12 @@ interface SearchInputProps {
   className?: string
 }
 
-export function SearchInput({ 
-  value, 
-  onChange, 
-  placeholder = 'Buscar...', 
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = 'Buscar...',
   debounceMs = 300,
-  className 
+  className,
 }: SearchInputProps) {
   const [localValue, setLocalValue] = useState(value)
 

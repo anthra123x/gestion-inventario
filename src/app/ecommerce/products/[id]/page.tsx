@@ -15,13 +15,17 @@ import { PageHeader } from '@/components/ui/page-header'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import {
-  getEcommerceProductById, updateEcommerceProduct,
-  addEcommerceImage, deleteEcommerceImage, setPrimaryImage,
+  getEcommerceProductById,
+  updateEcommerceProduct,
+  addEcommerceImage,
+  deleteEcommerceImage,
+  setPrimaryImage,
 } from '@/modules/ecommerce/ecommerce.actions'
 
 export default function EcommerceProductDetailPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [item, setItem] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -46,7 +50,11 @@ export default function EcommerceProductDetailPage() {
   async function loadItem() {
     try {
       const data = await getEcommerceProductById(id)
-      if (!data) { toast.error('Producto no encontrado'); router.push('/ecommerce/products'); return }
+      if (!data) {
+        toast.error('Producto no encontrado')
+        router.push('/ecommerce/products')
+        return
+      }
       setItem(data)
       setVisible(data.visible)
       setFeatured(data.featured)
@@ -79,7 +87,10 @@ export default function EcommerceProductDetailPage() {
       fd.set('badges', JSON.stringify(badges))
 
       const result = await updateEcommerceProduct(id, fd)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success!)
     } catch {
       toast.error('Error al guardar')
@@ -105,21 +116,30 @@ export default function EcommerceProductDetailPage() {
     if (!url) return
     const isPrimary = !item?.media?.length
     const result = await addEcommerceImage(id, url, isPrimary)
-    if (result.error) { toast.error(result.error); return }
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success(result.success!)
     loadItem()
   }
 
   async function handleDeleteImage(mediaId: string) {
     const result = await deleteEcommerceImage(mediaId)
-    if (result.error) { toast.error(result.error); return }
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success(result.success!)
     loadItem()
   }
 
   async function handleSetPrimary(mediaId: string) {
     const result = await setPrimaryImage(mediaId, id)
-    if (result.error) { toast.error(result.error); return }
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success(result.success!)
     loadItem()
   }
@@ -130,7 +150,9 @@ export default function EcommerceProductDetailPage() {
         <Skeleton className="h-9 w-64" />
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
           </div>
           <Skeleton className="h-64" />
         </div>
@@ -163,7 +185,9 @@ export default function EcommerceProductDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Pricing */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Precios</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Precios</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -174,11 +198,19 @@ export default function EcommerceProductDetailPage() {
                     onChange={(e) => setEcommercePrice(e.target.value)}
                     placeholder={formatCurrency(item.product.salePrice)}
                   />
-                  <p className="text-xs text-muted-foreground">Precio interno: {formatCurrency(item.product.salePrice)}. Si se deja vacío, se usará el precio interno.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Precio interno: {formatCurrency(item.product.salePrice)}. Si se deja vacío, se usará el precio
+                    interno.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Precio de comparación (tachado)</Label>
-                  <Input type="number" value={compareAtPrice} onChange={(e) => setCompareAtPrice(e.target.value)} placeholder="Ej: precio original" />
+                  <Input
+                    type="number"
+                    value={compareAtPrice}
+                    onChange={(e) => setCompareAtPrice(e.target.value)}
+                    placeholder="Ej: precio original"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -186,7 +218,9 @@ export default function EcommerceProductDetailPage() {
 
           {/* Content */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Contenido</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Contenido</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Slug (URL amigable)</Label>
@@ -194,30 +228,51 @@ export default function EcommerceProductDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label>Descripción corta</Label>
-                <Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} rows={2} placeholder="Breve descripción para tarjetas de producto" />
+                <Textarea
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Breve descripción para tarjetas de producto"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Descripción larga (comercial)</Label>
-                <Textarea value={longDescription} onChange={(e) => setLongDescription(e.target.value)} rows={5} placeholder="Descripción detallada con HTML o markdown" />
+                <Textarea
+                  value={longDescription}
+                  onChange={(e) => setLongDescription(e.target.value)}
+                  rows={5}
+                  placeholder="Descripción detallada con HTML o markdown"
+                />
               </div>
             </CardContent>
           </Card>
 
           {/* Badges */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Badges y etiquetas</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Badges y etiquetas</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {badges.map((b) => (
                   <Badge key={b} variant="secondary" className="gap-1 pr-1">
                     {b}
-                    <button onClick={() => removeBadge(b)} className="ml-1 hover:text-destructive">&times;</button>
+                    <button onClick={() => removeBadge(b)} className="ml-1 hover:text-destructive">
+                      &times;
+                    </button>
                   </Badge>
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input value={badgeInput} onChange={(e) => setBadgeInput(e.target.value)} placeholder="Nuevo, Oferta, Más vendido..." onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBadge())} />
-                <Button variant="outline" onClick={addBadge}>Agregar</Button>
+                <Input
+                  value={badgeInput}
+                  onChange={(e) => setBadgeInput(e.target.value)}
+                  placeholder="Nuevo, Oferta, Más vendido..."
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBadge())}
+                />
+                <Button variant="outline" onClick={addBadge}>
+                  Agregar
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -227,7 +282,9 @@ export default function EcommerceProductDetailPage() {
         <div className="space-y-6">
           {/* Status */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Estado</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Estado</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="visible">Visible en tienda</Label>
@@ -242,7 +299,9 @@ export default function EcommerceProductDetailPage() {
                 <Switch id="showStock" checked={showStock} onCheckedChange={setShowStock} />
               </div>
               {item.publishedAt && (
-                <p className="text-xs text-muted-foreground">Publicado: {new Date(item.publishedAt).toLocaleDateString('es-CO')}</p>
+                <p className="text-xs text-muted-foreground">
+                  Publicado: {new Date(item.publishedAt).toLocaleDateString('es-CO')}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -266,6 +325,7 @@ export default function EcommerceProductDetailPage() {
                     Sin imágenes
                   </div>
                 )}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {item.media?.map((m: any) => (
                   <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                     <div className="h-12 w-12 rounded-md bg-muted overflow-hidden shrink-0">
@@ -277,13 +337,23 @@ export default function EcommerceProductDetailPage() {
                     </div>
                     <div className="flex gap-1">
                       {!m.isPrimary ? (
-                        <Button variant="ghost" size="icon-xs" onClick={() => handleSetPrimary(m.id)} title="Marcar como principal">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleSetPrimary(m.id)}
+                          title="Marcar como principal"
+                        >
                           <StarOff className="h-3 w-3" />
                         </Button>
                       ) : (
                         <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
                       )}
-                      <Button variant="ghost" size="icon-xs" className="text-destructive" onClick={() => handleDeleteImage(m.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="text-destructive"
+                        onClick={() => handleDeleteImage(m.id)}
+                      >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>

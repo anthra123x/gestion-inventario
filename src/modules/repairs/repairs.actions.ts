@@ -95,6 +95,7 @@ export async function createRepair(formData: FormData) {
   await requireAdmin()
   const partsJson = formData.get('parts') as string
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let rawParts: any[]
   try {
     rawParts = partsJson ? JSON.parse(partsJson) : []
@@ -105,6 +106,7 @@ export async function createRepair(formData: FormData) {
   }
 
   // Normalizar parts para evitar NaN
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parts = rawParts.map((part: any) => ({
     productId: part.productId,
     quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
@@ -159,7 +161,7 @@ export async function createRepair(formData: FormData) {
     cost: isNaN(costValue) ? 0 : costValue,
     notes: formData.get('clientNotes') || null,
     internalNotes: formData.get('internalNotes') || null,
-    estimatedDate: formData.get('estimatedDate') as string || null,
+    estimatedDate: (formData.get('estimatedDate') as string) || null,
     parts,
   })
 
@@ -181,6 +183,7 @@ export async function createRepair(formData: FormData) {
         })
       }
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (validationError: any) {
     return {
       error: validationError.message,
@@ -188,10 +191,11 @@ export async function createRepair(formData: FormData) {
   }
 
   try {
-    const { clientId, device, problem, diagnosis, cost, notes, internalNotes, estimatedDate, parts } = validatedFields.data
+    const { clientId, device, problem, diagnosis, cost, notes, internalNotes, estimatedDate, parts } =
+      validatedFields.data
 
     // Calculate parts total (what customer pays for parts)
-    const partsTotal = (parts || []).reduce((sum, part) => sum + (part.unitCost * part.quantity), 0)
+    const partsTotal = (parts || []).reduce((sum, part) => sum + part.unitCost * part.quantity, 0)
     const total = cost + partsTotal
 
     // Fetch purchase prices for profit calculation
@@ -200,7 +204,7 @@ export async function createRepair(formData: FormData) {
       const products = await prisma.product.findMany({
         where: {
           id: {
-            in: parts.map(p => p.productId),
+            in: parts.map((p) => p.productId),
           },
           deletedAt: null,
         },
@@ -216,10 +220,7 @@ export async function createRepair(formData: FormData) {
     }
 
     // Calculate actual parts cost (what business paid)
-    const partsCost = (parts || []).reduce(
-      (sum, part) => sum + ((partsCostMap[part.productId] || 0) * part.quantity),
-      0
-    )
+    const partsCost = (parts || []).reduce((sum, part) => sum + (partsCostMap[part.productId] || 0) * part.quantity, 0)
 
     // Validate: no losses allowed
     if (cost < partsCost) {
@@ -234,10 +235,13 @@ export async function createRepair(formData: FormData) {
     const repair = await prisma.$transaction(async (tx) => {
       // Check stock availability for parts
       if (parts && parts.length > 0) {
-        await checkStockAvailability(tx, parts.map(part => ({
-          productId: part.productId,
-          quantity: part.quantity,
-        })))
+        await checkStockAvailability(
+          tx,
+          parts.map((part) => ({
+            productId: part.productId,
+            quantity: part.quantity,
+          })),
+        )
       }
 
       // Create repair with profit tracking
@@ -253,15 +257,18 @@ export async function createRepair(formData: FormData) {
           notes,
           internalNotes,
           estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
-          repairParts: parts && parts.length > 0 ? {
-            create: parts.map(part => ({
-              productId: part.productId,
-              quantity: part.quantity,
-              unitCost: part.unitCost,
-              total: part.unitCost * part.quantity,
-              purchasePriceAtPart: partsCostMap[part.productId] || 0,
-            })),
-          } : undefined,
+          repairParts:
+            parts && parts.length > 0
+              ? {
+                  create: parts.map((part) => ({
+                    productId: part.productId,
+                    quantity: part.quantity,
+                    unitCost: part.unitCost,
+                    total: part.unitCost * part.quantity,
+                    purchasePriceAtPart: partsCostMap[part.productId] || 0,
+                  })),
+                }
+              : undefined,
         },
         include: {
           repairParts: {
@@ -308,6 +315,7 @@ export async function createRepair(formData: FormData) {
       success: 'Reparación creada exitosamente',
       repair,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return {
       error: error.message || 'Error al crear la reparación',
@@ -346,7 +354,7 @@ export async function updateRepair(id: string, formData: FormData) {
       success: 'Reparación actualizada exitosamente',
       repair,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al actualizar la reparación',
     }
@@ -357,6 +365,7 @@ export async function editRepair(id: string, formData: FormData) {
   await requireAdmin()
   const partsJson = formData.get('parts') as string
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let rawParts: any[]
   try {
     rawParts = partsJson ? JSON.parse(partsJson) : []
@@ -364,6 +373,7 @@ export async function editRepair(id: string, formData: FormData) {
     return { error: 'Datos de repuestos inválidos' }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parts = rawParts.map((part: any) => ({
     productId: part.productId,
     quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
@@ -391,7 +401,7 @@ export async function editRepair(id: string, formData: FormData) {
     cost: isNaN(costValue) ? 0 : costValue,
     notes: formData.get('notes') || null,
     internalNotes: formData.get('internalNotes') || null,
-    estimatedDate: formData.get('estimatedDate') as string || null,
+    estimatedDate: (formData.get('estimatedDate') as string) || null,
     status: statusValue || undefined,
     parts,
   })
@@ -411,6 +421,7 @@ export async function editRepair(id: string, formData: FormData) {
         })
       }
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (validationError: any) {
     return { error: validationError.message }
   }
@@ -428,15 +439,28 @@ export async function editRepair(id: string, formData: FormData) {
       return { error: 'Reparación no encontrada' }
     }
 
-    const { clientName, clientPhone, clientEmail, clientAddress, device, problem, diagnosis, cost, notes, internalNotes, estimatedDate, status, parts } = validatedFields.data
+    const {
+      clientName,
+      clientEmail,
+      clientAddress,
+      device,
+      problem,
+      diagnosis,
+      cost,
+      notes,
+      internalNotes,
+      estimatedDate,
+      status,
+      parts,
+    } = validatedFields.data
 
-    const partsTotal = (parts || []).reduce((sum, part) => sum + (part.unitCost * part.quantity), 0)
+    const partsTotal = (parts || []).reduce((sum, part) => sum + part.unitCost * part.quantity, 0)
     const total = cost + partsTotal
 
     const partsCostMap: Record<string, number> = {}
     if (parts && parts.length > 0) {
       const products = await prisma.product.findMany({
-        where: { id: { in: parts.map(p => p.productId) }, deletedAt: null },
+        where: { id: { in: parts.map((p) => p.productId) }, deletedAt: null },
         select: { id: true, purchasePrice: true },
       })
       for (const product of products) {
@@ -444,9 +468,7 @@ export async function editRepair(id: string, formData: FormData) {
       }
     }
 
-    const partsCost = (parts || []).reduce(
-      (sum, part) => sum + ((partsCostMap[part.productId] || 0) * part.quantity), 0
-    )
+    const partsCost = (parts || []).reduce((sum, part) => sum + (partsCostMap[part.productId] || 0) * part.quantity, 0)
 
     if (cost < partsCost) {
       return {
@@ -493,7 +515,9 @@ export async function editRepair(id: string, formData: FormData) {
           if (diff > 0) {
             if (currentStocks[productId] < diff) {
               const product = await tx.product.findUnique({ where: { id: productId } })
-              throw new Error(`Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${diff}`)
+              throw new Error(
+                `Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${diff}`,
+              )
             }
             await tx.product.update({
               where: { id: productId },
@@ -513,7 +537,9 @@ export async function editRepair(id: string, formData: FormData) {
             const needed = Math.abs(diff)
             if (currentStocks[productId] < needed) {
               const product = await tx.product.findUnique({ where: { id: productId } })
-              throw new Error(`Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${needed}`)
+              throw new Error(
+                `Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${needed}`,
+              )
             }
             await tx.product.update({
               where: { id: productId },
@@ -544,7 +570,9 @@ export async function editRepair(id: string, formData: FormData) {
 
           if (currentStocks[productId] < newQuantity) {
             const product = await tx.product.findUnique({ where: { id: productId } })
-            throw new Error(`Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${newQuantity}`)
+            throw new Error(
+              `Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${newQuantity}`,
+            )
           }
           await tx.product.update({
             where: { id: productId },
@@ -563,7 +591,7 @@ export async function editRepair(id: string, formData: FormData) {
         }
       }
 
-      const clientId = existingRepair.clientId
+      const _clientId = existingRepair.clientId
       if (finalPhone !== existingRepair.client.phone) {
         if (finalPhone) {
           const existingClient = await tx.client.findFirst({
@@ -611,6 +639,7 @@ export async function editRepair(id: string, formData: FormData) {
         where: { repairId: id },
       })
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {
         device,
         problem,
@@ -637,7 +666,7 @@ export async function editRepair(id: string, formData: FormData) {
 
       if (parts && parts.length > 0) {
         await tx.repairPart.createMany({
-          data: parts.map(part => ({
+          data: parts.map((part) => ({
             repairId: id,
             productId: part.productId,
             quantity: part.quantity,
@@ -653,6 +682,7 @@ export async function editRepair(id: string, formData: FormData) {
     revalidatePath(`/repairs/${id}`)
     revalidatePath('/dashboard')
     return { success: 'Reparación actualizada exitosamente' }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { error: error.message || 'Error al actualizar la reparación' }
   }
@@ -711,7 +741,7 @@ export async function deleteRepair(id: string) {
     return {
       success: 'Reparación eliminada exitosamente',
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al eliminar la reparación',
     }
@@ -804,7 +834,7 @@ export async function updateRepairStatus(id: string, status: RepairStatus) {
       success: 'Estado actualizado exitosamente',
       repair,
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al actualizar el estado',
     }

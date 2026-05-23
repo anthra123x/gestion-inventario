@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Eye, Wrench, Clock, CheckCircle, XCircle, PiggyBank, TrendingUp, DollarSign, AlertCircle, ArrowRight } from 'lucide-react'
+import {
+  Plus,
+  Eye,
+  Wrench,
+  Clock,
+  CheckCircle,
+  XCircle,
+  PiggyBank,
+  TrendingUp,
+  DollarSign,
+  AlertCircle,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,7 +30,9 @@ import { getRepairs, getRepairStats, updateRepairStatus } from '@/modules/repair
 import { RepairStatus } from '@prisma/client'
 
 export default function RepairsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [repairs, setRepairs] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -50,7 +63,12 @@ export default function RepairsPage() {
     try {
       setLoading(true)
       const [repairsData, statsData] = await Promise.all([
-        getRepairs(debouncedSearch || undefined, debouncedStatus !== 'ALL' ? debouncedStatus : undefined, page, pageSize),
+        getRepairs(
+          debouncedSearch || undefined,
+          debouncedStatus !== 'ALL' ? debouncedStatus : undefined,
+          page,
+          pageSize,
+        ),
         page === 1 ? getRepairStats() : Promise.resolve(null),
       ])
       setRepairs(repairsData.repairs)
@@ -74,12 +92,15 @@ export default function RepairsPage() {
   }
 
   function getStatusInfo(status: RepairStatus) {
-    const info: Record<RepairStatus, { label: string; icon: typeof Clock; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }> = {
+    const info: Record<
+      RepairStatus,
+      { label: string; icon: typeof Clock; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'purple' }
+    > = {
       RECEIVED: { label: 'Recibido', icon: Clock, variant: 'info' },
       IN_PROGRESS: { label: 'En Progreso', icon: Wrench, variant: 'warning' },
       READY: { label: 'Listo', icon: CheckCircle, variant: 'success' },
       DELIVERED: { label: 'Entregado', icon: CheckCircle, variant: 'purple' },
-      CANCELLED: { label: 'Cancelado', icon: XCircle, variant: 'error' }
+      CANCELLED: { label: 'Cancelado', icon: XCircle, variant: 'error' },
     }
     return info[status]
   }
@@ -90,7 +111,7 @@ export default function RepairsPage() {
       IN_PROGRESS: ['READY', 'RECEIVED', 'CANCELLED'],
       READY: ['DELIVERED', 'IN_PROGRESS', 'RECEIVED', 'CANCELLED'],
       DELIVERED: ['READY', 'IN_PROGRESS', 'RECEIVED'],
-      CANCELLED: ['RECEIVED']
+      CANCELLED: ['RECEIVED'],
     }
     return flow[status] || []
   }
@@ -143,9 +164,8 @@ export default function RepairsPage() {
     )
   }
 
-  const completionRate = stats && stats.totalRepairs > 0 
-    ? Math.round((stats.completedRepairs / stats.totalRepairs) * 100) 
-    : 0
+  const completionRate =
+    stats && stats.totalRepairs > 0 ? Math.round((stats.completedRepairs / stats.totalRepairs) * 100) : 0
 
   return (
     <div className="page-container py-6 space-y-6">
@@ -172,13 +192,7 @@ export default function RepairsPage() {
               icon={Wrench}
               color="default"
             />
-            <StatCard
-              title="Activas"
-              value={stats.activeRepairs}
-              change="En proceso"
-              icon={Clock}
-              color="info"
-            />
+            <StatCard title="Activas" value={stats.activeRepairs} change="En proceso" icon={Clock} color="info" />
             <StatCard
               title="Completadas"
               value={stats.completedRepairs}
@@ -232,11 +246,7 @@ export default function RepairsPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Buscar reparaciones..."
-              />
+              <SearchInput value={search} onChange={setSearch} placeholder="Buscar reparaciones..." />
             </div>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RepairStatus | 'ALL')}>
               <SelectTrigger className="w-full sm:w-[180px]">
@@ -270,7 +280,6 @@ export default function RepairsPage() {
               <TableBody>
                 {repairs.map((repair) => {
                   const statusInfo = getStatusInfo(repair.status)
-                  const StatusIcon = statusInfo.icon
                   return (
                     <TableRow key={repair.id}>
                       <TableCell className="font-mono text-sm">#{repair.id.slice(-6)}</TableCell>
@@ -294,14 +303,14 @@ export default function RepairsPage() {
                       <TableCell className="font-semibold">{formatCurrency(repair.cost)}</TableCell>
                       <TableCell>
                         <div className="text-sm">{new Date(repair.createdAt).toLocaleDateString('es-CO')}</div>
-                        <div className="text-xs text-muted-foreground">{new Date(repair.createdAt).toLocaleTimeString('es-CO')}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(repair.createdAt).toLocaleTimeString('es-CO')}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           {getStatusNextOptions(repair.status).length > 0 && (
-                            <Select
-                              onValueChange={(value) => handleStatusChange(repair.id, value as RepairStatus)}
-                            >
+                            <Select onValueChange={(value) => handleStatusChange(repair.id, value as RepairStatus)}>
                               <SelectTrigger className="w-32 h-8">
                                 <SelectValue placeholder="Estado" />
                               </SelectTrigger>
@@ -339,8 +348,14 @@ export default function RepairsPage() {
             <EmptyState
               icon={Wrench}
               title={search || statusFilter !== 'ALL' ? 'Sin resultados' : 'Sin reparaciones'}
-              description={search || statusFilter !== 'ALL' ? 'No hay reparaciones que coincidan con tu búsqueda' : 'Crea tu primera orden de reparación'}
-              action={search || statusFilter !== 'ALL' ? undefined : { label: 'Crear reparación', href: '/repairs/new' }}
+              description={
+                search || statusFilter !== 'ALL'
+                  ? 'No hay reparaciones que coincidan con tu búsqueda'
+                  : 'Crea tu primera orden de reparación'
+              }
+              action={
+                search || statusFilter !== 'ALL' ? undefined : { label: 'Crear reparación', href: '/repairs/new' }
+              }
             />
           )}
 

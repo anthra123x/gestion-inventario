@@ -19,20 +19,10 @@ export function Pagination({ page, totalPages, total, entity, onPageChange }: Pa
         Página {page} de {totalPages} — {total} {entity}
       </p>
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === 1}
-          onClick={() => onPageChange(page - 1)}
-        >
+        <Button variant="outline" size="sm" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
           Anterior
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === totalPages}
-          onClick={() => onPageChange(page + 1)}
-        >
+        <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
           Siguiente
         </Button>
       </div>

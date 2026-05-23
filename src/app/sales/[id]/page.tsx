@@ -6,15 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Printer, Download, FileText } from 'lucide-react'
+import { ArrowLeft, Printer, FileText } from 'lucide-react'
 import { getSaleById } from '@/modules/sales/sales.actions'
-import { PaymentMethod } from '@prisma/client'
 import { formatCurrency } from '@/lib/format'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
 export default function SaleDetailPage() {
   const params = useParams()
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sale, setSale] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +34,7 @@ export default function SaleDetailPage() {
     loadSale()
   }, [params.id])
 
-  function handlePrint() {
+  function _handlePrint() {
     window.print()
   }
 
@@ -99,11 +99,17 @@ export default function SaleDetailPage() {
               <div className="print:w-1/2">
                 <CardTitle className="text-2xl print:text-xl">Factura #{sale.id.slice(-6).toUpperCase()}</CardTitle>
                 <CardDescription className="print:text-sm">
-                  Fecha: {new Date(sale.createdAt).toLocaleDateString('es-CO')} at {new Date(sale.createdAt).toLocaleTimeString('es-CO')}
+                  Fecha: {new Date(sale.createdAt).toLocaleDateString('es-CO')} at{' '}
+                  {new Date(sale.createdAt).toLocaleTimeString('es-CO')}
                 </CardDescription>
               </div>
               <div className="print:w-1/2 print:text-right">
-                <Badge variant={getPaymentMethodColor(sale.paymentMethod) as 'default' | 'secondary' | 'outline' | 'destructive'} className="print:inline-block print:border print:border-gray-300">
+                <Badge
+                  variant={
+                    getPaymentMethodColor(sale.paymentMethod) as 'default' | 'secondary' | 'outline' | 'destructive'
+                  }
+                  className="print:inline-block print:border print:border-gray-300"
+                >
                   {getPaymentMethodLabel(sale.paymentMethod)}
                 </Badge>
               </div>
@@ -112,7 +118,9 @@ export default function SaleDetailPage() {
           <CardContent className="space-y-6 print:px-4 print:py-4">
             {/* Client Info */}
             <div className="space-y-2 print:border print:border-gray-300 print:p-4 print:rounded">
-              <h3 className="font-semibold text-lg print:text-base print:border-b print:border-gray-300 print:pb-2">Datos del Cliente</h3>
+              <h3 className="font-semibold text-lg print:text-base print:border-b print:border-gray-300 print:pb-2">
+                Datos del Cliente
+              </h3>
               <div className="grid grid-cols-2 gap-4 print:grid-cols-4 print:gap-2">
                 <div>
                   <p className="text-sm text-gray-500 print:text-xs">Nombre</p>
@@ -135,7 +143,9 @@ export default function SaleDetailPage() {
 
             {/* Items */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-lg print:text-base print:border-b print:border-gray-300 print:pb-2">Productos</h3>
+              <h3 className="font-semibold text-lg print:text-base print:border-b print:border-gray-300 print:pb-2">
+                Productos
+              </h3>
               <div className="print:border print:border-gray-300 print:rounded print:overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -147,7 +157,8 @@ export default function SaleDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sale.saleItems.map((item: any) => (
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {sale.saleItems.map((item: any) => (
                       <TableRow key={item.id} className="print:border-b print:border-gray-300">
                         <TableCell className="print:text-sm">
                           <div>
@@ -156,7 +167,9 @@ export default function SaleDetailPage() {
                         </TableCell>
                         <TableCell className="text-right print:text-sm">{item.quantity}</TableCell>
                         <TableCell className="text-right print:text-sm">{formatCurrency(item.unitPrice)}</TableCell>
-                        <TableCell className="text-right font-medium print:text-sm">{formatCurrency(item.total)}</TableCell>
+                        <TableCell className="text-right font-medium print:text-sm">
+                          {formatCurrency(item.total)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -167,9 +180,7 @@ export default function SaleDetailPage() {
             {/* Total */}
             <div className="flex justify-end print:border-t print:border-gray-300 print:pt-4">
               <div className="space-y-2 text-right print:w-1/2">
-                <div className="text-3xl font-bold print:text-2xl">
-                  Total: {formatCurrency(sale.total)}
-                </div>
+                <div className="text-3xl font-bold print:text-2xl">Total: {formatCurrency(sale.total)}</div>
               </div>
             </div>
 
@@ -184,7 +195,10 @@ export default function SaleDetailPage() {
             {/* Footer */}
             <div className="border-t pt-4 text-sm text-gray-500 print:mt-8 print:border-t print:border-gray-300 print:pt-4">
               <p className="print:text-xs">Generado por Tecnicell - Sistema de Gestión</p>
-              <p className="print:text-xs">Factura generada el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}</p>
+              <p className="print:text-xs">
+                Factura generada el {new Date().toLocaleDateString('es-CO')} a las{' '}
+                {new Date().toLocaleTimeString('es-CO')}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -196,68 +210,69 @@ export default function SaleDetailPage() {
             margin: 0.5cm;
             size: A4;
           }
-          
+
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          
+
           body {
             background: white !important;
             margin: 0 !important;
             padding: 0 !important;
           }
-          
+
           .no-print {
             display: none !important;
           }
-          
+
           .print\\:shadow-none {
             box-shadow: none !important;
           }
-          
+
           .print\\:border {
             border: 1px solid #e5e7eb !important;
           }
-          
+
           .print\\:px-4 {
             padding-left: 1rem !important;
             padding-right: 1rem !important;
           }
-          
+
           .print\\:py-2 {
             padding-top: 0.5rem !important;
             padding-bottom: 0.5rem !important;
           }
-          
+
           .print\\:mt-8 {
             margin-top: 2rem !important;
           }
-          
+
           /* Ocultar elementos de navegación del navegador no es posible desde CSS,
              pero podemos optimizar el contenido para impresión */
-          
+
           .container {
             max-width: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
           }
-          
+
           .space-y-6 > * + * {
             margin-top: 1rem !important;
           }
-          
+
           /* Mejorar tabla para impresión */
           table {
             width: 100% !important;
             border-collapse: collapse !important;
           }
-          
-          th, td {
+
+          th,
+          td {
             border: 1px solid #e5e7eb !important;
             padding: 0.5rem !important;
           }
-          
+
           th {
             background-color: #f9fafb !important;
             font-weight: 600 !important;

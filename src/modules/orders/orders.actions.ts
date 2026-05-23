@@ -104,6 +104,7 @@ export async function getOrderStats() {
 
 export async function createOrder(formData: FormData) {
   const itemsJson = formData.get('items') as string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let rawItems: any[]
   try {
     rawItems = itemsJson ? JSON.parse(itemsJson) : []
@@ -111,6 +112,7 @@ export async function createOrder(formData: FormData) {
     return { error: 'Datos de productos inválidos' }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const items = rawItems.map((item: any) => ({
     productId: item.productId,
     quantity: isNaN(Number(item.quantity)) ? 1 : Number(item.quantity),
@@ -157,7 +159,7 @@ export async function createOrder(formData: FormData) {
           total: validatedFields.data.total,
           externalReference: validatedFields.data.externalReference,
           items: {
-            create: items.map(item => ({
+            create: items.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
@@ -173,6 +175,7 @@ export async function createOrder(formData: FormData) {
 
     revalidatePath('/orders')
     return { success: 'Pedido creado exitosamente', order }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { error: error.message || 'Error al crear el pedido' }
   }
@@ -269,6 +272,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
     return { success: 'Estado actualizado exitosamente' }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { error: error.message || 'Error al actualizar el estado' }
   }
@@ -283,6 +287,7 @@ export async function updateOrderNotes(orderId: string, internalNotes: string) {
     })
     revalidatePath(`/orders/${orderId}`)
     return { success: 'Notas actualizadas' }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { error: error.message || 'Error al actualizar las notas' }
   }

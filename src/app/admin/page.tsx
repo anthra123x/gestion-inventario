@@ -9,14 +9,26 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Settings, Trash2, UserPlus, Database, Download, AlertTriangle, Building2 } from 'lucide-react'
+import { Users, Settings, Trash2, UserPlus, Database, Download, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
-import { exportData, cleanupProducts, cleanupSales, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
-import { exportProductsToExcel, exportSalesToExcel, exportRepairsToExcel, exportClientsToExcel } from '@/modules/export/export.actions'
+import {
+  exportData,
+  cleanupProducts,
+  cleanupSales,
+  cleanupRepairs,
+  cleanupAll,
+} from '@/modules/cleanup/cleanup.actions'
+import {
+  exportProductsToExcel,
+  exportSalesToExcel,
+  exportRepairsToExcel,
+  exportClientsToExcel,
+} from '@/modules/export/export.actions'
 
 export default function AdminPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [newUserEmail, setNewUserEmail] = useState('')
@@ -29,6 +41,7 @@ export default function AdminPage() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [exportExcelLoading, setExportExcelLoading] = useState<string | null>(null)
   const [backupLoading, setBackupLoading] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [settings, setSettings] = useState<any>(null)
   const [settingsLoading, setSettingsLoading] = useState(true)
 
@@ -37,8 +50,8 @@ export default function AdminPage() {
       try {
         const data = await getUsers()
         setUsers(data)
-      } catch (error) {
-        console.error('Error loading users:', error)
+      } catch (_error) {
+        console.error('Error loading users:', _error)
       } finally {
         setLoading(false)
       }
@@ -49,8 +62,8 @@ export default function AdminPage() {
       try {
         const data = await getSystemSettings()
         setSettings(data)
-      } catch (error) {
-        console.error('Error loading settings:', error)
+      } catch (_error) {
+        console.error('Error loading settings:', _error)
       } finally {
         setSettingsLoading(false)
       }
@@ -59,6 +72,7 @@ export default function AdminPage() {
   }, [])
 
   async function handleUpdateRole(userId: string, role: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await updateUserRole(userId, role as any)
     if (result.success) {
       const updated = await getUsers()
@@ -141,7 +155,7 @@ export default function AdminPage() {
       } else {
         toast.error(result.error || 'Error al exportar backup')
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al exportar backup')
     } finally {
       setBackupLoading(false)
@@ -207,7 +221,7 @@ export default function AdminPage() {
       } else {
         toast.error(result.error)
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error durante la limpieza')
     } finally {
       setCleanupLoading(false)
@@ -244,7 +258,7 @@ export default function AdminPage() {
       } else {
         toast.error(result.error || 'Error al exportar')
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al exportar')
     } finally {
       setExportExcelLoading(null)
@@ -269,9 +283,7 @@ export default function AdminPage() {
               <Users className="h-5 w-5" />
               Gestión de Usuarios
             </CardTitle>
-            <CardDescription>
-              Administrar usuarios y roles del sistema
-            </CardDescription>
+            <CardDescription>Administrar usuarios y roles del sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border">
@@ -290,10 +302,7 @@ export default function AdminPage() {
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) => handleUpdateRole(user.id, value)}
-                        >
+                        <Select value={user.role} onValueChange={(value) => handleUpdateRole(user.id, value)}>
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
@@ -330,20 +339,13 @@ export default function AdminPage() {
               <UserPlus className="h-5 w-5" />
               Crear Usuario
             </CardTitle>
-            <CardDescription>
-              Agregar un nuevo usuario al sistema
-            </CardDescription>
+            <CardDescription>Agregar un nuevo usuario al sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="newUserName">Nombre</Label>
-                <Input
-                  id="newUserName"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  required
-                />
+                <Input id="newUserName" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} required />
               </div>
 
               <div className="space-y-2">
@@ -386,9 +388,7 @@ export default function AdminPage() {
               <Settings className="h-5 w-5" />
               Configuración del Sistema
             </CardTitle>
-            <CardDescription>
-              Ajustes generales del sistema
-            </CardDescription>
+            <CardDescription>Ajustes generales del sistema</CardDescription>
           </CardHeader>
           <CardContent>
             {settingsLoading ? (
@@ -444,7 +444,10 @@ export default function AdminPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="currency">Moneda</Label>
-                  <Select value={settings?.currency || 'COP'} onValueChange={(value) => setSettings({ ...settings, currency: value })}>
+                  <Select
+                    value={settings?.currency || 'COP'}
+                    onValueChange={(value) => setSettings({ ...settings, currency: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -500,9 +503,7 @@ export default function AdminPage() {
               <Download className="h-5 w-5" />
               Exportación de Datos
             </CardTitle>
-            <CardDescription>
-              Exporta datos del sistema a Excel
-            </CardDescription>
+            <CardDescription>Exporta datos del sistema a Excel</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -578,35 +579,20 @@ export default function AdminPage() {
                   Limpieza del Sistema
                 </h4>
                 <p className="text-sm text-red-800 mb-3">
-                  Estas acciones eliminarán datos permanentemente. Se generará un backup automáticamente antes de ejecutar.
+                  Estas acciones eliminarán datos permanentemente. Se generará un backup automáticamente antes de
+                  ejecutar.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    onClick={() => openCleanupDialog('products')}
-                    variant="destructive"
-                    size="sm"
-                  >
+                  <Button onClick={() => openCleanupDialog('products')} variant="destructive" size="sm">
                     Productos
                   </Button>
-                  <Button
-                    onClick={() => openCleanupDialog('sales')}
-                    variant="destructive"
-                    size="sm"
-                  >
+                  <Button onClick={() => openCleanupDialog('sales')} variant="destructive" size="sm">
                     Ventas
                   </Button>
-                  <Button
-                    onClick={() => openCleanupDialog('repairs')}
-                    variant="destructive"
-                    size="sm"
-                  >
+                  <Button onClick={() => openCleanupDialog('repairs')} variant="destructive" size="sm">
                     Reparaciones
                   </Button>
-                  <Button
-                    onClick={() => openCleanupDialog('all')}
-                    variant="destructive"
-                    size="sm"
-                  >
+                  <Button onClick={() => openCleanupDialog('all')} variant="destructive" size="sm">
                     Todo
                   </Button>
                 </div>
@@ -637,10 +623,7 @@ export default function AdminPage() {
             >
               Cancelar
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => userToDelete && handleDeleteUser(userToDelete)}
-            >
+            <Button variant="destructive" onClick={() => userToDelete && handleDeleteUser(userToDelete)}>
               Eliminar
             </Button>
           </div>
@@ -656,9 +639,18 @@ export default function AdminPage() {
             </DialogTitle>
             <DialogDescription>
               Esta acción generará un backup automático y luego eliminará los datos seleccionados.
-              <br /><br />
-              <strong>Tipo de limpieza:</strong> {cleanupType === 'products' ? 'Productos' : cleanupType === 'sales' ? 'Ventas' : cleanupType === 'repairs' ? 'Reparaciones' : 'TODO'}
-              <br /><br />
+              <br />
+              <br />
+              <strong>Tipo de limpieza:</strong>{' '}
+              {cleanupType === 'products'
+                ? 'Productos'
+                : cleanupType === 'sales'
+                  ? 'Ventas'
+                  : cleanupType === 'repairs'
+                    ? 'Reparaciones'
+                    : 'TODO'}
+              <br />
+              <br />
               ¿Estás seguro de continuar?
             </DialogDescription>
           </DialogHeader>
@@ -673,11 +665,7 @@ export default function AdminPage() {
             >
               Cancelar
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCleanup}
-              disabled={cleanupLoading}
-            >
+            <Button variant="destructive" onClick={handleCleanup} disabled={cleanupLoading}>
               {cleanupLoading ? 'Generando backup y limpiando...' : 'Confirmar Limpieza'}
             </Button>
           </div>

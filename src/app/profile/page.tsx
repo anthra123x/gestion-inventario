@@ -36,7 +36,7 @@ export default function ProfilePage() {
   async function handleSave() {
     setSaving(true)
     // TODO: Implementar actualización de perfil cuando el backend lo soporte
-    await new Promise(r => setTimeout(r, 500))
+    await new Promise((r) => setTimeout(r, 500))
     if (user) setUser({ ...user, name })
     setIsEditing(false)
     setSaving(false)
@@ -80,12 +80,7 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
               {isEditing ? (
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
               ) : (
                 <p className="text-sm">{user.name}</p>
               )}
@@ -108,16 +103,14 @@ export default function ProfilePage() {
             </div>
 
             {user.createdAt && (
-  <div className="space-y-2">
-    <Label>Fecha de Registro</Label>
-    <div className="flex items-center gap-2">
-      <Calendar className="h-4 w-4 text-gray-500" />
-      <p className="text-sm">
-        {new Date(user.createdAt).toLocaleDateString('es-ES')}
-      </p>
-    </div>
-  </div>
-)}
+              <div className="space-y-2">
+                <Label>Fecha de Registro</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <p className="text-sm">{new Date(user.createdAt).toLocaleDateString('es-ES')}</p>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               {isEditing ? (
@@ -126,7 +119,13 @@ export default function ProfilePage() {
                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Guardar
                   </Button>
-                  <Button variant="outline" onClick={() => { setIsEditing(false); setName(user.name) }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false)
+                      setName(user.name)
+                    }}
+                  >
                     Cancelar
                   </Button>
                 </>

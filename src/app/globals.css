@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -143,29 +143,37 @@
 
 @layer utilities {
   .card-shadow {
-    box-shadow: 0 1px 3px 0 oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
+    box-shadow:
+      0 1px 3px 0 oklch(0 0 0 / 0.1),
+      0 1px 2px -1px oklch(0 0 0 / 0.1);
   }
-  
+
   .card-shadow-sm {
     box-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.05);
   }
-  
+
   .card-shadow-md {
-    box-shadow: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
+    box-shadow:
+      0 4px 6px -1px oklch(0 0 0 / 0.1),
+      0 2px 4px -2px oklch(0 0 0 / 0.1);
   }
-  
+
   .card-hover {
-    transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+    transition:
+      box-shadow 0.2s ease-in-out,
+      transform 0.2s ease-in-out;
   }
-  
+
   .card-hover:hover {
-    box-shadow: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
+    box-shadow:
+      0 4px 6px -1px oklch(0 0 0 / 0.1),
+      0 2px 4px -2px oklch(0 0 0 / 0.1);
   }
-  
+
   .table-row-hover:hover {
     background-color: oklch(0.97 0 0);
   }
-  
+
   .button-hover {
     transition: all 0.15s ease-in-out;
   }
@@ -195,13 +203,23 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .stat-card {

@@ -4,12 +4,18 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { SearchInput } from '@/components/ui/search-input'
@@ -33,7 +39,12 @@ export default function InventoryPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [stockBreakdown, setStockBreakdown] = useState<{ total: number; inStock: number; lowStock: number; outOfStock: number } | null>(null)
+  const [stockBreakdown, setStockBreakdown] = useState<{
+    total: number
+    inStock: number
+    lowStock: number
+    outOfStock: number
+  } | null>(null)
   const pageSize = 20
 
   useEffect(() => {
@@ -50,15 +61,20 @@ export default function InventoryPage() {
     try {
       setLoading(true)
       const [result, breakdown] = await Promise.all([
-        getProducts(debouncedSearch || undefined, categoryFilter !== 'ALL' ? categoryFilter as ProductCategory : undefined, page, pageSize),
+        getProducts(
+          debouncedSearch || undefined,
+          categoryFilter !== 'ALL' ? (categoryFilter as ProductCategory) : undefined,
+          page,
+          pageSize,
+        ),
         getInventoryStockBreakdown(),
       ])
       setProducts(result.products)
       setTotalProducts(result.total)
       setTotalPages(result.totalPages)
       setStockBreakdown(breakdown)
-    } catch (error) {
-      console.error('Error loading products:', error)
+    } catch (_error) {
+      console.error('Error loading products:', _error)
     } finally {
       setLoading(false)
     }
@@ -79,7 +95,7 @@ export default function InventoryPage() {
         setDeleteDialogOpen(false)
         setProductToDelete(null)
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al eliminar el producto')
     }
   }
@@ -189,13 +205,12 @@ export default function InventoryPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Buscar productos..."
-              />
+              <SearchInput value={search} onChange={setSearch} placeholder="Buscar productos..." />
             </div>
-            <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as ProductCategory | 'ALL')}>
+            <Select
+              value={categoryFilter}
+              onValueChange={(value) => setCategoryFilter(value as ProductCategory | 'ALL')}
+            >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
@@ -236,21 +251,15 @@ export default function InventoryPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {getCategoryLabel(product.category)}
-                        </Badge>
+                        <Badge variant="outline">{getCategoryLabel(product.category)}</Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="font-semibold">{product.stock}</div>
                         <div className="text-xs text-muted-foreground">Mín: {product.minStock}</div>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {formatCurrency(product.salePrice)}
-                      </TableCell>
+                      <TableCell className="font-medium">{formatCurrency(product.salePrice)}</TableCell>
                       <TableCell>
-                        <Badge variant={stockStatus.variant}>
-                          {stockStatus.label}
-                        </Badge>
+                        <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -284,8 +293,14 @@ export default function InventoryPage() {
             <EmptyState
               icon={Package}
               title={search || categoryFilter !== 'ALL' ? 'Sin resultados' : 'Sin productos'}
-              description={search || categoryFilter !== 'ALL' ? 'No hay productos que coincidan con tu búsqueda' : 'Crea tu primer producto para comenzar'}
-              action={search || categoryFilter !== 'ALL' ? undefined : { label: 'Crear producto', href: '/inventory/new' }}
+              description={
+                search || categoryFilter !== 'ALL'
+                  ? 'No hay productos que coincidan con tu búsqueda'
+                  : 'Crea tu primer producto para comenzar'
+              }
+              action={
+                search || categoryFilter !== 'ALL' ? undefined : { label: 'Crear producto', href: '/inventory/new' }
+              }
             />
           )}
 
@@ -306,7 +321,7 @@ export default function InventoryPage() {
           <DialogHeader>
             <DialogTitle>¿Eliminar producto?</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar "{productToDelete?.name}"? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar &ldquo;{productToDelete?.name}&rdquo;? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

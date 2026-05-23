@@ -31,14 +31,14 @@ const dotClasses: Record<StatusVariant, string> = {
 
 export function StatusBadge({ variant = 'neutral', children, className, dot = false }: StatusBadgeProps) {
   return (
-    <span className={cn(
-      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-      variantClasses[variant],
-      className
-    )}>
-      {dot && (
-        <span className={cn('h-1.5 w-1.5 rounded-full', dotClasses[variant])} />
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        variantClasses[variant],
+        className,
       )}
+    >
+      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', dotClasses[variant])} />}
       {children}
     </span>
   )
@@ -53,11 +53,13 @@ interface StatusDotProps {
 export function StatusDot({ status, pulse = false, className }: StatusDotProps) {
   return (
     <span className={cn('relative flex h-2 w-2', className)}>
-      <span className={cn(
-        'absolute inline-flex h-full w-full rounded-full opacity-75',
-        dotClasses[status],
-        pulse && 'animate-ping'
-      )} />
+      <span
+        className={cn(
+          'absolute inline-flex h-full w-full rounded-full opacity-75',
+          dotClasses[status],
+          pulse && 'animate-ping',
+        )}
+      />
       <span className={cn('relative inline-flex h-2 w-2 rounded-full', dotClasses[status])} />
     </span>
   )

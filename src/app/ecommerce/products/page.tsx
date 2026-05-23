@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Eye, EyeOff, Store, Star, Tag, FileImage, ImageOff, Settings } from 'lucide-react'
+import { Plus, Eye, EyeOff, Store, Star, ImageOff, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -16,14 +16,23 @@ import { Pagination } from '@/components/ui/pagination'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  getEcommerceProducts, toggleVisibility, createEcommerceProduct,
-  deleteEcommerceProduct, getProductsWithoutEcommerce,
+  getEcommerceProducts,
+  toggleVisibility,
+  createEcommerceProduct,
+  deleteEcommerceProduct,
+  getProductsWithoutEcommerce,
 } from '@/modules/ecommerce/ecommerce.actions'
 
 export default function EcommerceProductsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -35,10 +44,12 @@ export default function EcommerceProductsPage() {
 
   // Add dialog
   const [addOpen, setAddOpen] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [availableProducts, setAvailableProducts] = useState<any[]>([])
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
 
   useEffect(() => {
@@ -67,7 +78,10 @@ export default function EcommerceProductsPage() {
 
   async function handleToggleVisibility(id: string, visible: boolean) {
     const result = await toggleVisibility(id, !visible)
-    if (result.error) { toast.error(result.error); return }
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success(result.success!)
     loadProducts()
   }
@@ -80,7 +94,10 @@ export default function EcommerceProductsPage() {
 
   async function handleAdd(productId: string) {
     const result = await createEcommerceProduct(productId)
-    if (result.error) { toast.error(result.error); return }
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success(result.success!)
     setAddOpen(false)
     loadProducts()
@@ -89,7 +106,10 @@ export default function EcommerceProductsPage() {
   async function handleDelete() {
     if (!deleteTarget) return
     const result = await deleteEcommerceProduct(deleteTarget.id)
-    if (result.error) { toast.error(result.error); return }
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
     toast.success(result.success!)
     setDeleteOpen(false)
     setDeleteTarget(null)
@@ -145,13 +165,18 @@ export default function EcommerceProductsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {products.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
                           {item.media?.[0]?.url ? (
-                            <img src={item.media[0].url} alt={item.media[0].alt || ''} className="h-full w-full object-cover" />
+                            <img
+                              src={item.media[0].url}
+                              alt={item.media[0].alt || ''}
+                              className="h-full w-full object-cover"
+                            />
                           ) : (
                             <ImageOff className="h-4 w-4 text-muted-foreground" />
                           )}
@@ -161,9 +186,7 @@ export default function EcommerceProductsPage() {
                             {item.product.name}
                             {item.featured && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
                           </div>
-                          {item.slug && (
-                            <div className="text-xs text-muted-foreground">/{item.slug}</div>
-                          )}
+                          {item.slug && <div className="text-xs text-muted-foreground">/{item.slug}</div>}
                         </div>
                       </div>
                     </TableCell>
@@ -175,7 +198,9 @@ export default function EcommerceProductsPage() {
                           <div className="font-semibold">{formatCurrency(item.product.salePrice)}</div>
                         )}
                         {item.compareAtPrice && (
-                          <div className="text-xs text-muted-foreground line-through">{formatCurrency(item.compareAtPrice)}</div>
+                          <div className="text-xs text-muted-foreground line-through">
+                            {formatCurrency(item.compareAtPrice)}
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -187,19 +212,28 @@ export default function EcommerceProductsPage() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {item.badges?.map((badge: string) => (
-                          <Badge key={badge} variant="secondary" className="text-[10px] px-1.5 py-0">{badge}</Badge>
+                          <Badge key={badge} variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {badge}
+                          </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${item.visible ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
+                        <div
+                          className={`h-2 w-2 rounded-full ${item.visible ? 'bg-emerald-500' : 'bg-muted-foreground'}`}
+                        />
                         <span className="text-sm">{item.visible ? 'Visible' : 'Oculto'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon-xs" onClick={() => handleToggleVisibility(item.id, item.visible)} title={item.visible ? 'Ocultar' : 'Publicar'}>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleToggleVisibility(item.id, item.visible)}
+                          title={item.visible ? 'Ocultar' : 'Publicar'}
+                        >
                           {item.visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </Button>
                         <Link href={`/ecommerce/products/${item.id}`}>
@@ -241,21 +275,27 @@ export default function EcommerceProductsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Agregar a la Tienda</DialogTitle>
-            <DialogDescription>Selecciona un producto del inventario para publicarlo en Tecnicell Store</DialogDescription>
+            <DialogDescription>
+              Selecciona un producto del inventario para publicarlo en Tecnicell Store
+            </DialogDescription>
           </DialogHeader>
           <div className="max-h-64 overflow-y-auto space-y-1">
             {availableProducts.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Todos los productos ya están en la tienda</p>
-            ) : availableProducts.map((p: any) => (
-              <button
-                key={p.id}
-                onClick={() => handleAdd(p.id)}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm flex items-center justify-between transition-colors"
-              >
-                <span className="font-medium">{p.name}</span>
-                <span className="text-xs text-muted-foreground">{p.category}</span>
-              </button>
-            ))}
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Todos los productos ya están en la tienda
+              </p>
+            ) : (
+              availableProducts.map((p: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+                <button
+                  key={p.id}
+                  onClick={() => handleAdd(p.id)}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm flex items-center justify-between transition-colors"
+                >
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-xs text-muted-foreground">{p.category}</span>
+                </button>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -265,11 +305,17 @@ export default function EcommerceProductsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Eliminar del catálogo</DialogTitle>
-            <DialogDescription>¿Eliminar {deleteTarget?.product?.name} de la tienda? No afecta el inventario.</DialogDescription>
+            <DialogDescription>
+              ¿Eliminar {deleteTarget?.product?.name} de la tienda? No afecta el inventario.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Eliminar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -14,20 +14,29 @@ export async function proxy(req: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value))
         },
       },
-    }
+    },
   )
 
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  const protectedRoutes = ['/dashboard', '/inventory', '/sales', '/repairs', '/admin', '/reports', '/ecommerce', '/orders']
-  const isProtectedRoute = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))
+  const protectedRoutes = [
+    '/dashboard',
+    '/inventory',
+    '/sales',
+    '/repairs',
+    '/admin',
+    '/reports',
+    '/ecommerce',
+    '/orders',
+  ]
+  const isProtectedRoute = protectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route))
   const isAuthRoute = req.nextUrl.pathname.startsWith('/login') || req.nextUrl.pathname.startsWith('/register')
 
   // Helper: copy session cookies from request to response
   function applyCookies(res: NextResponse) {
-    req.cookies.getAll().forEach(cookie => {
+    req.cookies.getAll().forEach((cookie) => {
       res.cookies.set(cookie.name, cookie.value)
     })
     return res

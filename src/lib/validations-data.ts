@@ -30,11 +30,7 @@ export function validatePriceMargin(purchasePrice: number, salePrice: number): v
 /**
  * Validates product data
  */
-export function validateProductData(data: {
-  stock: number
-  purchasePrice: number
-  salePrice: number
-}): void {
+export function validateProductData(data: { stock: number; purchasePrice: number; salePrice: number }): void {
   validateNonNegative(data.stock, 'Stock')
   validateNonNegative(data.purchasePrice, 'Precio de compra')
   validateNonNegative(data.salePrice, 'Precio de venta')
@@ -44,17 +40,16 @@ export function validateProductData(data: {
 /**
  * Validates sale item data
  */
-export function validateSaleItemData(data: {
-  quantity: number
-  unitPrice: number
-  total: number
-}): void {
+export function validateSaleItemData(data: { quantity: number; unitPrice: number; total: number }): void {
   validatePositive(data.quantity, 'Cantidad')
   validateNonNegative(data.unitPrice, 'Precio unitario')
   validateNonNegative(data.total, 'Total')
 }
 
-export function validateSalePriceAgainstCost(unitPrice: number, purchasePrice: number): { ok: boolean; message: string; severity: 'error' | 'warning' } {
+export function validateSalePriceAgainstCost(
+  unitPrice: number,
+  purchasePrice: number,
+): { ok: boolean; message: string; severity: 'error' | 'warning' } {
   if (purchasePrice <= 0) return { ok: true, message: '', severity: 'warning' }
 
   if (unitPrice < purchasePrice) {
@@ -80,14 +75,8 @@ export function validateSalePriceAgainstCost(unitPrice: number, purchasePrice: n
 /**
  * Validates repair part data
  */
-export function validateRepairPartData(data: {
-  quantity: number
-  unitCost: number
-  total: number
-}): void {
+export function validateRepairPartData(data: { quantity: number; unitCost: number; total: number }): void {
   validatePositive(data.quantity, 'Cantidad')
   validateNonNegative(data.unitCost, 'Costo unitario')
   validateNonNegative(data.total, 'Total')
 }
-
-

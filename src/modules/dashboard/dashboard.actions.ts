@@ -80,9 +80,7 @@ async function getSalesComparison() {
   const todayTotal = todaySales._sum.total || 0
   const yesterdayTotal = yesterdaySales._sum.total || 0
 
-  const change = yesterdayTotal > 0
-    ? ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100
-    : todayTotal > 0 ? 100 : 0
+  const change = yesterdayTotal > 0 ? ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100 : todayTotal > 0 ? 100 : 0
 
   return {
     todayTotal,
@@ -150,23 +148,26 @@ export async function getSalesByMonth(months: number = 12) {
   })
 
   // Group by month
-  const salesByMonth = sales.reduce((acc, sale) => {
-    const date = new Date(sale.createdAt)
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    
-    if (!acc[monthKey]) {
-      acc[monthKey] = {
-        month: monthKey,
-        total: 0,
-        count: 0,
+  const salesByMonth = sales.reduce(
+    (acc, sale) => {
+      const date = new Date(sale.createdAt)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+      if (!acc[monthKey]) {
+        acc[monthKey] = {
+          month: monthKey,
+          total: 0,
+          count: 0,
+        }
       }
-    }
-    
-    acc[monthKey].total += sale.total
-    acc[monthKey].count += 1
-    
-    return acc
-  }, {} as Record<string, { month: string; total: number; count: number }>)
+
+      acc[monthKey].total += sale.total
+      acc[monthKey].count += 1
+
+      return acc
+    },
+    {} as Record<string, { month: string; total: number; count: number }>,
+  )
 
   return Object.values(salesByMonth)
 }
@@ -200,7 +201,7 @@ export async function getTopProducts(days: number = 30) {
   })
 
   // Get product details
-  const productIds = topProducts.map(item => item.productId)
+  const productIds = topProducts.map((item) => item.productId)
   const products = await prisma.product.findMany({
     where: {
       id: {
@@ -215,9 +216,9 @@ export async function getTopProducts(days: number = 30) {
     },
   })
 
-  return topProducts.map(item => ({
+  return topProducts.map((item) => ({
     ...item,
-    product: products.find(p => p.id === item.productId),
+    product: products.find((p) => p.id === item.productId),
   }))
 }
 
@@ -233,7 +234,7 @@ export async function getProductsByCategory() {
     },
   })
 
-  return products.map(item => ({
+  return products.map((item) => ({
     category: item.category,
     count: item._count.id,
     totalStock: item._sum.stock || 0,

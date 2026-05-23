@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getSaleById } from '@/modules/sales/sales.actions'
-import { PaymentMethod } from '@prisma/client'
 import { Printer, X, ArrowLeft } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { getPaymentMethodLabel } from '@/lib/labels'
@@ -11,6 +10,7 @@ import { getPaymentMethodLabel } from '@/lib/labels'
 export default function PrintPage() {
   const params = useParams()
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sale, setSale] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -66,7 +66,8 @@ export default function PrintPage() {
     address: sale.clientAddress || '',
   }
 
-  const subtotal = sale.saleItems.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subtotal = sale.saleItems.reduce((sum: number, item: any) => sum + item.unitPrice * item.quantity, 0)
   const discountAmount = sale.discountAmount || (sale.discountPercent > 0 ? subtotal * (sale.discountPercent / 100) : 0)
 
   return (
@@ -94,7 +95,8 @@ export default function PrintPage() {
             <h2 className="invoice-title">FACTURA</h2>
             <p className="invoice-number">#{sale.id.slice(-6).toUpperCase()}</p>
             <p className="invoice-datetime">
-              {new Date(sale.createdAt).toLocaleDateString('es-CO')} at {new Date(sale.createdAt).toLocaleTimeString('es-CO')}
+              {new Date(sale.createdAt).toLocaleDateString('es-CO')} at{' '}
+              {new Date(sale.createdAt).toLocaleTimeString('es-CO')}
             </p>
           </div>
         </div>
@@ -142,6 +144,7 @@ export default function PrintPage() {
               </tr>
             </thead>
             <tbody>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {sale.saleItems.map((item: any) => (
                 <tr key={item.id} className="invoice-tr">
                   <td className="invoice-td invoice-td-product">
@@ -228,7 +231,9 @@ export default function PrintPage() {
         }
 
         @keyframes invoice-spin {
-          to { transform: rotate(360deg); }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .invoice-print-loading-text {

@@ -25,7 +25,7 @@ export const InventoryMovementSchema = z.object({
   productId: z.string(),
   type: MovementTypeSchema,
   quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
-  reason: z.string().optional()
+  reason: z.string().optional(),
 })
 
 // Client schemas
@@ -33,7 +33,7 @@ export const CreateClientSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   phone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
   email: z.string().email('Email inválido').optional(),
-  address: z.string().optional()
+  address: z.string().optional(),
 })
 
 export const UpdateClientSchema = CreateClientSchema.partial()
@@ -45,14 +45,22 @@ export const CreateSaleSchema = z.object({
   clientPhone: z.string().optional().nullable(),
   clientEmail: z.string().email('Email inválido').optional().nullable(),
   clientAddress: z.string().optional().nullable(),
-  items: z.array(z.object({
-    productId: z.string(),
-    quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
-    unitPrice: z.number().min(0, 'El precio debe ser positivo'),
-  })).min(1, 'Debe agregar al menos un producto'),
-  discountPercent: z.coerce.number().min(0, 'El descuento debe ser positivo').max(100, 'El descuento máximo es 100%').default(0),
+  items: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
+        unitPrice: z.number().min(0, 'El precio debe ser positivo'),
+      }),
+    )
+    .min(1, 'Debe agregar al menos un producto'),
+  discountPercent: z.coerce
+    .number()
+    .min(0, 'El descuento debe ser positivo')
+    .max(100, 'El descuento máximo es 100%')
+    .default(0),
   paymentMethod: PaymentMethodSchema,
-  notes: z.string().optional().nullable()
+  notes: z.string().optional().nullable(),
 })
 
 // Repair schemas
@@ -65,11 +73,15 @@ export const CreateRepairSchema = z.object({
   notes: z.string().optional().nullable(),
   internalNotes: z.string().optional().nullable(),
   estimatedDate: z.string().optional().nullable(),
-  parts: z.array(z.object({
-    productId: z.string(),
-    quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
-    unitCost: z.coerce.number().min(0, 'El costo debe ser positivo')
-  })).optional()
+  parts: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+        unitCost: z.coerce.number().min(0, 'El costo debe ser positivo'),
+      }),
+    )
+    .optional(),
 })
 
 export const UpdateRepairSchema = z.object({
@@ -79,7 +91,7 @@ export const UpdateRepairSchema = z.object({
   notes: z.string().optional().nullable(),
   internalNotes: z.string().optional().nullable(),
   estimatedDate: z.string().optional().nullable(),
-  dateDelivered: z.string().optional().nullable()
+  dateDelivered: z.string().optional().nullable(),
 })
 
 export const EditRepairSchema = z.object({
@@ -95,11 +107,15 @@ export const EditRepairSchema = z.object({
   internalNotes: z.string().optional().nullable(),
   estimatedDate: z.string().optional().nullable(),
   status: RepairStatusSchema.optional(),
-  parts: z.array(z.object({
-    productId: z.string(),
-    quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
-    unitCost: z.coerce.number().min(0, 'El costo debe ser positivo')
-  })).optional()
+  parts: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+        unitCost: z.coerce.number().min(0, 'El costo debe ser positivo'),
+      }),
+    )
+    .optional(),
 })
 
 // Order schemas
@@ -114,11 +130,15 @@ export const CreateOrderSchema = z.object({
   shipping: z.coerce.number().min(0).default(0),
   total: z.coerce.number().min(0),
   externalReference: z.string().optional().nullable(),
-  items: z.array(z.object({
-    productId: z.string(),
-    quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
-    unitPrice: z.coerce.number().min(0, 'El precio debe ser positivo'),
-  })).min(1, 'Debe tener al menos un producto'),
+  items: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+        unitPrice: z.coerce.number().min(0, 'El precio debe ser positivo'),
+      }),
+    )
+    .min(1, 'Debe tener al menos un producto'),
 })
 
 export const UpdateOrderStatusSchema = z.object({

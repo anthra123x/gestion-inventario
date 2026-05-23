@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
-import { getCurrentUser, requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
+import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
 
 export async function getClients(search?: string) {
   await requireAuth()
@@ -131,6 +131,7 @@ export async function createClient(formData: FormData) {
       success: 'Cliente creado exitosamente',
       client,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     // Manejar error de unique constraint específicamente
     if (error.code === 'P2002') {
@@ -179,6 +180,7 @@ export async function updateClient(id: string, formData: FormData) {
       success: 'Cliente actualizado exitosamente',
       client,
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     // Manejar error de unique constraint específicamente
     if (error.code === 'P2002') {
@@ -212,7 +214,7 @@ export async function deleteClient(id: string) {
     return {
       success: 'Cliente eliminado exitosamente',
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       error: 'Error al eliminar el cliente',
     }
@@ -256,7 +258,7 @@ export async function getClientStats() {
   ])
 
   // Calculate total spent for each top client
-  const topClientsWithSpending = topClients.map(client => ({
+  const topClientsWithSpending = topClients.map((client) => ({
     ...client,
     totalSpent: client.sales.reduce((sum, sale) => sum + sale.total, 0),
   }))

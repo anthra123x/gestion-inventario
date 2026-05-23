@@ -10,11 +10,10 @@ export async function GET(request: Request) {
     const take = parseInt(searchParams.get('limit') || '50')
     const ecommerce = searchParams.get('ecommerce') === 'true'
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       deletedAt: null,
-      ...(ecommerce
-        ? { ecommerce: { visible: true }, stock: { gt: 0 } }
-        : { stock: { gt: 0 } }),
+      ...(ecommerce ? { ecommerce: { visible: true }, stock: { gt: 0 } } : { stock: { gt: 0 } }),
       ...(category && { category }),
       ...(search && {
         OR: [
@@ -24,6 +23,7 @@ export async function GET(request: Request) {
       }),
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const select: any = {
       id: true,
       name: true,
@@ -60,13 +60,12 @@ export async function GET(request: Request) {
         select,
         skip: (page - 1) * take,
         take,
-        orderBy: ecommerce
-          ? [{ ecommerce: { sortOrder: 'asc' } }, { name: 'asc' }]
-          : { name: 'asc' },
+        orderBy: ecommerce ? [{ ecommerce: { sortOrder: 'asc' } }, { name: 'asc' }] : { name: 'asc' },
       }),
       prisma.product.count({ where }),
     ])
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = products.map((p: any) => {
       const base = {
         id: p.id,
@@ -96,10 +95,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ products: result, total, page, totalPages: Math.ceil(total / take) })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Error al obtener productos' },
-      { status: 500 }
-    )
+  } catch (_error) {
+    return NextResponse.json({ error: 'Error al obtener productos' }, { status: 500 })
   }
 }

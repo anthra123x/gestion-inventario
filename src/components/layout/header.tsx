@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
 
 interface HeaderProps {
   user: {
@@ -34,22 +33,12 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
       <div className="flex items-center gap-3 lg:gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onMenuClick}
-          className="lg:hidden"
-        >
+        <Button variant="ghost" size="icon" onClick={onMenuClick} className="lg:hidden">
           <Menu className="h-5 w-5" />
         </Button>
         <div className="relative flex-1 max-w-sm lg:max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="global-search"
-            type="search"
-            placeholder="Buscar... (Alt+Q)"
-            className="w-full pl-10"
-          />
+          <Input id="global-search" type="search" placeholder="Buscar... (Alt+Q)" className="w-full pl-10" />
         </div>
       </div>
 
@@ -65,9 +54,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
               <div className="text-xs text-muted-foreground capitalize">{user.role.toLowerCase()}</div>
             </div>
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-sm font-medium text-primary-foreground">
-                {user.name.charAt(0).toUpperCase()}
-              </span>
+              <span className="text-sm font-medium text-primary-foreground">{user.name.charAt(0).toUpperCase()}</span>
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

@@ -37,26 +37,29 @@ export function ClientAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const doSearch = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setResults([])
-      setIsOpen(false)
-      setIsLoading(false)
-      return
-    }
+  const doSearch = useCallback(
+    async (query: string) => {
+      if (query.length < 2) {
+        setResults([])
+        setIsOpen(false)
+        setIsLoading(false)
+        return
+      }
 
-    setIsLoading(true)
-    try {
-      const data = await searchClients(query)
-      setResults(data)
-      setIsOpen(data.length > 0 && isFocused)
-      setActiveIndex(-1)
-    } catch {
-      setResults([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [isFocused])
+      setIsLoading(true)
+      try {
+        const data = await searchClients(query)
+        setResults(data)
+        setIsOpen(data.length > 0 && isFocused)
+        setActiveIndex(-1)
+      } catch {
+        setResults([])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [isFocused],
+  )
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -86,11 +89,11 @@ export function ClientAutocomplete({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        setActiveIndex(prev => Math.min(prev + 1, results.length - 1))
+        setActiveIndex((prev) => Math.min(prev + 1, results.length - 1))
         break
       case 'ArrowUp':
         e.preventDefault()
-        setActiveIndex(prev => Math.max(prev - 1, 0))
+        setActiveIndex((prev) => Math.max(prev - 1, 0))
         break
       case 'Enter':
         if (activeIndex >= 0) {
@@ -119,22 +122,22 @@ export function ClientAutocomplete({
     <div ref={containerRef} className="relative">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            ref={inputRef}
-            name={name}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => {
-              setIsFocused(true)
-              if (results.length > 0) setIsOpen(true)
-            }}
-            onBlur={() => {
-              setTimeout(() => setIsFocused(false), 200)
-            }}
-            placeholder={placeholder}
-            className="pl-10"
-          />
+        <Input
+          ref={inputRef}
+          name={name}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            setIsFocused(true)
+            if (results.length > 0) setIsOpen(true)
+          }}
+          onBlur={() => {
+            setTimeout(() => setIsFocused(false), 200)
+          }}
+          placeholder={placeholder}
+          className="pl-10"
+        />
         {isLoading && (
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
@@ -152,27 +155,25 @@ export function ClientAutocomplete({
               }}
               onMouseEnter={() => setActiveIndex(index)}
               className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b last:border-0 ${
-                index === activeIndex
-                  ? 'bg-accent text-accent-foreground'
-                  : 'hover:bg-accent/50'
+                index === activeIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
               }`}
             >
               <div className="font-medium">{client.name}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>{client.phone || 'Sin teléfono'}</span>
-                      {client.email && (
-                        <>
-                          <span>·</span>
-                          <span>{client.email}</span>
-                        </>
-                      )}
-                      {client.address && (
-                        <>
-                          <span>·</span>
-                          <span className="truncate max-w-40">{client.address}</span>
-                        </>
-                      )}
-                    </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <span>{client.phone || 'Sin teléfono'}</span>
+                {client.email && (
+                  <>
+                    <span>·</span>
+                    <span>{client.email}</span>
+                  </>
+                )}
+                {client.address && (
+                  <>
+                    <span>·</span>
+                    <span className="truncate max-w-40">{client.address}</span>
+                  </>
+                )}
+              </div>
             </button>
           ))}
         </div>

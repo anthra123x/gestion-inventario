@@ -32,14 +32,11 @@ export function StatCard({ title, value, change, icon: Icon, color = 'default', 
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <div className="text-2xl font-bold tracking-tight">{value}</div>
-            {change && (
-              <p className="text-xs text-muted-foreground/70">{change}</p>
-            )}
+            {change && <p className="text-xs text-muted-foreground/70">{change}</p>}
           </div>
-          <div className={cn(
-            'rounded-xl p-3 transition-transform duration-200 group-hover:scale-110',
-            colorMap[color]
-          )}>
+          <div
+            className={cn('rounded-xl p-3 transition-transform duration-200 group-hover:scale-110', colorMap[color])}
+          >
             <Icon className="h-5 w-5" />
           </div>
         </div>
@@ -66,10 +63,6 @@ export function StatCardGrid({ children, columns = 4, className }: StatCardGridP
     3: 'md:grid-cols-2 lg:grid-cols-3',
     4: 'md:grid-cols-2 lg:grid-cols-4',
   }
-  
-  return (
-    <div className={cn('grid gap-4 lg:gap-6', gridCols[columns], className)}>
-      {children}
-    </div>
-  )
+
+  return <div className={cn('grid gap-4 lg:gap-6', gridCols[columns], className)}>{children}</div>
 }

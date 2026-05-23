@@ -19,6 +19,7 @@ export async function ensureUserExists(email: string, name: string) {
     })
 
     return { success: true }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { error: 'Error al verificar usuario' }
   }
@@ -46,17 +47,18 @@ export async function getCurrentUser() {
             return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
           },
         },
-      }
+      },
     )
 
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: _error,
+    } = await supabase.auth.getUser()
 
-    if (error || !user) {
+    if (_error || !user) {
       return null
     }
 
@@ -75,7 +77,7 @@ export async function getCurrentUser() {
     }
 
     return dbUser
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }
@@ -128,6 +130,7 @@ export async function updateUserRole(userId: string, role: UserRole) {
     return {
       success: 'Rol actualizado exitosamente',
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error?.code === 'P2025') {
       return { error: 'Usuario no encontrado' }
@@ -147,6 +150,7 @@ export async function deleteUser(userId: string) {
     return {
       success: 'Usuario eliminado exitosamente',
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error?.code === 'P2025') {
       return { error: 'Usuario no encontrado' }
@@ -171,6 +175,7 @@ export async function createUserByAdmin(formData: FormData) {
       await prisma.user.create({
         data: { email, name, role },
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error?.code === 'P2002') {
         return { error: 'El usuario ya existe' }
@@ -194,7 +199,8 @@ export async function createUserByAdmin(formData: FormData) {
 
     revalidatePath('/admin')
     return {
-      success: 'Usuario creado exitosamente. La contraseña temporal se ha generado y debe ser comunicada de forma segura.',
+      success:
+        'Usuario creado exitosamente. La contraseña temporal se ha generado y debe ser comunicada de forma segura.',
     }
   } catch (error) {
     console.error('createUserByAdmin error:', error)

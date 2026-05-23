@@ -14,11 +14,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { ClientAutocomplete } from '@/components/forms/client-autocomplete'
-import { Plus, Trash2, Search, Loader2, User, Phone, Mail, MapPin, AlertTriangle, CheckCircle, XCircle, TrendingUp, Percent, ShoppingCart } from 'lucide-react'
+import {
+  Plus,
+  Trash2,
+  Search,
+  Loader2,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Percent,
+  ShoppingCart,
+} from 'lucide-react'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 import { Product, PaymentMethod } from '@prisma/client'
 import { formatCurrency } from '@/lib/format'
-import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit, calcMargin, getProfitStatus, getItemProfit, getItemMargin } from '@/lib/finance'
+import {
+  calcSubtotal,
+  calcDiscountAmount,
+  calcTotal,
+  calcCost,
+  calcProfit,
+  calcMargin,
+  getProfitStatus,
+  getItemProfit,
+  getItemMargin,
+} from '@/lib/finance'
 import { validateSalePriceAgainstCost } from '@/lib/validations-data'
 
 interface SaleItem {
@@ -42,17 +67,12 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
   const [quantity, setQuantity] = useState(1)
   const [productSearch, setProductSearch] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoadingData, setIsLoadingData] = useState(false)
+  const [_isLoadingData, setIsLoadingData] = useState(false)
   const [discountPercent, setDiscountPercent] = useState(0)
   const [lowMarginWarnings, setLowMarginWarnings] = useState<string[]>([])
   const [clientId, setClientId] = useState('')
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-  } = useForm({
+  const { register, setValue, watch } = useForm({
     resolver: zodResolver(CreateSaleSchema),
     defaultValues: {
       paymentMethod: 'CASH' as PaymentMethod,
@@ -61,7 +81,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
       clientPhone: '',
       clientEmail: '',
       clientAddress: '',
-    }
+    },
   })
 
   const paymentMethod = watch('paymentMethod')
@@ -80,7 +100,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
     try {
       const productsData = await getProducts(undefined, undefined, 1, 1000)
       setProducts(productsData.products)
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al cargar datos', {
         description: 'No se pudieron cargar los productos. Por favor intenta nuevamente.',
       })
@@ -104,7 +124,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
   }, [items])
 
   const financials = useMemo(() => {
-    const itemsWithCost = items.map(item => ({
+    const itemsWithCost = items.map((item) => ({
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       unitCost: item.product?.purchasePrice || 0,
@@ -112,7 +132,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
     const subtotal = calcSubtotal(itemsWithCost)
     const discountAmt = calcDiscountAmount(subtotal, discountPercent)
     const total = calcTotal(subtotal, discountPercent)
-    const cost = calcCost(itemsWithCost.map(i => ({ unitCost: i.unitCost, quantity: i.quantity })))
+    const cost = calcCost(itemsWithCost.map((i) => ({ unitCost: i.unitCost, quantity: i.quantity })))
     const profit = calcProfit(subtotal, cost, discountPercent)
     const margin = calcMargin(subtotal, cost, discountPercent)
     const status = getProfitStatus(margin, profit)
@@ -129,7 +149,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
       return
     }
 
-    const existingItemIndex = items.findIndex(item => item.productId === selectedProduct.id)
+    const existingItemIndex = items.findIndex((item) => item.productId === selectedProduct.id)
 
     if (existingItemIndex >= 0) {
       const newQuantity = items[existingItemIndex].quantity + quantity
@@ -146,12 +166,15 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
         description: `${selectedProduct.name} actualizado a ${newQuantity} unidades.`,
       })
     } else {
-      setItems([...items, {
-        productId: selectedProduct.id,
-        quantity,
-        unitPrice: selectedProduct.salePrice,
-        product: selectedProduct,
-      }])
+      setItems([
+        ...items,
+        {
+          productId: selectedProduct.id,
+          quantity,
+          unitPrice: selectedProduct.salePrice,
+          product: selectedProduct,
+        },
+      ])
       toast.success('Producto agregado', {
         description: `${selectedProduct.name} agregado al carrito.`,
       })
@@ -188,7 +211,13 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
     setItems(updatedItems)
   }
 
-  function handleClientSelect(client: { id: string; name: string; phone: string | null; email: string | null; address: string | null }) {
+  function handleClientSelect(client: {
+    id: string
+    name: string
+    phone: string | null
+    email: string | null
+    address: string | null
+  }) {
     setClientId(client.id)
     setValue('clientName', client.name)
     setValue('clientPhone', client.phone || '')
@@ -243,6 +272,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
           router.push(redirectTo)
         }
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error('Error al registrar venta', {
         description: err?.message || 'Error desconocido',
@@ -252,9 +282,10 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
     }
   }
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    product.description?.toLowerCase().includes(productSearch.toLowerCase())
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      product.description?.toLowerCase().includes(productSearch.toLowerCase()),
   )
 
   const hasLoss = financials.status.status === 'loss'
@@ -298,12 +329,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
               <Label htmlFor="clientEmail">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  id="clientEmail"
-                  {...register('clientEmail')}
-                  placeholder="Email (opcional)"
-                  className="pl-10"
-                />
+                <Input id="clientEmail" {...register('clientEmail')} placeholder="Email (opcional)" className="pl-10" />
               </div>
             </div>
             <div className="space-y-2">
@@ -343,27 +369,34 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
-                {filteredProducts.filter(p => p.stock > 0).map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() => setSelectedProduct(product)}
-                    className={`p-3 rounded-lg border text-left transition-all hover:shadow-md ${
-                      selectedProduct?.id === product.id
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <p className="font-medium text-sm truncate">{product.name}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-semibold text-green-600">{formatCurrency(product.salePrice)}</span>
-                      <Badge variant={product.stock > product.minStock ? 'default' : 'destructive'} className="text-xs">
-                        Stock: {product.stock}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
-                {filteredProducts.filter(p => p.stock > 0).length === 0 && (
+                {filteredProducts
+                  .filter((p) => p.stock > 0)
+                  .map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => setSelectedProduct(product)}
+                      className={`p-3 rounded-lg border text-left transition-all hover:shadow-md ${
+                        selectedProduct?.id === product.id
+                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-medium text-sm truncate">{product.name}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-sm font-semibold text-green-600">
+                          {formatCurrency(product.salePrice)}
+                        </span>
+                        <Badge
+                          variant={product.stock > product.minStock ? 'default' : 'destructive'}
+                          className="text-xs"
+                        >
+                          Stock: {product.stock}
+                        </Badge>
+                      </div>
+                    </button>
+                  ))}
+                {filteredProducts.filter((p) => p.stock > 0).length === 0 && (
                   <div className="col-span-full text-center py-8 text-gray-500">
                     No se encontraron productos con stock disponible
                   </div>
@@ -385,7 +418,9 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="quantity" className="text-sm">Cant:</Label>
+                      <Label htmlFor="quantity" className="text-sm">
+                        Cant:
+                      </Label>
                       <Input
                         id="quantity"
                         type="number"
@@ -421,14 +456,22 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                     const purchasePrice = item.product?.purchasePrice || 0
                     const itemMargin = getItemMargin(item.unitPrice, purchasePrice)
                     const itemProfit = getItemProfit(item.unitPrice, purchasePrice, item.quantity)
-                    const priceValidation = purchasePrice > 0 ? validateSalePriceAgainstCost(item.unitPrice, purchasePrice) : null
+                    const priceValidation =
+                      purchasePrice > 0 ? validateSalePriceAgainstCost(item.unitPrice, purchasePrice) : null
                     const isLoss = itemProfit < 0
                     const isLowMargin = itemMargin >= 0 && itemMargin < 15
 
                     return (
-                      <div key={index} className={`p-3 rounded-lg border ${
-                        isLoss ? 'border-red-300 bg-red-50' : isLowMargin ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
-                      }`}>
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border ${
+                          isLoss
+                            ? 'border-red-300 bg-red-50'
+                            : isLowMargin
+                              ? 'border-amber-300 bg-amber-50'
+                              : 'border-gray-200'
+                        }`}
+                      >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{item.product?.name}</p>
@@ -486,7 +529,9 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                           </div>
                           <div>
                             <Label className="text-xs text-gray-500">Total</Label>
-                            <p className="text-sm font-semibold mt-2">{formatCurrency(item.unitPrice * item.quantity)}</p>
+                            <p className="text-sm font-semibold mt-2">
+                              {formatCurrency(item.unitPrice * item.quantity)}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -500,7 +545,9 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 flex-1">
                     <Percent className="h-4 w-4 text-gray-500" />
-                    <Label htmlFor="discount" className="text-sm">Descuento</Label>
+                    <Label htmlFor="discount" className="text-sm">
+                      Descuento
+                    </Label>
                   </div>
                   <div className="flex items-center gap-1">
                     <Input
@@ -547,9 +594,15 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Margen</span>
-                    <span className={`font-semibold ${
-                      financials.margin >= 15 ? 'text-emerald-600' : financials.margin >= 0 ? 'text-amber-600' : 'text-red-600'
-                    }`}>
+                    <span
+                      className={`font-semibold ${
+                        financials.margin >= 15
+                          ? 'text-emerald-600'
+                          : financials.margin >= 0
+                            ? 'text-amber-600'
+                            : 'text-red-600'
+                      }`}
+                    >
                       {financials.margin.toFixed(1)}%
                     </span>
                   </div>
@@ -575,9 +628,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                 {!hasLoss && !hasLowMargin && items.length > 0 && financials.profit > 0 && (
                   <div className="py-2 px-3 rounded-md border border-green-300 bg-green-50 flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
-                    <p className="text-sm text-green-700">
-                      Margen saludable ({financials.margin.toFixed(1)}%)
-                    </p>
+                    <p className="text-sm text-green-700">Margen saludable ({financials.margin.toFixed(1)}%)</p>
                   </div>
                 )}
 
@@ -604,9 +655,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                   <ShoppingCart className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground font-medium">Carrito vacío</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Selecciona productos del catálogo para comenzar
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">Selecciona productos del catálogo para comenzar</p>
               </CardContent>
             </Card>
           )}
@@ -616,7 +665,10 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Método de Pago</Label>
-                <Select value={paymentMethod} onValueChange={(value) => setValue('paymentMethod', value as PaymentMethod)}>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value) => setValue('paymentMethod', value as PaymentMethod)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona método de pago" />
                   </SelectTrigger>

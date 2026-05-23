@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Clock, DollarSign, User, Phone, Mail, MapPin, Wrench, Package, Pencil } from 'lucide-react'
+import { ArrowLeft, Clock, DollarSign, User, Wrench, Package, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/format'
 import { getRepairStatusLabel, getRepairStatusColor } from '@/lib/labels'
@@ -51,7 +51,8 @@ export default async function RepairPage({ params }: RepairPageProps) {
           <CardHeader>
             <CardTitle>Reparación #{repair.id.slice(-6).toUpperCase()}</CardTitle>
             <CardDescription>
-              Recibido el {new Date(repair.createdAt).toLocaleDateString('es-CO')} at {new Date(repair.createdAt).toLocaleTimeString('es-CO')}
+              Recibido el {new Date(repair.createdAt).toLocaleDateString('es-CO')} at{' '}
+              {new Date(repair.createdAt).toLocaleTimeString('es-CO')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
