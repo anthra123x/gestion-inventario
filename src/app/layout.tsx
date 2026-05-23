@@ -29,6 +29,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {process.env.NODE_ENV === 'development' && (
+          <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />
+        )}
         {children}
         <ToastProvider />
       </body>

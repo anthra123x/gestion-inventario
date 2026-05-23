@@ -4,123 +4,130 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Tecnicell ERP — Contexto para el Agente
+# Tecnicell ERP — Contexto Completo para el Agente
 
-## Stack
+## Stack tecnológico
 
-| Capa | Tecnología |
-|------|-----------|
-| Framework | Next.js 16.2.3 (App Router) |
-| Language | TypeScript strict |
-| Database | PostgreSQL (Supabase) |
-| ORM | Prisma 5.22 |
-| CSS | Tailwind CSS v4 |
-| UI Library | shadcn/ui + Radix primitives |
-| Auth | Supabase Auth (SSR) |
-| Validation | Zod 4 |
-| PDF | jsPDF + pdf-lib |
-| Charts | Recharts |
+| Capa | Tecnología | Versión | Notas |
+|------|-----------|---------|-------|
+| Framework | Next.js (App Router) | 16.2.3 | Turbopack build |
+| Language | TypeScript | 5.x | `strict: true` |
+| Database | PostgreSQL (Supabase) | - | PgBouncer pooler |
+| ORM | Prisma | 5.22 | Singleton en `@/lib/prisma` |
+| CSS | Tailwind CSS | 4.x | `@tailwindcss/postcss`, `@theme inline` |
+| UI Components | shadcn/ui + Base UI v1 | - | `base-nova` style, lucide icons |
+| Auth | Supabase Auth (SSR) | - | `@supabase/ssr` + middleware |
+| Validation | Zod | 4.3.6 | Schemas en `@/lib/validations.ts` |
+| Forms | react-hook-form | 7.72 | + `@hookform/resolvers` |
+| Charts | Ninguno | - | `recharts` eliminado (no se usaba) |
+| PDF | Ninguno | - | `jspdf`/`pdf-lib`/`react-pdf` eliminados (no se usaban) |
+| Excel | xlsx (SheetJS) | 0.18.5 | Exportación de reportes |
+| Testing | Vitest | 4.1.7 | 77 tests en 3 files |
+| Lint | ESLint | 9.x | `eslint-config-next` + `unused-imports` |
+| Format | Prettier | - | Config en `.prettierrc` |
 
-## Comandos básicos
+## Comandos esenciales
 
 ```bash
-npm run dev         # Iniciar dev server (http://localhost:3000)
+npm run dev         # Dev server (http://localhost:3000) + React Scan for rerenders
 npm run build       # Prisma generate + Next build
-npm run lint        # ESLint
-npm run db:push     # Sincronizar schema Prisma con DB (dev)
-npm run db:studio   # Abrir Prisma Studio
+npm run lint        # ESLint (incluye detección de imports muertos)
+npm run typecheck   # TypeScript check sin emitir
+npm run test        # Vitest (77 tests)
+npm run db:push     # Sync schema a DB (dev)
+npm run db:studio   # Prisma Studio
 npm run db:migrate  # Crear migración
+npm run db:seed     # Ejecutar seed
+npx prettier --write src/  # Formatear todo el código
 ```
 
 ## Estructura del proyecto
 
 ```
 src/
-├── app/                    # Next.js App Router pages
-│   ├── admin/              # Panel de administración
-│   ├── api/                # API routes (públicas)
-│   │   ├── ecommerce/products/  # Storefront API
-│   │   ├── orders/              # Order CRUD
-│   │   └── products/            # Product API (legacy)
-│   ├── dashboard/          # Dashboard (inicio)
+├── app/                    # Next.js App Router
+│   ├── admin/              # Panel de administración (usuarios, settings, cleanup)
+│   ├── api/                # API routes públicas (storefront)
+│   │   ├── ecommerce/products/  # GET catálogo online
+│   │   ├── orders/              # POST crear pedido (storefront)
+│   │   └── products/            # GET productos (legacy)
+│   ├── dashboard/          # Dashboard principal con stats
 │   ├── ecommerce/          # Admin catálogo online
 │   │   └── products/[id]/  # Editor de producto ecommerce
-│   ├── inventory/          # Gestión de inventario
-│   ├── orders/             # Pedidos online
-│   ├── repairs/            # Reparaciones
-│   ├── reports/            # Reportes
-│   └── sales/              # Ventas POS
+│   ├── inventory/          # CRUD productos, movimientos de stock
+│   ├── login/              # Login con Supabase
+│   ├── orders/             # Gestión de pedidos online
+│   ├── print/              # Impresión de facturas (ruta unificada)
+│   ├── profile/            # Perfil de usuario (datos reales de sesión)
+│   ├── register/           # Redirige a /login (solo admin crea usuarios)
+│   ├── repairs/            # CRUD reparaciones con partes
+│   ├── reports/            # Reportes (ventas, inventario, reparaciones, clientes)
+│   └── sales/              # POS ventas con carrito y descuentos
 ├── components/
-│   ├── forms/              # Formularios (sale-form, etc.)
+│   ├── forms/              # Formularios complejos (sale-form, product-form)
 │   ├── layout/             # Sidebar, Header, DashboardLayout
-│   └── ui/                 # shadcn/ui components
-├── lib/                    # Utilidades, validaciones, finanzas
-│   ├── validations.ts      # Zod schemas (todos los módulos)
-│   ├── finance.ts          # Cálculos financieros
+│   └── ui/                 # shadcn/ui + Base UI components (24 components)
+├── lib/
+│   ├── labels.ts           # Helpers compartidos (getPaymentMethodLabel, etc.)
+│   ├── validations.ts      # Zod schemas de todos los módulos
+│   ├── finance.ts          # Cálculos financieros (subtotal, profit, margin)
+│   ├── format.ts           # Formateo moneda/fechas (COP)
+│   ├── stock-check.ts      # Utilidades de verificación de stock
+│   ├── keyboard-shortcuts.ts # Atajos de teclado POS
+│   ├── zod-error.ts        # Helper para mensajes de error Zod
+│   ├── supabase.ts         # Cliente Supabase browser
+│   ├── supabase-server.ts  # Cliente Supabase server (logout)
 │   ├── prisma.ts           # Prisma Client singleton
-│   └── format.ts           # Formateo de moneda/fechas
-├── modules/                # Server actions (negocio)
-│   ├── auth/               # Autenticación
-│   ├── cleanup/            # Backup/restore de datos
-│   ├── clients/            # Clientes
-│   ├── dashboard/          # Estadísticas dashboard
-│   ├── ecommerce/          # Catálogo online CRUD
-│   ├── export/             # Exportaciones Excel
-│   ├── inventory/          # Productos y stock
-│   ├── orders/             # Pedidos online
-│   ├── repairs/            # Reparaciones
-│   ├── reports/            # Reportes
-│   ├── sales/              # Ventas POS
+│   └── utils.ts            # cn() utility (clsx + tailwind-merge)
+├── modules/
+│   ├── auth/               # getCurrentUser, requireAdmin, requireAuth, CRUD usuarios
+│   ├── cleanup/            # Backup/restore/cleanup datos
+│   ├── clients/            # CRUD clientes
+│   ├── dashboard/          # Stats dashboard (ventas hoy, repairs ready, pedidos)
+│   ├── ecommerce/          # Catálogo online CRUD + imágenes
+│   ├── export/             # Exportación Excel
+│   ├── inventory/          # Productos CRUD + movimientos stock
+│   ├── orders/             # Pedidos CRUD + transiciones estado
+│   ├── repairs/            # Reparaciones CRUD + partes
+│   ├── reports/            # Reportes (ventas, inventario, reparaciones, clientes)
 │   └── settings/           # Configuración del sistema
-├── components/
-│   ├── ui/
-│   │   └── error-fallback.tsx  # Error boundary reusable
-│   └── ...
-├── middleware.ts            # Supabase Auth middleware
-└── next.config.ts           # serverActions.bodySizeLimit: 10mb
+├── proxy.ts                # Middleware Supabase Auth (detectado por Next.js 16 build)
+├── middleware.ts            # NO EXISTE — proxy.ts hace el rol
+└── next.config.ts           # CORS headers + bodySizeLimit 10mb
 ```
 
-## Convenciones de código
+## Convenciones de código críticas
 
-- **Server Actions**: En `src/modules/<modulo>/<modulo>.actions.ts`, usar `'use server'`
-- **API Routes**: En `src/app/api/<ruta>/route.ts`, sin auth (públicas)
-- **Páginas**: Componentes Server Component por defecto, `'use client'` solo cuando sea necesario
-- **Validación**: Siempre con Zod, schemas en `src/lib/validations.ts`
+- **Server Actions**: `src/modules/<modulo>/<modulo>.actions.ts`, con `'use server'`
+- **API Routes**: `src/app/api/<ruta>/route.ts`, públicas, SIN auth (para storefront)
+- **Auth en Server Actions**: Toda action administrativa DEBE llamar `requireAdmin()` al inicio
+- **Validación**: Siempre Zod, schemas en `@/lib/validations.ts`
 - **Errores Prisma**: Capturar P2002 (unique), P2025 (not found), P2003 (FK)
-- **Stock**: Siempre usar `prisma.$transaction()` para operaciones que modifican stock
-- **Formateo monetario**: Usar `formatCurrency()` de `@/lib/format`
-- **Cálculos financieros**: Usar helpers de `@/lib/finance` (calcSubtotal, calcTotal, calcProfit, etc.)
-- **CSS**: Tailwind utility classes, evitar CSS modules
+- **Stock**: Siempre en `prisma.$transaction()` las operaciones que modifican stock
+- **Moneda**: `formatCurrency()` de `@/lib/format` (COP)
+- **Cálculos**: Helpers de `@/lib/finance` (calcSubtotal, calcTotal, calcProfit, calcMargin, etc.)
+- **CSS**: Tailwind only, NO CSS modules, NO inline styles
+- **Páginas**: Server Component por defecto, `'use client'` solo cuando necesitas interactividad
+- **Labels**: Usar helpers de `@/lib/labels` en lugar de definir funciones locales duplicadas
+- **Navegación**: Usar `router.push()` (NO `window.location.href`)
+- **Delete**: Usar shadcn `Dialog` (NO `window.confirm()`)
+- **Error boundaries**: Siempre tener `error.tsx` con `ErrorFallback` en cada ruta
 
-## Módulos clave
+## Reglas de negocio (NO ROMPER)
 
-| Módulo | Server Actions | Archivo Principal |
-|--------|---------------|-------------------|
-| Inventario | `inventory.actions.ts` | CRUD productos, movimientos de stock |
-| Ventas POS | `sales.actions.ts` | Crear venta, descuentos, validación no-pérdida |
-| Pedidos online | `orders.actions.ts` | CRUD pedidos, transiciones de estado con side effects de stock |
-| Ecommerce | `ecommerce.actions.ts` | Catálogo online, imágenes, badges, precios |
-| Reparaciones | `repairs.actions.ts` | CRUD reparaciones, gestión de partes, stock |
-| Reportes | `reports.actions.ts` | Reportes de ventas, inventario, reparaciones, clientes |
-| Export | `export.actions.ts` | Exportación Excel de productos, clientes, reportes |
-| Cleanup | `cleanup.actions.ts` | Backup y restore de datos |
-
-## Reglas de negocio importantes
-
-1. **Stock**: `Product.stock` es la única fuente de verdad. Storefront NO escribe stock.
-2. **Ventas**: No se puede vender por debajo del costo (`unitPrice >= purchasePrice`).
-3. **Reparaciones**: El costo de mano de obra (`cost`) debe ser >= el costo de partes (`partsCost`).
-4. **Pedidos online**: El stock se descuenta en `PENDING → CONFIRMED`, no al crear el pedido.
-5. **Soft delete**: Productos y clientes tienen `deletedAt`. Siempre filtrar `deletedAt: null` en queries.
-6. **Enums**: Todos en UPPERCASE. La DB tiene datos legacy en lowercase.
-7. **Órdenes**: Máquina de estados `ALLOWED_TRANSITIONS` valida transiciones. Stock solo se restaura si el estado previo era ≥ CONFIRMED.
-8. **Admin auth**: Toda server action administrativa debe llamar `requireAdmin()` al inicio.
-9. **Error boundaries**: Cada ruta del dashboard debe tener su `error.tsx` que renderice `ErrorFallback`.
-10. **Middleware**: Cookie handler usa `getAll()`/`setAll()` + `applyCookies()` para persistir session en redirects.
+1. **`Product.stock` es la única fuente de verdad** — Storefront NUNCA escribe stock.
+2. **`unitPrice >= purchasePrice`** — No se puede vender por debajo del costo.
+3. **Reparaciones**: `cost` (mano de obra) debe ser >= `partsCost`.
+4. **Stock se descuenta en PENDING→CONFIRMED**, no al crear el pedido.
+5. **Soft delete**: Productos y clientes tienen `deletedAt`. Siempre filtrar `deletedAt: null`.
+6. **Enums en UPPERCASE** en schema (DB tiene datos legacy en lowercase).
+7. **Transiciones de orden**: Solo `ALLOWED_TRANSITIONS`. Stock se restaura si estado previo era ≥ CONFIRMED.
+8. **API endpoints son públicos** — Sin auth en `/api/*` (el storefront los consume).
+9. **Middleware**: `proxy.ts` usa Supabase SSR con `getAll()`/`setAll()` + `applyCookies()`.
 
 ## Documentación compartida
 
-Hay un submodule en `docs/` que apunta a `github.com/anthra123x/tecnicell-docs`. Esta documentación cubre la integración con el storefront.
+Submodule en `docs/` → `github.com/anthra123x/tecnicell-docs`
 
 **Leer primero:**
 - `docs/docs/architecture/00-SYSTEM_OVERVIEW.md` — Visión general
@@ -129,24 +136,72 @@ Hay un submodule en `docs/` que apunta a `github.com/anthra123x/tecnicell-docs`.
 
 **Actualizar docs:**
 ```bash
-cd docs
-git checkout main
-# editar...
-git add . && git commit -m "mensaje" && git push origin main
-cd ..
-git add docs && git commit -m "docs: sync submodule" && git push
+cd docs && git add -A && git commit -m "mensaje" && git push origin main
+cd .. && git add docs && git commit -m "docs: sync submodule" && git push
 ```
 
 **Recibir cambios:**
 ```bash
-git submodule update --remote docs
-git add docs && git commit -m "docs: sync submodule" && git push
+git submodule update --remote docs && git add docs && git commit -m "docs: sync submodule" && git push
 ```
 
-## Notas sobre la integración con Storefront
+## Storefront integration
 
-- Ambos proyectos comparten la misma DB PostgreSQL en Supabase.
-- El storefront lee productos via `GET /api/ecommerce/products` (API) o directo a DB.
-- El storefront escribe pedidos via `POST /api/orders` (local o API del ERP).
-- El storefront NUNCA escribe stock, productos, ni datos de ecommerce.
-- Los modelos `EcommerceProduct` y `ProductMedia` están en `product_ecommerce` y `product_media`.
+- Misma DB PostgreSQL en Supabase (compartida)
+- Storefront lee productos via `GET /api/ecommerce/products` (API pública)
+- Storefront escribe pedidos via `POST /api/orders` (API pública, con validación de precios)
+- Storefront NUNCA escribe stock, productos ni datos de ecommerce
+- `EcommerceProduct` y `ProductMedia` mapean a `product_ecommerce` y `product_media` en DB
+
+## Tooling disponible
+
+| Herramienta | Para qué | Cómo usarlo |
+|------------|----------|-------------|
+| ESLint + unused-imports | Detecta imports/vars sin uso | `npm run lint` |
+| Prettier | Formateo consistente | `npx prettier --write src/` |
+| React Scan | Detecta rerenders innecesarios | Se activa SOLO en dev automáticamente |
+| Vitest | Tests unitarios (77 tests) | `npm test` |
+| TypeScript strict | Type safety | `npm run typecheck` |
+| Zod 4 | Validación runtime | Schemas en `@/lib/validations.ts` |
+
+## Dependencias eliminadas (no se usaban)
+
+| Paquete | Razón |
+|---------|-------|
+| `@supabase/auth-helpers-nextjs` | Deprecado, reemplazado por `@supabase/ssr` |
+| `jspdf` / `jspdf-autotable` | No se usaban (0 imports) |
+| `pdf-lib` | No se usaba (0 imports) |
+| `react-pdf` | No se usaba (0 imports) |
+| `recharts` | No se usaba (0 imports) — gráficos se renderizan server-side |
+| `uuid` / `@types/uuid` | No se usaban (0 imports) |
+| `shadcn` | Movido a devDependencies (es CLI, no runtime) |
+
+## Decisiones de arquitectura (NO cambiar sin autorización)
+
+- **Float → Decimal**: Diferido (23 campos, requiere migration). Riesgo alto.
+- **`any` types**: Aceptados como deuda técnica. Refactor masivo sin valor inmediato.
+- **Sin TanStack Table**: Las tablas actuales (shadcn Table simple) cubren bien CRUDs. Reports no justifica la complejidad.
+- **Sin Framer Motion**: ERP con tablas/formularios no necesita animaciones complejas. View Transitions API de React 19 cubre lo necesario.
+- **Sin Magic UI / Aceternity**: Efectos CSS sin valor real para un ERP. Añaden peso y dependencias.
+- **Sin Sentry (aún)**: Sería valioso para producción, requiere setup de cuenta. Pendiente para próximo sprint.
+- **Middleware**: `proxy.ts` es detectado automáticamente por Next.js 16 build como middleware. No necesita `middleware.ts`.
+
+## Skills del agente (cargar cuando aplique)
+
+| Skill | Cuándo usarlo |
+|-------|--------------|
+| `vercel-react-best-practices` | Optimización de componentes, data fetching, bundle |
+| `vercel-composition-patterns` | Refactor de componentes con prop drilling, compound components |
+| `tailwind-v4-shadcn` | Problemas de CSS, dark mode, theming, shadcn setup |
+| `responsive-design` | Layouts responsive, container queries, mobile-first |
+| `vercel-react-view-transitions` | Animaciones entre rutas, transiciones de estado |
+| `tailwind-design-system` | Sistema de diseño, tokens, componentes reutilizables |
+| `web-design-guidelines` | Auditoría de UI/UX, accesibilidad, diseño |
+
+## Deuda técnica conocida
+
+- [ ] Migrar Float→Decimal en 23 campos financieros
+- [ ] Reducir uso de `any` types gradualmente
+- [ ] Agregar Sentry para monitoreo en producción
+- [ ] Agregar `loading.tsx` para rutas que aún no tienen
+- [ ] Implementar perfil de administrador con cambio de contraseña real (Supabase Auth)
