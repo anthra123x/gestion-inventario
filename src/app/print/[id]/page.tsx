@@ -6,15 +6,7 @@ import { getSaleById } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
 import { Printer, X, ArrowLeft } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
-
-function getPaymentMethodLabel(method: PaymentMethod): string {
-  const labels: Record<PaymentMethod, string> = {
-    CASH: 'Efectivo',
-    CARD: 'Tarjeta',
-    TRANSFER: 'Transferencia',
-  }
-  return labels[method] || method
-}
+import { getPaymentMethodLabel } from '@/lib/labels'
 
 export default function PrintPage() {
   const params = useParams()

@@ -21,10 +21,6 @@ import { formatCurrency } from '@/lib/format'
 import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit, calcMargin, getProfitStatus, getItemProfit, getItemMargin } from '@/lib/finance'
 import { validateSalePriceAgainstCost } from '@/lib/validations-data'
 
-function formatCOP(value: number): string {
-  return value.toLocaleString('es-CO')
-}
-
 interface SaleItem {
   productId: string
   quantity: number
@@ -56,7 +52,6 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
   } = useForm({
     resolver: zodResolver(CreateSaleSchema),
     defaultValues: {
@@ -93,12 +88,6 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
       setIsLoadingData(false)
     }
   }
-
-  useEffect(() => {
-    if (items.length > 0) {
-      setValue('items', items)
-    }
-  }, [items, setValue])
 
   useEffect(() => {
     const warnings: string[] = []
@@ -633,6 +622,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CASH">Efectivo</SelectItem>
+                    <SelectItem value="CARD">Tarjeta</SelectItem>
                     <SelectItem value="TRANSFER">Transferencia</SelectItem>
                   </SelectContent>
                 </Select>

@@ -2,18 +2,24 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 export async function exportData() {
+  await requireAdmin()
   try {
     const [products, sales, repairs, clients, inventoryMovements] = await Promise.all([
-      prisma.product.findMany(),
+      prisma.product.findMany({
+        where: { deletedAt: null },
+      }),
       prisma.sale.findMany({
         include: { saleItems: true, client: true },
       }),
       prisma.repair.findMany({
         include: { repairParts: true, client: true },
       }),
-      prisma.client.findMany(),
+      prisma.client.findMany({
+        where: { deletedAt: null },
+      }),
       prisma.inventoryMovement.findMany(),
     ])
 
@@ -39,6 +45,7 @@ export async function exportData() {
 }
 
 export async function cleanupProducts() {
+  await requireAdmin()
   try {
     console.log('=== CLEANUP PRODUCTS STARTED ===')
 
@@ -64,6 +71,7 @@ export async function cleanupProducts() {
 }
 
 export async function cleanupSales() {
+  await requireAdmin()
   try {
     console.log('=== CLEANUP SALES STARTED ===')
 
@@ -89,6 +97,7 @@ export async function cleanupSales() {
 }
 
 export async function cleanupRepairs() {
+  await requireAdmin()
   try {
     console.log('=== CLEANUP REPAIRS STARTED ===')
 
@@ -114,6 +123,7 @@ export async function cleanupRepairs() {
 }
 
 export async function cleanupClients() {
+  await requireAdmin()
   try {
     console.log('=== CLEANUP CLIENTS STARTED ===')
 
@@ -133,16 +143,18 @@ export async function cleanupClients() {
 }
 
 export async function cleanupAll() {
+  await requireAdmin()
   try {
-    // Orden de eliminación: relaciones primero
-    const deletedSaleItems = await prisma.saleItem.deleteMany({})
-    const deletedRepairParts = await prisma.repairPart.deleteMany({})
-    const deletedMovements = await prisma.inventoryMovement.deleteMany({})
-
-    const deletedSales = await prisma.sale.deleteMany({})
-    const deletedRepairs = await prisma.repair.deleteMany({})
-    const deletedProducts = await prisma.product.deleteMany({})
-    const deletedClients = await prisma.client.deleteMany({})
+    const result = await prisma.$transaction(async (tx) => {
+      const deletedSaleItems = await tx.saleItem.deleteMany({})
+      const deletedRepairParts = await tx.repairPart.deleteMany({})
+      const deletedMovements = await tx.inventoryMovement.deleteMany({})
+      const deletedSales = await tx.sale.deleteMany({})
+      const deletedRepairs = await tx.repair.deleteMany({})
+      const deletedProducts = await tx.product.deleteMany({})
+      const deletedClients = await tx.client.deleteMany({})
+      return { deletedSaleItems, deletedRepairParts, deletedMovements, deletedSales, deletedRepairs, deletedProducts, deletedClients }
+    })
 
     revalidatePath('/inventory')
     revalidatePath('/sales')

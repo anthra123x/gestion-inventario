@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Badge } from '@/components/ui/badge'
+import { Pagination } from '@/components/ui/pagination'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import {
@@ -224,13 +225,13 @@ export default function EcommerceProductsPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">Página {page} de {totalPages} — {total} productos</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Siguiente</Button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              entity="productos"
+              onPageChange={(p) => setPage(p)}
+            />
           )}
         </CardContent>
       </Card>

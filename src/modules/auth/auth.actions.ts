@@ -8,19 +8,15 @@ import { UserRole } from '@prisma/client'
 
 export async function ensureUserExists(email: string, name: string) {
   try {
-    const existingUser = await prisma.user.findUnique({
+    await prisma.user.upsert({
       where: { email },
+      update: { name },
+      create: {
+        email,
+        name,
+        role: 'EMPLOYEE' as UserRole,
+      },
     })
-
-    if (!existingUser) {
-      await prisma.user.create({
-        data: {
-          email,
-          name,
-          role: 'EMPLOYEE' as UserRole,
-        },
-      })
-    }
 
     return { success: true }
   } catch (error: any) {
@@ -48,6 +44,11 @@ export async function getCurrentUser() {
         cookies: {
           getAll() {
             return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
           },
         },
       }
@@ -117,26 +118,40 @@ export async function getUsers() {
 
 export async function updateUserRole(userId: string, role: UserRole) {
   await requireAdmin()
-  await prisma.user.update({
-    where: { id: userId },
-    data: { role },
-  })
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    })
 
-  revalidatePath('/admin')
-  return {
-    success: 'Rol actualizado exitosamente',
+    revalidatePath('/admin')
+    return {
+      success: 'Rol actualizado exitosamente',
+    }
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return { error: 'Usuario no encontrado' }
+    }
+    return { error: 'Error al actualizar rol' }
   }
 }
 
 export async function deleteUser(userId: string) {
   await requireAdmin()
-  await prisma.user.delete({
-    where: { id: userId },
-  })
+  try {
+    await prisma.user.delete({
+      where: { id: userId },
+    })
 
-  revalidatePath('/admin')
-  return {
-    success: 'Usuario eliminado exitosamente',
+    revalidatePath('/admin')
+    return {
+      success: 'Usuario eliminado exitosamente',
+    }
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return { error: 'Usuario no encontrado' }
+    }
+    return { error: 'Error al eliminar usuario' }
   }
 }
 
@@ -152,18 +167,16 @@ export async function createUserByAdmin(formData: FormData) {
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
-      return { error: 'El usuario ya existe' }
+    try {
+      await prisma.user.create({
+        data: { email, name, role },
+      })
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        return { error: 'El usuario ya existe' }
+      }
+      throw error
     }
-
-    // Crear registro en DB primero
-    await prisma.user.create({
-      data: { email, name, role },
-    })
 
     // Luego crear auth user en Supabase
     const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)

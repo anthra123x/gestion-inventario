@@ -4,9 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
-import { getCurrentUser } from '@/modules/auth/auth.actions'
+import { getCurrentUser, requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
 
 export async function getClients(search?: string) {
+  await requireAuth()
   const where = {
     deletedAt: null,
     ...(search && {
@@ -52,6 +53,7 @@ export async function getClients(search?: string) {
 }
 
 export async function searchClients(search: string) {
+  await requireAuth()
   if (!search || search.length < 2) return []
 
   return await prisma.client.findMany({
@@ -76,6 +78,7 @@ export async function searchClients(search: string) {
 }
 
 export async function getClientById(id: string) {
+  await requireAuth()
   return await prisma.client.findFirst({
     where: { id, deletedAt: null },
     include: {
@@ -104,6 +107,7 @@ export async function getClientById(id: string) {
 }
 
 export async function createClient(formData: FormData) {
+  await requireAdmin()
   const validatedFields = CreateClientSchema.safeParse({
     name: formData.get('name'),
     phone: formData.get('phone'),
@@ -148,8 +152,7 @@ export async function createClient(formData: FormData) {
 }
 
 export async function updateClient(id: string, formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user) throw new Error('No autorizado')
+  await requireAdmin()
 
   const validatedFields = UpdateClientSchema.safeParse({
     name: formData.get('name'),
@@ -197,8 +200,7 @@ export async function updateClient(id: string, formData: FormData) {
 }
 
 export async function deleteClient(id: string) {
-  const user = await getCurrentUser()
-  if (!user) throw new Error('No autorizado')
+  await requireAdmin()
 
   try {
     await prisma.client.update({
@@ -218,6 +220,7 @@ export async function deleteClient(id: string) {
 }
 
 export async function getClientStats() {
+  await requireAuth()
   const [totalClients, newClientsThisMonth, topClients] = await Promise.all([
     prisma.client.count({ where: { deletedAt: null } }),
     prisma.client.count({

@@ -5,8 +5,10 @@ import { revalidatePath } from 'next/cache'
 import { CreateOrderSchema, UpdateOrderStatusSchema } from '@/lib/validations'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { OrderStatus } from '@prisma/client'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 export async function getOrders(search?: string, status?: OrderStatus, page = 1, take = 20) {
+  await requireAdmin()
   const where = {
     ...(search && {
       OR: [
@@ -49,6 +51,7 @@ export async function getOrders(search?: string, status?: OrderStatus, page = 1,
 }
 
 export async function getOrderById(id: string) {
+  await requireAdmin()
   return await prisma.order.findUnique({
     where: { id },
     include: {
@@ -60,6 +63,7 @@ export async function getOrderById(id: string) {
 }
 
 export async function getOrderByExternalReference(ref: string) {
+  await requireAdmin()
   return await prisma.order.findUnique({
     where: { externalReference: ref },
     include: {
@@ -71,6 +75,7 @@ export async function getOrderByExternalReference(ref: string) {
 }
 
 export async function getOrderStats() {
+  await requireAdmin()
   const [total, pending, confirmed, preparing, shipped, delivered, cancelled, revenue] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { status: 'PENDING' } }),
@@ -131,7 +136,7 @@ export async function createOrder(formData: FormData) {
   }
 
   for (const item of validatedFields.data.items) {
-    const product = await prisma.product.findUnique({ where: { id: item.productId } })
+    const product = await prisma.product.findUnique({ where: { id: item.productId, deletedAt: null } })
     if (!product || product.stock < item.quantity) {
       return { error: `Stock insuficiente para ${product?.name || 'producto'}` }
     }
@@ -185,34 +190,35 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 const STATUS_WITH_STOCK_DECREMENTED: OrderStatus[] = ['CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED']
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  await requireAdmin()
   const validated = UpdateOrderStatusSchema.safeParse({ status })
   if (!validated.success) {
     return { error: 'Estado inválido' }
   }
 
   try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    })
-
-    if (!order) return { error: 'Pedido no encontrado' }
-
-    const allowed = ALLOWED_TRANSITIONS[order.status]
-    if (!allowed.includes(status)) {
-      return { error: `Transición inválida: ${order.status} → ${status}` }
-    }
-
     await prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      })
+
+      if (!currentOrder) throw new Error('Pedido no encontrado')
+
+      const allowed = ALLOWED_TRANSITIONS[currentOrder.status]
+      if (!allowed.includes(status)) {
+        throw new Error(`Transición inválida: ${currentOrder.status} → ${status}`)
+      }
+
       await tx.order.update({
         where: { id: orderId },
         data: { status },
       })
 
-      const becomesConfirmed = status === 'CONFIRMED' && order.status === 'PENDING'
+      const becomesConfirmed = status === 'CONFIRMED' && currentOrder.status === 'PENDING'
 
       if (becomesConfirmed) {
-        for (const item of order.items) {
+        for (const item of currentOrder.items) {
           const product = await tx.product.findUnique({
             where: { id: item.productId },
             select: { stock: true },
@@ -238,9 +244,9 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
       }
 
       if (status === 'CANCELLED') {
-        const hadStockDecremented = STATUS_WITH_STOCK_DECREMENTED.includes(order.status)
+        const hadStockDecremented = STATUS_WITH_STOCK_DECREMENTED.includes(currentOrder.status)
         if (hadStockDecremented) {
-          for (const item of order.items) {
+          for (const item of currentOrder.items) {
             await tx.product.update({
               where: { id: item.productId },
               data: { stock: { increment: item.quantity } },
@@ -269,6 +275,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 }
 
 export async function updateOrderNotes(orderId: string, internalNotes: string) {
+  await requireAdmin()
   try {
     await prisma.order.update({
       where: { id: orderId },
@@ -282,6 +289,7 @@ export async function updateOrderNotes(orderId: string, internalNotes: string) {
 }
 
 export async function getOrdersByStatus(status: OrderStatus) {
+  await requireAdmin()
   return await prisma.order.findMany({
     where: { status },
     orderBy: { createdAt: 'desc' },

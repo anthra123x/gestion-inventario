@@ -13,26 +13,10 @@ import { FileText, Download, Filter, BarChart3, Package, Users, Wrench, Trending
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { generateReportData } from '@/modules/reports/reports.actions'
+import { getRepairStatusLabel, getStockStatus } from '@/lib/labels'
 import { ProductCategory, RepairStatus, PaymentMethod } from '@prisma/client'
 
 type SortDir = 'asc' | 'desc'
-
-function getRepairStatusLabel(status: string) {
-  const labels: Record<string, string> = {
-    RECEIVED: 'Recibido',
-    IN_PROGRESS: 'En Progreso',
-    READY: 'Listo',
-    DELIVERED: 'Entregado',
-    CANCELLED: 'Cancelado',
-  }
-  return labels[status] || status
-}
-
-function getStockStatusLabel(product: { stock: number; minStock: number }) {
-  if (product.stock === 0) return { label: 'Agotado', variant: 'destructive' as const }
-  if (product.stock <= product.minStock) return { label: 'Stock Bajo', variant: 'warning' as const }
-  return { label: 'En Stock', variant: 'default' as const }
-}
 
 function SortHeader({ label, sortKey: sk, currentSortKey, currentSortDir, onToggle }: {
   label: string
@@ -864,7 +848,7 @@ function InventoryDetails({ data, sortKey, sortDir, detailSearch, formatCurrency
           <tbody>
             {sorted.map((product: any) => {
               const margin = product.salePrice > 0 ? ((product.salePrice - product.purchasePrice) / product.salePrice) * 100 : 0
-              const { label, variant } = getStockStatusLabel(product)
+              const { label, variant } = getStockStatus(product.stock, product.minStock)
               return (
                 <tr key={product.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2.5 font-medium">{product.name}</td>

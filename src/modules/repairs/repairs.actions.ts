@@ -7,8 +7,10 @@ import { checkStockAvailability } from '@/lib/stock-check'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
 import { RepairStatus } from '@prisma/client'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 export async function getRepairs(search?: string, status?: RepairStatus, page = 1, take = 20) {
+  await requireAdmin()
   const where = {
     ...(search && {
       OR: [
@@ -70,6 +72,7 @@ export async function getRepairs(search?: string, status?: RepairStatus, page = 
 }
 
 export async function getRepairById(id: string) {
+  await requireAdmin()
   return await prisma.repair.findUnique({
     where: { id },
     include: {
@@ -89,6 +92,7 @@ export async function getRepairById(id: string) {
 }
 
 export async function createRepair(formData: FormData) {
+  await requireAdmin()
   const partsJson = formData.get('parts') as string
 
   let rawParts: any[]
@@ -198,6 +202,7 @@ export async function createRepair(formData: FormData) {
           id: {
             in: parts.map(p => p.productId),
           },
+          deletedAt: null,
         },
         select: {
           id: true,
@@ -311,6 +316,7 @@ export async function createRepair(formData: FormData) {
 }
 
 export async function updateRepair(id: string, formData: FormData) {
+  await requireAdmin()
 
   const validatedFields = UpdateRepairSchema.safeParse({
     status: formData.get('status') as RepairStatus,
@@ -318,8 +324,8 @@ export async function updateRepair(id: string, formData: FormData) {
     cost: formData.get('cost') ? parseFloat(formData.get('cost') as string) : undefined,
     notes: formData.get('notes') || null,
     internalNotes: formData.get('internalNotes') || null,
-    estimatedDate: formData.get('estimatedDate') ? new Date(formData.get('estimatedDate') as string) : undefined,
-    dateDelivered: formData.get('dateDelivered') ? new Date(formData.get('dateDelivered') as string) : undefined,
+    estimatedDate: formData.get('estimatedDate') ? String(formData.get('estimatedDate')) : undefined,
+    dateDelivered: formData.get('dateDelivered') ? String(formData.get('dateDelivered')) : undefined,
   })
 
   if (!validatedFields.success) {
@@ -348,6 +354,7 @@ export async function updateRepair(id: string, formData: FormData) {
 }
 
 export async function editRepair(id: string, formData: FormData) {
+  await requireAdmin()
   const partsJson = formData.get('parts') as string
 
   let rawParts: any[]
@@ -429,7 +436,7 @@ export async function editRepair(id: string, formData: FormData) {
     const partsCostMap: Record<string, number> = {}
     if (parts && parts.length > 0) {
       const products = await prisma.product.findMany({
-        where: { id: { in: parts.map(p => p.productId) } },
+        where: { id: { in: parts.map(p => p.productId) }, deletedAt: null },
         select: { id: true, purchasePrice: true },
       })
       for (const product of products) {
@@ -652,6 +659,7 @@ export async function editRepair(id: string, formData: FormData) {
 }
 
 export async function deleteRepair(id: string) {
+  await requireAdmin()
 
   try {
     // Get repair with parts to restore stock
@@ -711,6 +719,7 @@ export async function deleteRepair(id: string) {
 }
 
 export async function getRepairStats() {
+  await requireAdmin()
   const [totalRepairs, activeRepairs, completedRepairs, repairsByStatus, profitData] = await Promise.all([
     prisma.repair.count(),
     prisma.repair.count({
@@ -756,6 +765,7 @@ export async function getRepairStats() {
 }
 
 export async function getRepairsByDevice() {
+  await requireAdmin()
   const repairs = await prisma.repair.groupBy({
     by: ['device'],
     _count: {
@@ -773,6 +783,7 @@ export async function getRepairsByDevice() {
 }
 
 export async function updateRepairStatus(id: string, status: RepairStatus) {
+  await requireAdmin()
 
   try {
     const updateData: { status: RepairStatus; dateDelivered?: Date } = { status }

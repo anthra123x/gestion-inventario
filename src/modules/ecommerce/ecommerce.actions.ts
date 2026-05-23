@@ -3,8 +3,10 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 export async function getEcommerceProducts(search?: string, page = 1, take = 20) {
+  await requireAdmin()
   const where: any = {
     product: { deletedAt: null },
     ...(search && {
@@ -83,7 +85,7 @@ const EcommerceSettingsSchema = z.object({
 
 export async function createEcommerceProduct(productId: string) {
   const product = await prisma.product.findUnique({
-    where: { id: productId },
+    where: { id: productId, deletedAt: null },
     select: { id: true, name: true, category: true },
   })
 
@@ -230,7 +232,7 @@ export async function addEcommerceImage(ecommerceId: string, url: string, isPrim
 export async function deleteEcommerceImage(id: string) {
   try {
     await prisma.productMedia.delete({ where: { id } })
-    revalidatePath('/ecommerce/products')
+    revalidatePath('/ecommerce/products', 'layout')
     return { success: 'Imagen eliminada' }
   } catch (error: any) {
     return { error: error.message || 'Error al eliminar imagen' }
@@ -243,7 +245,7 @@ export async function reorderImages(mediaId: string, newOrder: number) {
       where: { id: mediaId },
       data: { sortOrder: newOrder },
     })
-    revalidatePath('/ecommerce/products')
+    revalidatePath('/ecommerce/products', 'layout')
     return { success: 'Orden actualizado' }
   } catch (error: any) {
     return { error: error.message || 'Error al reordenar' }

@@ -10,24 +10,7 @@ import { ArrowLeft, Printer, Download, FileText } from 'lucide-react'
 import { getSaleById } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
 import { formatCurrency } from '@/lib/format'
-
-function getPaymentMethodLabel(method: PaymentMethod): string {
-  const labels: Record<PaymentMethod, string> = {
-    CASH: 'Efectivo',
-    CARD: 'Tarjeta',
-    TRANSFER: 'Transferencia',
-  }
-  return labels[method] || method
-}
-
-function getPaymentMethodColor(method: PaymentMethod): string {
-  const colors: Record<PaymentMethod, string> = {
-    CASH: 'default',
-    CARD: 'secondary',
-    TRANSFER: 'outline',
-  }
-  return colors[method] || 'default'
-}
+import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
 export default function SaleDetailPage() {
   const params = useParams()
@@ -120,7 +103,7 @@ export default function SaleDetailPage() {
                 </CardDescription>
               </div>
               <div className="print:w-1/2 print:text-right">
-                <Badge variant={getPaymentMethodColor(sale.paymentMethod) as any} className="print:inline-block print:border print:border-gray-300">
+                <Badge variant={getPaymentMethodColor(sale.paymentMethod) as 'default' | 'secondary' | 'outline' | 'destructive'} className="print:inline-block print:border print:border-gray-300">
                   {getPaymentMethodLabel(sale.paymentMethod)}
                 </Badge>
               </div>

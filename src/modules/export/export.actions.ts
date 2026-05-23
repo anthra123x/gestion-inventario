@@ -1,10 +1,12 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 const TS = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 
 export async function exportProductsToExcel() {
+  await requireAdmin()
   try {
     const products = await prisma.product.findMany({
       where: { deletedAt: null },

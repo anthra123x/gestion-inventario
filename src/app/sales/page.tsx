@@ -13,10 +13,12 @@ import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { SearchInput } from '@/components/ui/search-input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
+import { Pagination } from '@/components/ui/pagination'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency } from '@/lib/format'
 import { getSales, getSalesStats } from '@/modules/sales/sales.actions'
 import { PaymentMethod } from '@prisma/client'
+import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
 export default function SalesPage() {
   const [sales, setSales] = useState<any[]>([])
@@ -55,24 +57,6 @@ export default function SalesPage() {
     }
     loadData()
   }, [debouncedSearch, paymentFilter, page])
-
-  function getPaymentMethodLabel(method: string) {
-    const labels: Record<string, string> = {
-      CASH: 'Efectivo',
-      CARD: 'Tarjeta',
-      TRANSFER: 'Transferencia',
-    }
-    return labels[method] || method
-  }
-
-  function getPaymentMethodVariant(method: string): 'default' | 'secondary' | 'outline' | 'destructive' {
-    const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-      CASH: 'default',
-      CARD: 'secondary',
-      TRANSFER: 'outline',
-    }
-    return variants[method] || 'default'
-  }
 
   if (loading && sales.length === 0) {
     return (
@@ -272,7 +256,7 @@ export default function SalesPage() {
                     </TableCell>
                     <TableCell className="font-semibold text-emerald-600">{formatCurrency(sale.total)}</TableCell>
                     <TableCell>
-                      <Badge variant={getPaymentMethodVariant(sale.paymentMethod)}>
+                      <Badge variant={getPaymentMethodColor(sale.paymentMethod) as 'default' | 'secondary' | 'outline' | 'destructive'}>
                         {getPaymentMethodLabel(sale.paymentMethod)}
                       </Badge>
                     </TableCell>
@@ -282,7 +266,7 @@ export default function SalesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/sales/${sale.id}`}>
-                        <Button variant="ghost" size="icon-sm">
+                        <Button variant="ghost" size="icon-sm" aria-label="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </Button>
                       </Link>
@@ -303,29 +287,13 @@ export default function SalesPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Página {page} de {totalPages} — {totalSales} ventas
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage(p => p + 1)}
-                >
-                  Siguiente
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={totalSales}
+              entity="ventas"
+              onPageChange={(p) => setPage(p)}
+            />
           )}
         </CardContent>
       </Card>

@@ -64,6 +64,8 @@ model Product {
   @@index([name])
   @@index([supplier])
   @@index([deletedAt])
+  @@index([deletedAt, category])
+  @@index([deletedAt, name])
   @@map("products")
 }
 
@@ -182,6 +184,7 @@ model Repair {
   @@index([clientId])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
   @@map("repairs")
 }
 
@@ -216,6 +219,7 @@ model InventoryMovement {
 
   @@index([productId])
   @@index([createdAt])
+  @@index([productId, createdAt])
   @@map("inventory_movements")
 }
 
@@ -258,6 +262,7 @@ model Order {
   @@index([createdAt])
   @@index([clientPhone])
   @@index([externalReference])
+  @@index([status, createdAt])
   @@map("orders")
 }
 

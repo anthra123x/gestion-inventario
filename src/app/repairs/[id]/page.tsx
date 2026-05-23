@@ -6,33 +6,12 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Clock, DollarSign, User, Phone, Mail, MapPin, Wrench, Package, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/format'
+import { getRepairStatusLabel, getRepairStatusColor } from '@/lib/labels'
 
 interface RepairPageProps {
   params: Promise<{
     id: string
   }>
-}
-
-function getRepairStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    RECEIVED: 'bg-blue-100 text-blue-800 border-blue-200',
-    IN_PROGRESS: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    READY: 'bg-green-100 text-green-800 border-green-200',
-    DELIVERED: 'bg-purple-100 text-purple-800 border-purple-200',
-    CANCELLED: 'bg-red-100 text-red-800 border-red-200',
-  }
-  return colors[status] || 'default'
-}
-
-function getRepairStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    RECEIVED: 'Recibido',
-    IN_PROGRESS: 'En Progreso',
-    READY: 'Listo',
-    DELIVERED: 'Entregado',
-    CANCELLED: 'Cancelado',
-  }
-  return labels[status] || status
 }
 
 export default async function RepairPage({ params }: RepairPageProps) {

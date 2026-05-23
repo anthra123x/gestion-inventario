@@ -12,6 +12,7 @@ import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { SearchInput } from '@/components/ui/search-input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
+import { Pagination } from '@/components/ui/pagination'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency } from '@/lib/format'
 import { getOrders, getOrderStats } from '@/modules/orders/orders.actions'
@@ -195,7 +196,7 @@ export default function OrdersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/orders/${order.id}`}>
-                          <Button variant="ghost" size="icon-sm">
+                          <Button variant="ghost" size="icon-sm" aria-label="Ver detalle">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -216,13 +217,13 @@ export default function OrdersPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">Página {page} de {totalPages} — {total} pedidos</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Siguiente</Button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              entity="pedidos"
+              onPageChange={(p) => setPage(p)}
+            />
           )}
         </CardContent>
       </Card>

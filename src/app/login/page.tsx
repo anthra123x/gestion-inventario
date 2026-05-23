@@ -45,7 +45,7 @@ export default function LoginPage() {
         }
       }
 
-      window.location.href = '/dashboard'
+      router.push('/dashboard')
     } catch (err: any) {
       setError(err?.message || 'Error al iniciar sesión')
       setIsLoading(false)
@@ -65,24 +65,26 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="tu@email.com"
-                required
-                disabled={isLoading}
-              />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="tu@email.com"
+                  required
+                  disabled={isLoading}
+                />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                disabled={isLoading}
-              />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  disabled={isLoading}
+                />
             </div>
             {error && (
               <div className="text-red-500 text-sm text-center">{error}</div>

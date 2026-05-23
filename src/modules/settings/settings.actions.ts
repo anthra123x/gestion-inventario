@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAdmin } from '@/modules/auth/auth.actions'
+import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
 import { z } from 'zod'
 
 const UpdateSettingsSchema = z.object({
@@ -24,6 +24,7 @@ async function getOrCreateSettings() {
 }
 
 export async function getSystemSettings() {
+  await requireAuth()
   try {
     return await getOrCreateSettings()
   } catch (error) {

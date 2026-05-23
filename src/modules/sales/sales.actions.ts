@@ -8,6 +8,7 @@ import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateSaleItemData, validateSalePriceAgainstCost } from '@/lib/validations-data'
 import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit } from '@/lib/finance'
 import { PaymentMethod } from '@prisma/client'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 /**
  * Obtiene lista de ventas con filtros opcionales
@@ -17,6 +18,7 @@ import { PaymentMethod } from '@prisma/client'
  * @returns Lista de ventas con información de cliente y usuario
  */
 export async function getSales(search?: string, startDate?: Date, endDate?: Date, page = 1, take = 20) {
+  await requireAdmin()
   const where = {
     ...(search && {
       OR: [
@@ -87,6 +89,7 @@ export async function getSales(search?: string, startDate?: Date, endDate?: Date
  * @returns Venta con items, productos, cliente y usuario
  */
 export async function getSaleById(id: string) {
+  await requireAdmin()
   return await prisma.sale.findUnique({
     where: { id },
     include: {
@@ -111,6 +114,7 @@ export async function getSaleById(id: string) {
  * @returns Resultado de la operación con venta creada o error
  */
 export async function createSale(formData: FormData) {
+  await requireAdmin()
   const itemsJson = formData.get('items') as string
 
   let items
@@ -197,7 +201,7 @@ export async function createSale(formData: FormData) {
     // Fetch all product costs upfront
     const productIds = items.map(item => item.productId)
     const products = await prisma.product.findMany({
-      where: { id: { in: productIds } },
+      where: { id: { in: productIds }, deletedAt: null },
       select: { id: true, purchasePrice: true, name: true },
     })
     const productMap = new Map(products.map(p => [p.id, { purchasePrice: p.purchasePrice, name: p.name }]))
@@ -321,6 +325,7 @@ export async function createSale(formData: FormData) {
  * @returns Estadísticas de ventas incluyendo total, revenue, top productos
  */
 export async function getSalesStats(startDate?: Date, endDate?: Date) {
+  await requireAdmin()
   const where = {
     ...(startDate && endDate && {
       createdAt: {
@@ -385,6 +390,7 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
       id: {
         in: productIds,
       },
+      deletedAt: null,
     },
     select: {
       id: true,
@@ -413,6 +419,7 @@ export async function getSalesStats(startDate?: Date, endDate?: Date) {
 }
 
 export async function getDailySales(days: number = 30) {
+  await requireAdmin()
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
 

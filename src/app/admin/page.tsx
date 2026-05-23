@@ -22,13 +22,15 @@ export default function AdminPage() {
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserName, setNewUserName] = useState('')
   const [newUserRole, setNewUserRole] = useState('EMPLOYEE')
-  const [settings, setSettings] = useState<any>(null)
-  const [settingsLoading, setSettingsLoading] = useState(true)
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
-  const [cleanupType, setCleanupType] = useState<string | null>(null)
+  const [cleanupType, setCleanupType] = useState<'products' | 'sales' | 'repairs' | 'all' | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [exportExcelLoading, setExportExcelLoading] = useState<string | null>(null)
   const [backupLoading, setBackupLoading] = useState(false)
+  const [settings, setSettings] = useState<any>(null)
+  const [settingsLoading, setSettingsLoading] = useState(true)
 
   useEffect(() => {
     async function loadUsers() {
@@ -65,13 +67,13 @@ export default function AdminPage() {
   }
 
   async function handleDeleteUser(userId: string) {
-    if (confirm('¿Estás seguro de eliminar este usuario?')) {
-      const result = await deleteUser(userId)
-      if (result.success) {
-        const updated = await getUsers()
-        setUsers(updated)
-      }
+    const result = await deleteUser(userId)
+    if (result.success) {
+      const updated = await getUsers()
+      setUsers(updated)
     }
+    setDeleteUserDialogOpen(false)
+    setUserToDelete(null)
   }
 
   async function handleCreateUser(e: React.FormEvent) {
@@ -146,7 +148,7 @@ export default function AdminPage() {
     }
   }
 
-  function openCleanupDialog(type: string) {
+  function openCleanupDialog(type: 'products' | 'sales' | 'repairs' | 'all') {
     setCleanupType(type)
     setCleanupDialogOpen(true)
   }
@@ -178,12 +180,8 @@ export default function AdminPage() {
         URL.revokeObjectURL(url)
       }
 
-      // Confirmación adicional después de backup
-      if (!confirm('Backup generado y descargado. ¿Estás seguro de continuar con la limpieza? Esta acción NO se puede deshacer.')) {
-        setCleanupLoading(false)
-        return
-      }
-
+      // Backup descargado, proceder con limpieza
+      // (confirmación ya fue dada en el Dialog anterior)
       let result
       switch (cleanupType) {
         case 'products':
@@ -309,7 +307,11 @@ export default function AdminPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
+                          aria-label="Eliminar usuario"
+                          onClick={() => {
+                            setUserToDelete(user.id)
+                            setDeleteUserDialogOpen(true)
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -613,6 +615,37 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteUserDialogOpen(false)
+                setUserToDelete(null)
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => userToDelete && handleDeleteUser(userToDelete)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
         <DialogContent>

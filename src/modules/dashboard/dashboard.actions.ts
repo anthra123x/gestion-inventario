@@ -6,7 +6,10 @@ import { getSalesStats } from '@/modules/sales/sales.actions'
 import { getRepairStats } from '@/modules/repairs/repairs.actions'
 import { getClientStats } from '@/modules/clients/clients.actions'
 
+import { requireAuth } from '@/modules/auth/auth.actions'
+
 export async function getDashboardStats() {
+  await requireAuth()
   const [
     salesStats,
     repairStats,
@@ -203,6 +206,7 @@ export async function getTopProducts(days: number = 30) {
       id: {
         in: productIds,
       },
+      deletedAt: null,
     },
     select: {
       id: true,

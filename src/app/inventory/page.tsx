@@ -15,10 +15,12 @@ import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { SearchInput } from '@/components/ui/search-input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
+import { Pagination } from '@/components/ui/pagination'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import { getProducts, deleteProduct, getInventoryStockBreakdown } from '@/modules/inventory/inventory.actions'
 import { Product, ProductCategory } from '@prisma/client'
+import { getStockStatus, getCategoryLabel } from '@/lib/labels'
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -80,22 +82,6 @@ export default function InventoryPage() {
     } catch (error) {
       toast.error('Error al eliminar el producto')
     }
-  }
-
-  function getStockStatus(stock: number, minStock: number) {
-    if (stock === 0) return { label: 'Agotado', variant: 'destructive' as const }
-    if (stock <= minStock) return { label: 'Stock Bajo', variant: 'warning' as const }
-    return { label: 'En Stock', variant: 'default' as const }
-  }
-
-  function getCategoryLabel(category: ProductCategory) {
-    const labels: Record<ProductCategory, string> = {
-      ACCESSORY: 'Accesorio',
-      REPAIR_PART: 'Repuesto',
-      DEVICE: 'Dispositivo',
-      OTHER: 'Otro'
-    }
-    return labels[category]
   }
 
   const stockCounts = stockBreakdown || {
@@ -269,7 +255,7 @@ export default function InventoryPage() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/inventory/${product.id}`}>
-                            <Button variant="ghost" size="icon-sm">
+                            <Button variant="ghost" size="icon-sm" aria-label="Editar producto">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
@@ -277,6 +263,7 @@ export default function InventoryPage() {
                             variant="ghost"
                             size="icon-sm"
                             className="text-destructive hover:text-destructive"
+                            aria-label="Eliminar producto"
                             onClick={() => {
                               setProductToDelete(product)
                               setDeleteDialogOpen(true)
@@ -303,29 +290,13 @@ export default function InventoryPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Página {page} de {totalPages} — {totalProducts} productos
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage(p => p + 1)}
-                >
-                  Siguiente
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={totalProducts}
+              entity="productos"
+              onPageChange={(p) => setPage(p)}
+            />
           )}
         </CardContent>
       </Card>

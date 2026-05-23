@@ -6,6 +6,7 @@ import { CreateProductSchema, UpdateProductSchema, InventoryMovementSchema } fro
 import { ProductCategory } from '@prisma/client'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 /**
  * Obtiene lista de productos con filtros opcionales
@@ -14,6 +15,7 @@ import { validateProductData, validateNonNegative, validatePriceMargin } from '@
  * @returns Lista de productos activos (no eliminados)
  */
 export async function getProducts(search?: string, category?: ProductCategory, page = 1, take = 20) {
+  await requireAdmin()
   const where = {
     deletedAt: null,
     ...(search && {
@@ -49,8 +51,9 @@ export async function getProducts(search?: string, category?: ProductCategory, p
  * @returns Producto con movimientos de inventario ordenados por fecha
  */
 export async function getProductById(id: string) {
+  await requireAdmin()
   return await prisma.product.findUnique({
-    where: { id },
+    where: { id, deletedAt: null },
     include: {
       inventoryMovements: {
         orderBy: { createdAt: 'desc' },
@@ -70,6 +73,7 @@ export async function getProductById(id: string) {
  * @returns Resultado de la operación con producto creado o error
  */
 export async function createProduct(formData: FormData) {
+  await requireAdmin()
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -150,6 +154,7 @@ export async function createProduct(formData: FormData) {
  */
 
 export async function updateProduct(id: string, formData: FormData) {
+  await requireAdmin()
   const normalizedData = {
     name: formData.get('name'),
     description: formData.get('description') || null,
@@ -232,9 +237,10 @@ export async function updateProduct(id: string, formData: FormData) {
  * @returns Resultado de la operación
  */
 export async function deleteProduct(id: string) {
+  await requireAdmin()
   try {
     const product = await prisma.product.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
     })
 
     if (!product) {
@@ -272,6 +278,7 @@ export async function deleteProduct(id: string) {
 }
 
 export async function addInventoryMovement(formData: FormData) {
+  await requireAdmin()
   const validatedFields = InventoryMovementSchema.safeParse({
     productId: formData.get('productId'),
     type: formData.get('type'),
@@ -286,6 +293,19 @@ export async function addInventoryMovement(formData: FormData) {
   }
 
   try {
+    const product = await prisma.product.findUnique({
+      where: { id: validatedFields.data.productId, deletedAt: null },
+      select: { stock: true },
+    })
+
+    if (!product) {
+      return { error: 'Producto no encontrado' }
+    }
+
+    if (validatedFields.data.type === 'EXIT' && product.stock < validatedFields.data.quantity) {
+      return { error: `Stock insuficiente. Disponible: ${product.stock}, solicitado: ${validatedFields.data.quantity}` }
+    }
+
     const [movement, updatedProduct] = await prisma.$transaction([
       prisma.inventoryMovement.create({
         data: validatedFields.data,
@@ -315,6 +335,7 @@ export async function addInventoryMovement(formData: FormData) {
 }
 
 export async function getInventorySummary() {
+  await requireAdmin()
   const [totalProducts, totalStockAgg, lowStockCount, categories] = await Promise.all([
     prisma.product.count({
       where: { deletedAt: null },
@@ -352,6 +373,7 @@ export async function getInventorySummary() {
 }
 
 export async function getInventoryStockBreakdown() {
+  await requireAdmin()
   const products = await prisma.product.findMany({
     where: { deletedAt: null },
     select: { stock: true, minStock: true },
@@ -370,6 +392,7 @@ export async function getInventoryStockBreakdown() {
 }
 
 export async function getLowStockProducts() {
+  await requireAdmin()
   const products = await prisma.product.findMany({
     where: { deletedAt: null },
     select: { id: true, name: true, stock: true, minStock: true, category: true, salePrice: true },

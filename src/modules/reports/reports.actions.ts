@@ -2,12 +2,14 @@
 
 import { prisma } from '@/lib/prisma'
 import { ProductCategory, RepairStatus, PaymentMethod } from '@prisma/client'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 
 export async function getSalesReport(filters?: {
   startDate?: Date
   endDate?: Date
   clientId?: string
 }) {
+  await requireAdmin()
   const where = {
     ...(filters?.startDate && filters?.endDate && {
       createdAt: {
@@ -125,6 +127,7 @@ export async function getInventoryReport(filters?: {
   category?: ProductCategory
   lowStock?: boolean
 }) {
+  await requireAdmin()
   const where = {
     deletedAt: null,
     ...(filters?.category && { category: filters.category }),
@@ -182,6 +185,7 @@ export async function getRepairsReport(filters?: {
   status?: RepairStatus
   clientId?: string
 }) {
+  await requireAdmin()
   const where = {
     ...(filters?.startDate && filters?.endDate && {
       createdAt: {
@@ -300,6 +304,7 @@ export async function getClientsReport(filters?: {
   hasSales?: boolean
   hasRepairs?: boolean
 }) {
+  await requireAdmin()
   const dateFilter = filters?.startDate && filters?.endDate ? {
     createdAt: {
       gte: filters.startDate,
@@ -420,6 +425,7 @@ interface ReportFilters {
 }
 
 export async function generateReportData(reportType: string, filters: ReportFilters) {
+  await requireAdmin()
   switch (reportType) {
     case 'sales':
       return await getSalesReport({

@@ -90,22 +90,4 @@ export function validateRepairPartData(data: {
   validateNonNegative(data.total, 'Total')
 }
 
-/**
- * Validates inventory movement data
- */
-export function validateInventoryMovementData(data: {
-  quantity: number
-}): void {
-  validatePositive(data.quantity, 'Cantidad')
-}
 
-/**
- * Validates system settings data
- */
-export function validateSystemSettingsData(data: {
-  defaultMinStock: number
-  taxRate: number
-}): void {
-  validateNonNegative(data.defaultMinStock, 'Stock mínimo por defecto')
-  validateNonNegative(data.taxRate, 'Tasa de impuesto')
-}
