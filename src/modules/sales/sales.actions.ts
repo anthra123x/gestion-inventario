@@ -165,7 +165,34 @@ export async function createSale(formData: FormData) {
   }
 
   try {
-    const { clientId, clientName, clientPhone, clientEmail, clientAddress, items, discountPercent: discountPct, paymentMethod, notes } = validatedFields.data
+    let { clientId, clientName, clientPhone, clientEmail, clientAddress, items, discountPercent: discountPct, paymentMethod, notes } = validatedFields.data
+
+    // Find or create client by phone (same pattern as createRepair)
+    if (!clientId && (clientName || clientPhone)) {
+      try {
+        if (clientPhone) {
+          const existingClient = await prisma.client.findFirst({
+            where: { phone: clientPhone, deletedAt: null },
+          })
+          if (existingClient) {
+            clientId = existingClient.id
+          }
+        }
+        if (!clientId && clientName) {
+          const newClient = await prisma.client.create({
+            data: {
+              name: clientName,
+              phone: clientPhone || null,
+              email: clientEmail || null,
+              address: clientAddress || null,
+            },
+          })
+          clientId = newClient.id
+        }
+      } catch (err: any) {
+        return { error: `Error al procesar el cliente: ${err.message}` }
+      }
+    }
 
     // Fetch all product costs upfront
     const productIds = items.map(item => item.productId)

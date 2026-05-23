@@ -14,6 +14,9 @@ export async function getDashboardStats() {
     lowStockProducts,
     recentSales,
     recentRepairs,
+    repairsReady,
+    pendingOrders,
+    salesComparison,
   ] = await Promise.all([
     getSalesStats(new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()),
     getRepairStats(),
@@ -21,6 +24,9 @@ export async function getDashboardStats() {
     getLowStockProducts(),
     getRecentSales(),
     getRecentRepairs(),
+    getRepairsReadyCount(),
+    getPendingOrdersCount(),
+    getSalesComparison(),
   ])
 
   return {
@@ -30,6 +36,57 @@ export async function getDashboardStats() {
     lowStockProducts,
     recentSales,
     recentRepairs,
+    repairsReady,
+    pendingOrders,
+    salesComparison,
+  }
+}
+
+async function getRepairsReadyCount() {
+  const count = await prisma.repair.count({
+    where: { status: 'READY' },
+  })
+  return count
+}
+
+async function getPendingOrdersCount() {
+  const count = await prisma.order.count({
+    where: { status: 'PENDING' },
+  })
+  return count
+}
+
+async function getSalesComparison() {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterdayStart = new Date(todayStart)
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
+
+  const todaySales = await prisma.sale.aggregate({
+    where: { createdAt: { gte: todayStart } },
+    _sum: { total: true },
+    _count: { id: true },
+  })
+
+  const yesterdaySales = await prisma.sale.aggregate({
+    where: { createdAt: { gte: yesterdayStart, lt: todayStart } },
+    _sum: { total: true },
+    _count: { id: true },
+  })
+
+  const todayTotal = todaySales._sum.total || 0
+  const yesterdayTotal = yesterdaySales._sum.total || 0
+
+  const change = yesterdayTotal > 0
+    ? ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100
+    : todayTotal > 0 ? 100 : 0
+
+  return {
+    todayTotal,
+    yesterdayTotal,
+    todayCount: todaySales._count.id,
+    yesterdayCount: yesterdaySales._count.id,
+    change,
   }
 }
 

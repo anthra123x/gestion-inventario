@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { ClientAutocomplete } from '@/components/forms/client-autocomplete'
 import { Plus, Trash2, Search, Loader2, User, Phone, Mail, MapPin, AlertTriangle, CheckCircle, XCircle, TrendingUp, Percent, ShoppingCart } from 'lucide-react'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 import { Product, PaymentMethod } from '@prisma/client'
@@ -48,6 +49,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
   const [isLoadingData, setIsLoadingData] = useState(false)
   const [discountPercent, setDiscountPercent] = useState(0)
   const [lowMarginWarnings, setLowMarginWarnings] = useState<string[]>([])
+  const [clientId, setClientId] = useState('')
 
   const {
     register,
@@ -197,6 +199,14 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
     setItems(updatedItems)
   }
 
+  function handleClientSelect(client: { id: string; name: string; phone: string | null; email: string | null; address: string | null }) {
+    setClientId(client.id)
+    setValue('clientName', client.name)
+    setValue('clientPhone', client.phone || '')
+    setValue('clientEmail', client.email || '')
+    setValue('clientAddress', client.address || '')
+  }
+
   function applySuggestedPrice(index: number) {
     const item = items[index]
     if (item.product) {
@@ -209,7 +219,7 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
 
     try {
       const formData = new FormData()
-      formData.append('clientId', '')
+      formData.append('clientId', clientId || '')
       formData.append('clientName', clientName || '')
       formData.append('clientPhone', clientPhone || '')
       formData.append('clientEmail', clientEmail || '')
@@ -275,9 +285,11 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo }: SaleFormPr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="clientName">Nombre *</Label>
-              <Input
-                id="clientName"
-                {...register('clientName')}
+              <ClientAutocomplete
+                name="clientName"
+                value={clientName ?? ''}
+                onChange={(value) => setValue('clientName', value)}
+                onSelect={handleClientSelect}
                 placeholder="Nombre del cliente"
               />
             </div>

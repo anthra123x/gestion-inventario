@@ -3,6 +3,7 @@
 import { LucideIcon } from 'lucide-react'
 import { Card, CardContent } from './card'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 interface StatCardProps {
   title: string
@@ -11,6 +12,7 @@ interface StatCardProps {
   icon: LucideIcon
   color?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple'
   className?: string
+  href?: string
 }
 
 const colorMap = {
@@ -22,9 +24,9 @@ const colorMap = {
   purple: 'bg-purple-500/10 text-purple-600',
 }
 
-export function StatCard({ title, value, change, icon: Icon, color = 'default', className }: StatCardProps) {
-  return (
-    <Card className={cn('stat-card group', className)}>
+export function StatCard({ title, value, change, icon: Icon, color = 'default', className, href }: StatCardProps) {
+  const content = (
+    <Card className={cn('stat-card group', href && 'cursor-pointer hover:shadow-md transition-shadow', className)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -44,6 +46,12 @@ export function StatCard({ title, value, change, icon: Icon, color = 'default', 
       </CardContent>
     </Card>
   )
+
+  if (href) {
+    return <Link href={href}>{content}</Link>
+  }
+
+  return content
 }
 
 interface StatCardGridProps {

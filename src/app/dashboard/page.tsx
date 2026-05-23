@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency, formatNumber } from '@/lib/format'
-import { Package, ShoppingCart, Wrench, Users, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react'
+import { Package, ShoppingCart, Wrench, Users, TrendingUp, TrendingDown, AlertTriangle, ArrowRight, Clock, CheckCircle2, Globe } from 'lucide-react'
 import { getDashboardStats } from '@/modules/dashboard/dashboard.actions'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -113,6 +113,18 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <StatCardGrid>
         <StatCard
+          title="Ventas Hoy"
+          value={formatCurrency(stats.salesComparison?.todayTotal || 0)}
+          change={(() => {
+            const change = stats.salesComparison?.change ?? 0
+            const direction = change >= 0 ? '↑' : '↓'
+            const text = Math.abs(change).toFixed(1)
+            return `${direction} ${text}% vs ayer (${formatCurrency(stats.salesComparison?.yesterdayTotal || 0)})`
+          })()}
+          icon={stats.salesComparison?.change >= 0 ? TrendingUp : TrendingDown}
+          color={stats.salesComparison?.change >= 0 ? 'success' : 'danger'}
+        />
+        <StatCard
           title="Ventas del Mes"
           value={formatCurrency(stats.salesStats?.totalRevenue || 0)}
           change={`${formatNumber(stats.salesStats?.totalSales || 0)} ventas este mes`}
@@ -120,17 +132,25 @@ export default function DashboardPage() {
           color="success"
         />
         <StatCard
-          title="Stock Bajo"
-          value={formatNumber(stats.lowStockProducts?.length || 0)}
-          change="Productos por reabastecer"
-          icon={Package}
-          color="warning"
-        />
-        <StatCard
           title="Reparaciones Activas"
           value={stats.repairStats?.activeRepairs?.toString() || '0'}
           change={`${stats.repairStats?.totalRepairs || 0} reparaciones totales`}
           icon={Wrench}
+          color="warning"
+        />
+        <StatCard
+          title="Reparaciones Listas"
+          value={formatNumber(stats.repairsReady || 0)}
+          change="Listas para entregar"
+          icon={CheckCircle2}
+          color="success"
+          href="/repairs?filter=ready"
+        />
+        <StatCard
+          title="Stock Bajo"
+          value={formatNumber(stats.lowStockProducts?.length || 0)}
+          change="Productos por reabastecer"
+          icon={Package}
           color="warning"
         />
         <StatCard
@@ -260,6 +280,39 @@ export default function DashboardPage() {
                     </StatusBadge>
                   </div>
                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pending Online Orders */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <div className="rounded-lg bg-indigo-500/10 p-2">
+                  <Globe className="h-4 w-4 text-indigo-600" />
+                </div>
+                Pedidos Online
+              </CardTitle>
+              <Link href="/orders" className="text-xs text-primary hover:underline flex items-center gap-1">
+                Ver todos <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <CardDescription>Pedidos pendientes por procesar</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {stats.pendingOrders === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No hay pedidos pendientes</p>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                <div className="text-4xl font-bold text-indigo-600">{formatNumber(stats.pendingOrders)}</div>
+                <p className="text-sm text-muted-foreground">pedido{stats.pendingOrders !== 1 ? 's' : ''} pendiente{stats.pendingOrders !== 1 ? 's' : ''} de procesar</p>
+                <Link href="/orders">
+                  <Button variant="outline" size="sm" className="mt-2">
+                    Ir a pedidos <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             )}
           </CardContent>

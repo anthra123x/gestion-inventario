@@ -223,7 +223,7 @@ export async function createRepair(formData: FormData) {
       }
     }
 
-    const profit = cost - partsCost
+    const profit = total - partsCost
 
     // Use transaction for atomicity
     const repair = await prisma.$transaction(async (tx) => {
@@ -447,7 +447,7 @@ export async function editRepair(id: string, formData: FormData) {
       }
     }
 
-    const profit = cost - partsCost
+    const profit = total - partsCost
 
     await prisma.$transaction(async (tx) => {
       const oldPartsMap: Record<string, { quantity: number; productId: string }> = {}
