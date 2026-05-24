@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import Link from 'next/link'
@@ -17,6 +19,10 @@ export function ErrorFallback({
   title = 'Algo salió mal',
   description = 'Ocurrió un error inesperado. Intenta de nuevo o vuelve al inicio.',
 }: ErrorFallbackProps) {
+  useEffect(() => {
+    if (error) Sentry.captureException(error)
+  }, [error])
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-6">

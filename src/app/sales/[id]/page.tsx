@@ -20,11 +20,36 @@ import {
 import { formatCurrency } from '@/lib/format'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
+interface SaleDetailItem {
+  id: string
+  total: number
+  paymentMethod: string
+  notes: string | null
+  createdAt: Date
+  discountPercent: number
+  discountAmount: number
+  clientName: string | null
+  clientPhone: string | null
+  clientEmail: string | null
+  clientAddress: string | null
+  client: { id: string; name: string; phone: string | null; email: string | null; address: string | null; createdAt: Date; updatedAt: Date; deletedAt: Date | null } | null
+  user: { name: string } | null
+  saleItems: Array<{
+    id: string
+    productId: string
+    quantity: number
+    unitPrice: number
+    total: number
+    profit: number
+    purchasePriceAtSale: number
+    product: { id: string; name: string }
+  }>
+}
+
 export default function SaleDetailPage() {
   const params = useParams()
   const router = useRouter()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sale, setSale] = useState<any>(null)
+  const [sale, setSale] = useState<SaleDetailItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -210,8 +235,7 @@ export default function SaleDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {sale.saleItems.map((item: any) => (
+            {sale.saleItems.map((item) => (
                       <TableRow key={item.id} className="print:border-b print:border-gray-300">
                         <TableCell className="print:text-sm">
                           <div>

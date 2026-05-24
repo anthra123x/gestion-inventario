@@ -40,11 +40,33 @@ import { getSales, getSalesStats, deleteSale } from '@/modules/sales/sales.actio
 import { PaymentMethod } from '@prisma/client'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '@/lib/labels'
 
+interface SaleListItem {
+  id: string
+  total: number
+  paymentMethod: string
+  notes: string | null
+  createdAt: Date
+  clientName: string | null
+  clientPhone: string | null
+  clientEmail: string | null
+  clientAddress: string | null
+  client: { id: string; name: string; phone: string | null } | null
+  user: { name: string } | null
+  _count: { saleItems: number }
+}
+
+interface SalesStats {
+  totalSales: number
+  totalRevenue: number
+  totalCost: number
+  totalProfit: number
+  salesByPaymentMethod: Array<{ paymentMethod: string; _count: { id: number }; _sum: { total: number | null } }>
+  topProducts: Array<{ productId: string; _sum: { quantity: number | null; total: number | null }; product: { id: string; name: string } | undefined }>
+}
+
 export default function SalesPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sales, setSales] = useState<any[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [stats, setStats] = useState<any>(null)
+  const [sales, setSales] = useState<SaleListItem[]>([])
+  const [stats, setStats] = useState<SalesStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentMethod | 'ALL'>('ALL')
