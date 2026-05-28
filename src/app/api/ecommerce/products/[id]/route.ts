@@ -16,6 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const ecommerceProduct = await prisma.ecommerceProduct.findFirst({
       where: {
+        deletedAt: null,
         visible: true,
         product: { deletedAt: null },
         OR: [{ productId: id }, { slug: id }],
@@ -54,47 +55,54 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const price = ecommerceProduct.ecommercePrice ?? ecommerceProduct.product.salePrice
     const primaryImage = ecommerceProduct.media.find((m) => m.isPrimary) || ecommerceProduct.media[0] || null
 
-    return NextResponse.json({
-      product: {
-        id: ecommerceProduct.product.id,
-        slug: ecommerceProduct.slug,
-        name: ecommerceProduct.product.name,
-        description: ecommerceProduct.shortDescription ?? ecommerceProduct.product.description,
-        shortDescription: ecommerceProduct.shortDescription,
-        longDescription: ecommerceProduct.longDescription,
-        category: ecommerceProduct.product.category,
-        price,
-        compareAtPrice: ecommerceProduct.compareAtPrice,
-        salePrice: ecommerceProduct.product.salePrice,
-        stock: ecommerceProduct.product.stock,
-        showStock: ecommerceProduct.showStock,
-        inStock: ecommerceProduct.product.stock > 0,
-        featured: ecommerceProduct.featured,
-        badges: ecommerceProduct.badges,
-        tags: ecommerceProduct.tags,
-        metaTitle: ecommerceProduct.metaTitle,
-        metaDescription: ecommerceProduct.metaDescription,
-        images: ecommerceProduct.media.map((m) => ({
-          id: m.id,
-          url: m.url,
-          alt: m.alt,
-          width: m.width,
-          height: m.height,
-          sortOrder: m.sortOrder,
-          isPrimary: m.isPrimary,
-        })),
-        primaryImage: primaryImage
-          ? {
-              url: primaryImage.url,
-              alt: primaryImage.alt,
-              width: primaryImage.width,
-              height: primaryImage.height,
-            }
-          : null,
-        createdAt: ecommerceProduct.createdAt.toISOString(),
-        updatedAt: ecommerceProduct.updatedAt.toISOString(),
+    return NextResponse.json(
+      {
+        product: {
+          id: ecommerceProduct.product.id,
+          slug: ecommerceProduct.slug,
+          name: ecommerceProduct.product.name,
+          description: ecommerceProduct.shortDescription ?? ecommerceProduct.product.description,
+          shortDescription: ecommerceProduct.shortDescription,
+          longDescription: ecommerceProduct.longDescription,
+          category: ecommerceProduct.product.category,
+          price,
+          compareAtPrice: ecommerceProduct.compareAtPrice,
+          salePrice: ecommerceProduct.product.salePrice,
+          stock: ecommerceProduct.product.stock,
+          showStock: ecommerceProduct.showStock,
+          inStock: ecommerceProduct.product.stock > 0,
+          featured: ecommerceProduct.featured,
+          badges: ecommerceProduct.badges,
+          tags: ecommerceProduct.tags,
+          metaTitle: ecommerceProduct.metaTitle,
+          metaDescription: ecommerceProduct.metaDescription,
+          images: ecommerceProduct.media.map((m) => ({
+            id: m.id,
+            url: m.url,
+            alt: m.alt,
+            width: m.width,
+            height: m.height,
+            sortOrder: m.sortOrder,
+            isPrimary: m.isPrimary,
+          })),
+          primaryImage: primaryImage
+            ? {
+                url: primaryImage.url,
+                alt: primaryImage.alt,
+                width: primaryImage.width,
+                height: primaryImage.height,
+              }
+            : null,
+          createdAt: ecommerceProduct.createdAt.toISOString(),
+          updatedAt: ecommerceProduct.updatedAt.toISOString(),
+        },
       },
-    })
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=30',
+        },
+      },
+    )
   } catch (error) {
     console.error('Error fetching ecommerce product:', error)
     return NextResponse.json({ error: 'Error al obtener producto' }, { status: 500 })

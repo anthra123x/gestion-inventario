@@ -88,6 +88,7 @@ model EcommerceProduct {
   sortOrder        Int              @default(0) @map("sort_order")
   showStock        Boolean          @default(true) @map("show_stock")
   media            ProductMedia[]
+  deletedAt        DateTime?        @map("deleted_at")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
@@ -95,6 +96,7 @@ model EcommerceProduct {
   @@index([featured])
   @@index([sortOrder])
   @@index([publishedAt])
+  @@index([deletedAt])
   @@map("product_ecommerce")
 }
 

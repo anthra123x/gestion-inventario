@@ -2,9 +2,25 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { CreateOrderSchema } from '@/lib/validations'
 import { getZodErrorMessage } from '@/lib/zod-error'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const limiter = rateLimit(`orders:${ip}`, { maxRequests: 10, windowMs: 60_000 })
+    if (!limiter.allowed) {
+      return NextResponse.json(
+        { error: 'Demasiadas solicitudes. Intenta de nuevo en un minuto.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': `${Math.ceil((limiter.resetAt - Date.now()) / 1000)}`,
+            'X-RateLimit-Remaining': '0',
+          },
+        },
+      )
+    }
+
     const body = await request.json()
 
     const validated = CreateOrderSchema.safeParse(body)
@@ -57,10 +73,6 @@ export async function POST(request: Request) {
           { error: `Producto no disponible para venta online: ${product.name}` },
           { status: 409 },
         )
-      }
-
-      if (product.stock < item.quantity) {
-        return NextResponse.json({ error: `Stock insuficiente para ${product.name}` }, { status: 409 })
       }
 
       // Validate unitPrice against DB price (prevent price manipulation)

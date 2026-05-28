@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const slugsParam = searchParams.get('slugs')
 
     const where: Prisma.EcommerceProductWhereInput = {
+      deletedAt: null,
       visible: true,
       product: {
         deletedAt: null,
@@ -117,12 +118,19 @@ export async function GET(request: Request) {
       }
     })
 
-    return NextResponse.json({
-      products: mapped,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    })
+    return NextResponse.json(
+      {
+        products: mapped,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=30',
+        },
+      },
+    )
   } catch (error) {
     console.error('Error fetching ecommerce products:', error)
     return NextResponse.json({ error: 'Error al obtener productos' }, { status: 500 })

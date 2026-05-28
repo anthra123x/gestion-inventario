@@ -18,9 +18,10 @@ export async function getEcommerceProducts(search?: string, page = 1, take = 20)
     }),
   }
 
+  const whereDeleted = { ...where, deletedAt: null }
   const [items, total] = await Promise.all([
     prisma.ecommerceProduct.findMany({
-      where,
+      where: whereDeleted,
       orderBy: [{ sortOrder: 'asc' }, { product: { name: 'asc' } }],
       skip: (page - 1) * take,
       take,
@@ -29,15 +30,16 @@ export async function getEcommerceProducts(search?: string, page = 1, take = 20)
         media: { where: { isPrimary: true }, take: 1, select: { url: true, alt: true } },
       },
     }),
-    prisma.ecommerceProduct.count({ where }),
+    prisma.ecommerceProduct.count({ where: whereDeleted }),
   ])
 
   return { products: items, total, page, totalPages: Math.ceil(total / take) }
 }
 
 export async function getEcommerceProductById(id: string) {
-  return await prisma.ecommerceProduct.findUnique({
-    where: { id },
+  await requireAdmin()
+  return await prisma.ecommerceProduct.findFirst({
+    where: { id, deletedAt: null },
     include: {
       product: true,
       media: { orderBy: { sortOrder: 'asc' } },
@@ -46,8 +48,9 @@ export async function getEcommerceProductById(id: string) {
 }
 
 export async function getEcommerceProductByProductId(productId: string) {
-  return await prisma.ecommerceProduct.findUnique({
-    where: { productId },
+  await requireAdmin()
+  return await prisma.ecommerceProduct.findFirst({
+    where: { productId, deletedAt: null },
     include: {
       product: true,
       media: { orderBy: { sortOrder: 'asc' } },
@@ -56,6 +59,7 @@ export async function getEcommerceProductByProductId(productId: string) {
 }
 
 export async function getProductsWithoutEcommerce(search?: string) {
+  await requireAdmin()
   return await prisma.product.findMany({
     where: {
       deletedAt: null,
@@ -85,6 +89,7 @@ const EcommerceSettingsSchema = z.object({
 })
 
 export async function createEcommerceProduct(productId: string) {
+  await requireAdmin()
   const product = await prisma.product.findUnique({
     where: { id: productId, deletedAt: null },
     select: { id: true, name: true, category: true },
@@ -120,6 +125,7 @@ export async function createEcommerceProduct(productId: string) {
 }
 
 export async function updateEcommerceProduct(id: string, formData: FormData) {
+  await requireAdmin()
   const rawData = {
     visible: formData.get('visible') === 'true',
     featured: formData.get('featured') === 'true',
@@ -162,11 +168,15 @@ export async function updateEcommerceProduct(id: string, formData: FormData) {
 }
 
 export async function deleteEcommerceProduct(id: string) {
+  await requireAdmin()
   try {
-    await prisma.ecommerceProduct.delete({ where: { id } })
+    await prisma.ecommerceProduct.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    })
     revalidatePath('/ecommerce')
     revalidatePath('/api/products')
-    return { success: 'Producto eliminado del catálogo' }
+    return { success: 'Producto ocultado del catálogo' }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { error: error.message || 'Error al eliminar' }
@@ -174,20 +184,23 @@ export async function deleteEcommerceProduct(id: string) {
 }
 
 export async function getEcommerceStats() {
+  await requireAdmin()
+  const notDeleted = { deletedAt: null }
   const [totalPublished, totalVisible, featured, withDiscount, totalInventory] = await Promise.all([
-    prisma.ecommerceProduct.count({ where: { publishedAt: { not: null } } }),
-    prisma.ecommerceProduct.count({ where: { visible: true } }),
-    prisma.ecommerceProduct.count({ where: { featured: true } }),
+    prisma.ecommerceProduct.count({ where: { ...notDeleted, publishedAt: { not: null } } }),
+    prisma.ecommerceProduct.count({ where: { ...notDeleted, visible: true } }),
+    prisma.ecommerceProduct.count({ where: { ...notDeleted, featured: true } }),
     prisma.ecommerceProduct.count({
-      where: { compareAtPrice: { not: null }, visible: true },
+      where: { ...notDeleted, compareAtPrice: { not: null }, visible: true },
     }),
-    prisma.product.count({ where: { deletedAt: null, ecommerce: null } }),
+    prisma.product.count({ where: { deletedAt: null, ecommerce: { deletedAt: null } } }),
   ])
 
   return { totalPublished, totalVisible, featured, withDiscount, totalInventory }
 }
 
 export async function toggleVisibility(id: string, visible: boolean) {
+  await requireAdmin()
   try {
     await prisma.ecommerceProduct.update({
       where: { id },
@@ -203,6 +216,7 @@ export async function toggleVisibility(id: string, visible: boolean) {
 }
 
 export async function addEcommerceImage(ecommerceId: string, url: string, isPrimary: boolean) {
+  await requireAdmin()
   try {
     if (isPrimary) {
       await prisma.productMedia.updateMany({
@@ -236,6 +250,7 @@ export async function addEcommerceImage(ecommerceId: string, url: string, isPrim
 }
 
 export async function deleteEcommerceImage(id: string) {
+  await requireAdmin()
   try {
     await prisma.productMedia.delete({ where: { id } })
     revalidatePath('/ecommerce/products', 'layout')
@@ -247,6 +262,7 @@ export async function deleteEcommerceImage(id: string) {
 }
 
 export async function reorderImages(mediaId: string, newOrder: number) {
+  await requireAdmin()
   try {
     await prisma.productMedia.update({
       where: { id: mediaId },
@@ -261,6 +277,7 @@ export async function reorderImages(mediaId: string, newOrder: number) {
 }
 
 export async function setPrimaryImage(mediaId: string, ecommerceId: string) {
+  await requireAdmin()
   try {
     await prisma.productMedia.updateMany({
       where: { ecommerceId, isPrimary: true },
