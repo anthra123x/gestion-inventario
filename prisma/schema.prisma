@@ -285,6 +285,31 @@ model OrderItem {
   @@map("order_items")
 }
 
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String?
+  type       NotificationType
+  title      String
+  message    String?
+  entityType String?
+  entityId   String?
+  read       Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  STOCK_ALERT
+  ORDER_STATUS
+  REPAIR_READY
+  SALE_COMPLETED
+  SYSTEM
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?

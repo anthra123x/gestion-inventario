@@ -145,6 +145,18 @@ export const UpdateOrderStatusSchema = z.object({
   status: OrderStatusSchema,
 })
 
+// Notification schemas
+export const NotificationTypeSchema = z.enum(['STOCK_ALERT', 'ORDER_STATUS', 'REPAIR_READY', 'SALE_COMPLETED', 'SYSTEM'])
+
+export const CreateNotificationSchema = z.object({
+  userId: z.string().nullable().optional(),
+  type: NotificationTypeSchema,
+  title: z.string().min(1, 'El título es requerido'),
+  message: z.string().optional().nullable(),
+  entityType: z.string().optional().nullable(),
+  entityId: z.string().optional().nullable(),
+})
+
 export const OrderItemSchema = z.object({
   productId: z.string(),
   quantity: z.coerce.number().int().min(1),

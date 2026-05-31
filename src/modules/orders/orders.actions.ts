@@ -8,6 +8,7 @@ import { getZodErrorMessage } from '@/lib/zod-error'
 import { logAudit } from '@/modules/audit/audit.service'
 import { OrderStatus } from '@prisma/client'
 import { parseError } from '@/lib/errors'
+import { notifyUsers } from '@/modules/notifications/notifications.actions'
 
 export async function getOrders(search?: string, status?: OrderStatus, page = 1, take = 20) {
   await requireAdmin()
@@ -291,6 +292,16 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
+
+    if (status === 'CONFIRMED') {
+      notifyUsers('ORDER_STATUS', 'Pedido confirmado', `Pedido #${orderId.slice(-6)} confirmado`, 'order', orderId)
+    } else if (status === 'SHIPPED') {
+      notifyUsers('ORDER_STATUS', 'Pedido enviado', `Pedido #${orderId.slice(-6)} ha sido enviado`, 'order', orderId)
+    } else if (status === 'DELIVERED') {
+      notifyUsers('ORDER_STATUS', 'Pedido entregado', `Pedido #${orderId.slice(-6)} entregado`, 'order', orderId)
+    } else if (status === 'CANCELLED') {
+      notifyUsers('ORDER_STATUS', 'Pedido cancelado', `Pedido #${orderId.slice(-6)} cancelado`, 'order', orderId)
+    }
 
     const auditAction = status === 'CANCELLED' ? 'CANCEL' : 'CONFIRM'
     logAudit(auditAction, 'order', orderId, `${status}`)

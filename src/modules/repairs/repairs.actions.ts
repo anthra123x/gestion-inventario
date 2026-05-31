@@ -9,6 +9,7 @@ import { validateRepairPartData, validateNonNegative } from '@/lib/validations-d
 import { RepairStatus } from '@prisma/client'
 import { requireAdmin } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
+import { notifyUsers } from '@/modules/notifications/notifications.actions'
 
 export async function getRepairs(search?: string, status?: RepairStatus, page = 1, take = 20) {
   await requireAdmin()
@@ -340,6 +341,13 @@ export async function updateRepair(id: string, formData: FormData) {
       data: validatedFields.data,
     })
 
+    const newStatus = validatedFields.data.status
+    if (newStatus === 'READY') {
+      notifyUsers('REPAIR_READY', 'Reparación lista', `Reparación #${id.slice(-6)} lista para entregar`, 'repair', id)
+    } else if (newStatus === 'DELIVERED') {
+      notifyUsers('REPAIR_READY', 'Reparación entregada', `Reparación #${id.slice(-6)} entregada al cliente`, 'repair', id)
+    }
+
     revalidatePath('/repairs')
     revalidatePath(`/repairs/${id}`)
     return {
@@ -666,6 +674,12 @@ export async function editRepair(id: string, formData: FormData) {
       }
     })
 
+    if (status === 'READY') {
+      notifyUsers('REPAIR_READY', 'Reparación lista', `Reparación #${id.slice(-6)} lista para entregar`, 'repair', id)
+    } else if (status === 'DELIVERED') {
+      notifyUsers('REPAIR_READY', 'Reparación entregada', `Reparación #${id.slice(-6)} entregada al cliente`, 'repair', id)
+    }
+
     revalidatePath('/repairs')
     revalidatePath(`/repairs/${id}`)
     revalidatePath('/dashboard')
@@ -814,6 +828,12 @@ export async function updateRepairStatus(id: string, status: RepairStatus) {
       where: { id },
       data: updateData,
     })
+
+    if (status === 'READY') {
+      notifyUsers('REPAIR_READY', 'Reparación lista', `Reparación #${id.slice(-6)} lista para entregar`, 'repair', id)
+    } else if (status === 'DELIVERED') {
+      notifyUsers('REPAIR_READY', 'Reparación entregada', `Reparación #${id.slice(-6)} entregada al cliente`, 'repair', id)
+    }
 
     revalidatePath('/repairs')
     revalidatePath(`/repairs/${id}`)

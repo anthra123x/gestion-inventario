@@ -8,6 +8,7 @@ import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
 import { requireAdmin } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
+import { notifyUsers } from '@/modules/notifications/notifications.actions'
 
 /**
  * Obtiene lista de productos con filtros opcionales
@@ -120,6 +121,10 @@ export async function createProduct(formData: FormData) {
       })
     }
 
+    if (validatedFields.data.stock <= validatedFields.data.minStock) {
+      notifyUsers('STOCK_ALERT', 'Stock bajo en producto nuevo', `${product.name}: ${validatedFields.data.stock} uds (mín: ${validatedFields.data.minStock})`, 'product', product.id)
+    }
+
     revalidatePath('/inventory')
     return {
       success: 'Producto creado exitosamente',
@@ -184,6 +189,12 @@ export async function updateProduct(id: string, formData: FormData) {
       where: { id },
       data: validatedFields.data,
     })
+
+    if (product.stock <= product.minStock && product.stock > 0) {
+      notifyUsers('STOCK_ALERT', 'Stock bajo', `${product.name}: ${product.stock} uds (mín: ${product.minStock})`, 'product', id)
+    } else if (product.stock === 0) {
+      notifyUsers('STOCK_ALERT', 'Producto agotado', `${product.name} sin stock`, 'product', id)
+    }
 
     revalidatePath('/inventory')
     revalidatePath(`/inventory/${id}`)
@@ -288,6 +299,12 @@ export async function addInventoryMovement(formData: FormData) {
         },
       }),
     ])
+
+    if (updatedProduct.stock <= updatedProduct.minStock && updatedProduct.stock > 0) {
+      notifyUsers('STOCK_ALERT', 'Stock bajo', `${updatedProduct.name}: ${updatedProduct.stock} uds (mín: ${updatedProduct.minStock})`, 'product', validatedFields.data.productId)
+    } else if (updatedProduct.stock === 0) {
+      notifyUsers('STOCK_ALERT', 'Producto agotado', `${updatedProduct.name} sin stock`, 'product', validatedFields.data.productId)
+    }
 
     revalidatePath('/inventory')
     revalidatePath(`/inventory/${validatedFields.data.productId}`)

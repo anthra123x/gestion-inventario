@@ -1,0 +1,170 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { Bell, CheckCheck, Loader2, Package, Wrench, ShoppingCart, AlertTriangle, Info } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '@/modules/notifications/notifications.actions'
+import { cn } from '@/lib/utils'
+import type { NotificationType } from '@prisma/client'
+
+type Notification = {
+  id: string
+  userId: string | null
+  type: NotificationType
+  title: string
+  message: string | null
+  entityType: string | null
+  entityId: string | null
+  read: boolean
+  createdAt: Date
+}
+
+const typeIcons: Record<NotificationType, typeof Bell> = {
+  STOCK_ALERT: AlertTriangle,
+  ORDER_STATUS: Package,
+  REPAIR_READY: Wrench,
+  SALE_COMPLETED: ShoppingCart,
+  SYSTEM: Info,
+}
+
+function timeAgo(date: Date) {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  if (seconds < 60) return 'ahora'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  return `${days}d`
+}
+
+export function NotificationsDropdown() {
+  const [open, setOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [notifResult, count] = await Promise.all([
+      getNotifications(1, 10),
+      getUnreadCount(),
+    ])
+    setNotifications(notifResult.notifications as Notification[])
+    setUnreadCount(count)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [load])
+
+  async function handleOpenChange(open: boolean) {
+    setOpen(open)
+    if (open) load()
+  }
+
+  async function handleMarkAsRead(id: string) {
+    await markAsRead(id)
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+    setUnreadCount((prev) => Math.max(0, prev - 1))
+  }
+
+  async function handleMarkAllAsRead() {
+    await markAllAsRead()
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    setUnreadCount(0)
+  }
+
+  return (
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-80">
+        <DropdownMenuLabel className="flex items-center justify-between">
+          <span>Notificaciones</span>
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllAsRead}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <CheckCheck className="h-3 w-3" />
+              Marcar todo leído
+            </button>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <div className="max-h-80 overflow-y-auto">
+          {loading && notifications.length === 0 ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              No hay notificaciones
+            </div>
+          ) : (
+            <DropdownMenuGroup>
+              {notifications.map((notif) => {
+                const Icon = typeIcons[notif.type]
+                return (
+                  <DropdownMenuItem
+                    key={notif.id}
+                    className={cn(
+                      'flex items-start gap-3 px-3 py-2.5 cursor-pointer',
+                      !notif.read && 'bg-muted/50',
+                    )}
+                    onClick={() => handleMarkAsRead(notif.id)}
+                  >
+                    <div className={cn(
+                      'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                      !notif.read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                    )}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex-1 space-y-0.5 min-w-0">
+                      <p className={cn(
+                        'text-sm leading-tight truncate',
+                        !notif.read && 'font-medium',
+                      )}>
+                        {notif.title}
+                      </p>
+                      {notif.message && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{notif.message}</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground">{timeAgo(notif.createdAt)}</p>
+                    </div>
+                    {!notif.read && (
+                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                    )}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuGroup>
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}

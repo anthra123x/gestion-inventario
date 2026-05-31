@@ -11,6 +11,8 @@ import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit } fro
 import { PaymentMethod } from '@prisma/client'
 import { checkStockAvailability } from '@/lib/stock-check'
 import { parseError } from '@/lib/errors'
+import { formatCurrency } from '@/lib/format'
+import { notifyUsers } from '@/modules/notifications/notifications.actions'
 
 /**
  * Obtiene lista de ventas con filtros opcionales
@@ -320,6 +322,11 @@ export async function createSale(formData: FormData) {
 
       return newSale
     })
+
+    const LARGE_SALE_THRESHOLD = 1_000_000
+    if (sale.total >= LARGE_SALE_THRESHOLD) {
+      notifyUsers('SALE_COMPLETED', 'Venta de alto valor', `Venta #${sale.id.slice(-6)} por ${formatCurrency(sale.total)}`, 'sale', sale.id)
+    }
 
     revalidatePath('/sales')
     revalidatePath('/dashboard')

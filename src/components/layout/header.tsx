@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Search, LogOut, User, Menu } from 'lucide-react'
+import { Search, LogOut, User, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
+import { NotificationsDropdown } from '@/components/layout/notifications-dropdown'
 
 interface HeaderProps {
   user: {
@@ -43,9 +44,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2 lg:gap-4">
-        <Button variant="ghost" size="icon" className="hidden lg:flex">
-          <Bell className="h-5 w-5" />
-        </Button>
+        <NotificationsDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 lg:gap-3 cursor-pointer rounded-lg p-1.5 hover:bg-muted transition-colors">
