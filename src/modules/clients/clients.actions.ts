@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
 import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
+import { parseError } from '@/lib/errors'
 
 export async function getClients(search?: string, take = 100) {
   await requireAuth()
@@ -132,24 +133,16 @@ export async function createClient(formData: FormData) {
       success: 'Cliente creado exitosamente',
       client,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    // Manejar error de unique constraint específicamente
-    if (error.code === 'P2002') {
-      const target = error.meta?.target
-      if (target && target.includes('phone')) {
-        return {
-          error: 'El teléfono ya está registrado en otro cliente.',
-        }
+  } catch (error) {
+    const parsed = parseError(error)
+    if (parsed.code === 'P2002') {
+      const target = parsed.meta?.target as string[] | undefined
+      if (target?.includes?.('phone')) {
+        return { error: 'El teléfono ya está registrado en otro cliente.' }
       }
-      return {
-        error: 'Ya existe un registro con estos datos únicos.',
-      }
+      return { error: 'Ya existe un registro con estos datos únicos.' }
     }
-
-    return {
-      error: error instanceof Error ? error.message : 'Error al crear el cliente',
-    }
+    return { error: parsed.message }
   }
 }
 
@@ -181,24 +174,16 @@ export async function updateClient(id: string, formData: FormData) {
       success: 'Cliente actualizado exitosamente',
       client,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    // Manejar error de unique constraint específicamente
-    if (error.code === 'P2002') {
-      const target = error.meta?.target
-      if (target && target.includes('phone')) {
-        return {
-          error: 'El teléfono ya está registrado en otro cliente.',
-        }
+  } catch (error) {
+    const parsed = parseError(error)
+    if (parsed.code === 'P2002') {
+      const target = parsed.meta?.target as string[] | undefined
+      if (target?.includes?.('phone')) {
+        return { error: 'El teléfono ya está registrado en otro cliente.' }
       }
-      return {
-        error: 'Ya existe un registro con estos datos únicos.',
-      }
+      return { error: 'Ya existe un registro con estos datos únicos.' }
     }
-
-    return {
-      error: error instanceof Error ? error.message : 'Error al actualizar el cliente',
-    }
+    return { error: parsed.message }
   }
 }
 

@@ -111,8 +111,7 @@ export async function getSalesReport(filters?: { startDate?: Date; endDate?: Dat
       acc[productId].profit += item.profit || 0
       return acc
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    {} as Record<string, any>,
+    {} as Record<string, { product: { id: string; name: string }; quantity: number; revenue: number; cost: number; profit: number }>,
   )
 
   return {
@@ -455,16 +454,14 @@ export async function generateReportData(reportType: string, filters: ReportFilt
       })
     case 'inventory':
       return await getInventoryReport({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: filters.category as any,
+        category: filters.category as ProductCategory | undefined,
         lowStock: false,
       })
     case 'repairs':
       return await getRepairsReport({
         startDate: filters.startDate,
         endDate: filters.endDate,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        status: filters.status as any,
+        status: filters.status as RepairStatus | undefined,
         clientId: undefined,
       })
     case 'clients':

@@ -8,6 +8,7 @@ import { CreateOrderSchema, UpdateOrderStatusSchema } from '@/lib/validations'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { logAudit } from '@/modules/audit/audit.service'
 import { OrderStatus } from '@prisma/client'
+import { parseError } from '@/lib/errors'
 
 export async function getOrders(search?: string, status?: OrderStatus, page = 1, take = 20) {
   await requireAdmin()
@@ -106,16 +107,14 @@ export async function getOrderStats() {
 
 export async function createOrder(formData: FormData) {
   const itemsJson = formData.get('items') as string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let rawItems: any[]
+  let rawItems: { productId: string; quantity: number; unitPrice: number }[]
   try {
     rawItems = itemsJson ? JSON.parse(itemsJson) : []
   } catch {
     return { error: 'Datos de productos inválidos' }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items = rawItems.map((item: any) => ({
+  const items = rawItems.map((item) => ({
     productId: item.productId,
     quantity: isNaN(Number(item.quantity)) ? 1 : Number(item.quantity),
     unitPrice: isNaN(Number(item.unitPrice)) ? 0 : Number(item.unitPrice),
@@ -177,9 +176,8 @@ export async function createOrder(formData: FormData) {
 
     revalidatePath('/orders')
     return { success: 'Pedido creado exitosamente', order }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { error: error.message || 'Error al crear el pedido' }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 
@@ -299,9 +297,8 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
     logAudit(auditAction, 'order', orderId, `${status}`)
 
     return { success: 'Estado actualizado exitosamente' }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { error: error.message || 'Error al actualizar el estado' }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 
@@ -314,9 +311,8 @@ export async function updateOrderNotes(orderId: string, internalNotes: string) {
     })
     revalidatePath(`/orders/${orderId}`)
     return { success: 'Notas actualizadas' }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { error: error.message || 'Error al actualizar las notas' }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 

@@ -10,6 +10,7 @@ import { validateSaleItemData, validateSalePriceAgainstCost } from '@/lib/valida
 import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit } from '@/lib/finance'
 import { PaymentMethod } from '@prisma/client'
 import { checkStockAvailability } from '@/lib/stock-check'
+import { parseError } from '@/lib/errors'
 
 /**
  * Obtiene lista de ventas con filtros opcionales
@@ -165,11 +166,8 @@ export async function createSale(formData: FormData) {
         total: item.unitPrice * item.quantity,
       })
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (validationError: any) {
-    return {
-      error: validationError.message,
-    }
+  } catch (validationError) {
+    return { error: parseError(validationError).message }
   }
 
   try {
@@ -185,7 +183,6 @@ export async function createSale(formData: FormData) {
     } = validatedFields.data
     let { clientId } = validatedFields.data
 
-    // Find or create client by phone (same pattern as createRepair)
     if (!clientId && (clientName || clientPhone)) {
       try {
         if (clientPhone) {
@@ -207,9 +204,8 @@ export async function createSale(formData: FormData) {
           })
           clientId = newClient.id
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        return { error: `Error al procesar el cliente: ${err.message}` }
+      } catch (err) {
+        return { error: `Error al procesar el cliente: ${parseError(err).message}` }
       }
     }
 
@@ -331,9 +327,8 @@ export async function createSale(formData: FormData) {
       success: 'Venta registrada exitosamente',
       sale,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { error: error.message || 'Error al crear la venta' }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 
@@ -434,9 +429,8 @@ export async function updateSale(id: string, formData: FormData) {
         total: item.unitPrice * item.quantity,
       })
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (validationError: any) {
-    return { error: validationError.message }
+  } catch (validationError) {
+    return { error: parseError(validationError).message }
   }
 
   try {
@@ -471,9 +465,8 @@ export async function updateSale(id: string, formData: FormData) {
           })
           clientId = newClient.id
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        return { error: `Error al procesar el cliente: ${err.message}` }
+      } catch (err) {
+        return { error: `Error al procesar el cliente: ${parseError(err).message}` }
       }
     }
 
@@ -596,9 +589,8 @@ export async function updateSale(id: string, formData: FormData) {
     revalidatePath('/sales')
     revalidatePath('/dashboard')
     return { success: 'Venta actualizada exitosamente', sale: updatedSale }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { error: error.message || 'Error al actualizar la venta' }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 

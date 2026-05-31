@@ -41,6 +41,23 @@ export class ConflictError extends AppError {
   }
 }
 
+export function parseError(error: unknown, fallbackMessage = 'Error desconocido'): { message: string; code?: string; meta?: Record<string, unknown> } {
+  if (error instanceof Error) {
+    const prismaCode = 'code' in error ? String((error as { code: unknown }).code) : undefined
+    const meta = 'meta' in error ? (error as { meta: unknown }).meta as Record<string, unknown> : undefined
+    return { message: error.message, code: prismaCode, meta }
+  }
+  if (error && typeof error === 'object') {
+    const obj = error as Record<string, unknown>
+    return {
+      message: typeof obj.message === 'string' ? obj.message : fallbackMessage,
+      code: typeof obj.code === 'string' ? obj.code : undefined,
+      meta: obj.meta as Record<string, unknown> | undefined,
+    }
+  }
+  return { message: fallbackMessage }
+}
+
 const PRISMA_CODE_MAP: Record<string, (message: string) => AppError> = {
   P2002: (m) => new ConflictError('El registro ya existe'),
   P2025: () => new NotFoundError(),

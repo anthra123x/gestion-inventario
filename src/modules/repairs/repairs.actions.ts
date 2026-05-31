@@ -8,6 +8,7 @@ import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
 import { RepairStatus } from '@prisma/client'
 import { requireAdmin } from '@/modules/auth/auth.actions'
+import { parseError } from '@/lib/errors'
 
 export async function getRepairs(search?: string, status?: RepairStatus, page = 1, take = 20) {
   await requireAdmin()
@@ -95,8 +96,7 @@ export async function createRepair(formData: FormData) {
   await requireAdmin()
   const partsJson = formData.get('parts') as string
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let rawParts: any[]
+  let rawParts: { productId: string; quantity: number; unitCost: number }[]
   try {
     rawParts = partsJson ? JSON.parse(partsJson) : []
   } catch {
@@ -105,9 +105,7 @@ export async function createRepair(formData: FormData) {
     }
   }
 
-  // Normalizar parts para evitar NaN
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const parts = rawParts.map((part: any) => ({
+  const parts = rawParts.map((part) => ({
     productId: part.productId,
     quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
     unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
@@ -183,11 +181,8 @@ export async function createRepair(formData: FormData) {
         })
       }
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (validationError: any) {
-    return {
-      error: validationError.message,
-    }
+  } catch (validationError) {
+    return { error: parseError(validationError).message }
   }
 
   try {
@@ -315,11 +310,8 @@ export async function createRepair(formData: FormData) {
       success: 'Reparación creada exitosamente',
       repair,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return {
-      error: error.message || 'Error al crear la reparación',
-    }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 
@@ -365,16 +357,14 @@ export async function editRepair(id: string, formData: FormData) {
   await requireAdmin()
   const partsJson = formData.get('parts') as string
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let rawParts: any[]
+  let rawParts: { productId: string; quantity: number; unitCost: number }[]
   try {
     rawParts = partsJson ? JSON.parse(partsJson) : []
   } catch {
     return { error: 'Datos de repuestos inválidos' }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const parts = rawParts.map((part: any) => ({
+  const parts = rawParts.map((part) => ({
     productId: part.productId,
     quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
     unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
@@ -421,9 +411,8 @@ export async function editRepair(id: string, formData: FormData) {
         })
       }
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (validationError: any) {
-    return { error: validationError.message }
+  } catch (validationError) {
+    return { error: parseError(validationError).message }
   }
 
   try {
@@ -639,8 +628,7 @@ export async function editRepair(id: string, formData: FormData) {
         where: { repairId: id },
       })
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         device,
         problem,
         diagnosis,
@@ -682,9 +670,8 @@ export async function editRepair(id: string, formData: FormData) {
     revalidatePath(`/repairs/${id}`)
     revalidatePath('/dashboard')
     return { success: 'Reparación actualizada exitosamente' }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { error: error.message || 'Error al actualizar la reparación' }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 

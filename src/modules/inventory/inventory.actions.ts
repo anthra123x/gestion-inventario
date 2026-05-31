@@ -7,6 +7,7 @@ import { ProductCategory } from '@prisma/client'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { validateProductData, validateNonNegative, validatePriceMargin } from '@/lib/validations-data'
 import { requireAdmin } from '@/modules/auth/auth.actions'
+import { parseError } from '@/lib/errors'
 
 /**
  * Obtiene lista de productos con filtros opcionales
@@ -93,18 +94,14 @@ export async function createProduct(formData: FormData) {
     }
   }
 
-  // Validate business logic
   try {
     validateProductData({
       stock: validatedFields.data.stock,
       purchasePrice: validatedFields.data.purchasePrice,
       salePrice: validatedFields.data.salePrice,
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (validationError: any) {
-    return {
-      error: validationError.message,
-    }
+  } catch (validationError) {
+    return { error: parseError(validationError).message }
   }
 
   try {
@@ -128,23 +125,12 @@ export async function createProduct(formData: FormData) {
       success: 'Producto creado exitosamente',
       product,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      return {
-        error: 'Ya existe un registro con estos datos únicos.',
-      }
+  } catch (error) {
+    const parsed = parseError(error)
+    if (parsed.code === 'P2002') {
+      return { error: 'Ya existe un registro con estos datos únicos.' }
     }
-
-    if (error instanceof Error) {
-      return {
-        error: error.message,
-      }
-    }
-
-    return {
-      error: 'Error desconocido al crear el producto',
-    }
+    return { error: parsed.message }
   }
 }
 
@@ -176,7 +162,6 @@ export async function updateProduct(id: string, formData: FormData) {
     }
   }
 
-  // Validate business logic (only if values are provided)
   try {
     if (validatedFields.data.stock !== undefined) {
       validateNonNegative(validatedFields.data.stock, 'Stock')
@@ -190,11 +175,8 @@ export async function updateProduct(id: string, formData: FormData) {
     if (validatedFields.data.purchasePrice !== undefined && validatedFields.data.salePrice !== undefined) {
       validatePriceMargin(validatedFields.data.purchasePrice, validatedFields.data.salePrice)
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (validationError: any) {
-    return {
-      error: validationError.message,
-    }
+  } catch (validationError) {
+    return { error: parseError(validationError).message }
   }
 
   try {
@@ -209,29 +191,15 @@ export async function updateProduct(id: string, formData: FormData) {
       success: 'Producto actualizado exitosamente',
       product,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      return {
-        error: 'Ya existe un registro con estos datos únicos.',
-      }
+  } catch (error) {
+    const parsed = parseError(error)
+    if (parsed.code === 'P2002') {
+      return { error: 'Ya existe un registro con estos datos únicos.' }
     }
-
-    if (error.code === 'P2025') {
-      return {
-        error: 'Producto no encontrado',
-      }
+    if (parsed.code === 'P2025') {
+      return { error: 'Producto no encontrado' }
     }
-
-    if (error instanceof Error) {
-      return {
-        error: error.message,
-      }
-    }
-
-    return {
-      error: 'Error desconocido al actualizar el producto',
-    }
+    return { error: parsed.message }
   }
 }
 
@@ -262,24 +230,18 @@ export async function deleteProduct(id: string) {
     return {
       success: 'Producto eliminado exitosamente',
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error.code === 'P2003') {
+  } catch (error) {
+    const parsed = parseError(error)
+    if (parsed.code === 'P2003') {
       return {
         error:
           'No se puede eliminar el producto porque está relacionado con ventas o reparaciones. Usa la función de limpieza del sistema.',
       }
     }
-
-    if (error.code === 'P2025') {
-      return {
-        error: 'Producto no encontrado',
-      }
+    if (parsed.code === 'P2025') {
+      return { error: 'Producto no encontrado' }
     }
-
-    return {
-      error: error instanceof Error ? error.message : 'Error al eliminar el producto',
-    }
+    return { error: parsed.message }
   }
 }
 
@@ -334,11 +296,8 @@ export async function addInventoryMovement(formData: FormData) {
       success: `Movimiento de inventario registrado. Stock actual: ${updatedProduct.stock}`,
       movement,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return {
-      error: error.message || 'Error al registrar movimiento de inventario',
-    }
+  } catch (error) {
+    return { error: parseError(error).message }
   }
 }
 

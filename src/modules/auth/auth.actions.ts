@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { UserRole } from '@prisma/client'
+import { parseError } from '@/lib/errors'
 
 export async function ensureUserExists(email: string, name: string) {
   try {
@@ -19,8 +20,7 @@ export async function ensureUserExists(email: string, name: string) {
     })
 
     return { success: true }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     return { error: 'Error al verificar usuario' }
   }
 }
@@ -130,9 +130,8 @@ export async function updateUserRole(userId: string, role: UserRole) {
     return {
       success: 'Rol actualizado exitosamente',
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
+  } catch (error) {
+    if (parseError(error).code === 'P2025') {
       return { error: 'Usuario no encontrado' }
     }
     return { error: 'Error al actualizar rol' }
@@ -150,9 +149,8 @@ export async function deleteUser(userId: string) {
     return {
       success: 'Usuario eliminado exitosamente',
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
+  } catch (error) {
+    if (parseError(error).code === 'P2025') {
       return { error: 'Usuario no encontrado' }
     }
     return { error: 'Error al eliminar usuario' }
@@ -175,9 +173,8 @@ export async function createUserByAdmin(formData: FormData) {
       await prisma.user.create({
         data: { email, name, role },
       })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error?.code === 'P2002') {
+    } catch (error) {
+      if (parseError(error).code === 'P2002') {
         return { error: 'El usuario ya existe' }
       }
       throw error
