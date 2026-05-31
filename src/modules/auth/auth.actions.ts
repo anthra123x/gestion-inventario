@@ -163,9 +163,14 @@ export async function createUserByAdmin(formData: FormData) {
   const email = formData.get('email') as string
   const name = formData.get('name') as string
   const role = formData.get('role') as UserRole
+  const password = formData.get('password') as string | null
 
   if (!email || !name || !role) {
     return { error: 'Todos los campos son requeridos' }
+  }
+
+  if (password && password.length < 6) {
+    return { error: 'La contraseña debe tener al menos 6 caracteres' }
   }
 
   try {
@@ -180,11 +185,10 @@ export async function createUserByAdmin(formData: FormData) {
       throw error
     }
 
-    // Luego crear auth user en Supabase
-    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+    const finalPassword = password || Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
     const { error: authError } = await supabase.auth.admin.createUser({
       email,
-      password: tempPassword,
+      password: finalPassword,
       email_confirm: true,
       user_metadata: { name },
     })
@@ -195,9 +199,15 @@ export async function createUserByAdmin(formData: FormData) {
     }
 
     revalidatePath('/admin')
+
+    if (password) {
+      return {
+        success: 'Usuario creado exitosamente. La contraseña fue asignada.',
+      }
+    }
+
     return {
-      success:
-        'Usuario creado exitosamente. La contraseña temporal se ha generado y debe ser comunicada de forma segura.',
+      success: `Usuario creado exitosamente. Contraseña temporal: ${finalPassword}. Comunícala de forma segura.`,
     }
   } catch (error) {
     console.error('createUserByAdmin error:', error)

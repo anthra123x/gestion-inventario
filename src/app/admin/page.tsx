@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import * as XLSX from 'xlsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -35,6 +34,7 @@ export default function AdminPage() {
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserName, setNewUserName] = useState('')
   const [newUserRole, setNewUserRole] = useState('EMPLOYEE')
+  const [newUserPassword, setNewUserPassword] = useState('')
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
   const [cleanupType, setCleanupType] = useState<'products' | 'sales' | 'repairs' | 'all' | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
@@ -97,6 +97,7 @@ export default function AdminPage() {
     formData.append('email', newUserEmail)
     formData.append('name', newUserName)
     formData.append('role', newUserRole)
+    formData.append('password', newUserPassword)
 
     const result = await createUserByAdmin(formData)
 
@@ -105,6 +106,7 @@ export default function AdminPage() {
       setNewUserEmail('')
       setNewUserName('')
       setNewUserRole('EMPLOYEE')
+      setNewUserPassword('')
       const updated = await getUsers()
       setUsers(updated)
     } else {
@@ -121,7 +123,7 @@ export default function AdminPage() {
     formData.append('companyPhone', settings.companyPhone || '')
     formData.append('companyEmail', settings.companyEmail || '')
     formData.append('defaultMinStock', String(settings.defaultMinStock || 5))
-    formData.append('lowStockAlert', String(settings.lowStockAlert || true))
+    formData.append('lowStockAlert', String(!!settings.lowStockAlert))
     formData.append('currency', settings.currency || 'COP')
     formData.append('taxRate', String(settings.taxRate || 0))
     formData.append('receiptFooter', settings.receiptFooter || '')
@@ -138,20 +140,25 @@ export default function AdminPage() {
     }
   }
 
+  function downloadXlsx(base64: string, filename: string) {
+    const binaryStr = atob(base64)
+    const bytes = new Uint8Array(binaryStr.length)
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   async function handleExportData() {
     setBackupLoading(true)
     try {
       const result = await exportData()
-      if (result.success && result.data) {
-        const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-        const dataStr = JSON.stringify(result.data, null, 2)
-        const dataBlob = new Blob([dataStr], { type: 'application/json' })
-        const url = URL.createObjectURL(dataBlob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `backup_tecnicell_${ts}.json`
-        link.click()
-        URL.revokeObjectURL(url)
+      if (result.success && result.data && result.filename) {
+        downloadXlsx(result.data, result.filename)
         toast.success('Backup exportado exitosamente')
       } else {
         toast.error(result.error || 'Error al exportar backup')
@@ -183,16 +190,8 @@ export default function AdminPage() {
       }
 
       // Descargar backup automáticamente
-      if (backupResult.data) {
-        const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-        const dataStr = JSON.stringify(backupResult.data, null, 2)
-        const dataBlob = new Blob([dataStr], { type: 'application/json' })
-        const url = URL.createObjectURL(dataBlob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `backup_before_cleanup_${ts}.json`
-        link.click()
-        URL.revokeObjectURL(url)
+      if (backupResult.data && backupResult.filename) {
+        downloadXlsx(backupResult.data, backupResult.filename.replace('backup_', 'backup_before_cleanup_'))
       }
 
       // Backup descargado, proceder con limpieza
@@ -251,10 +250,7 @@ export default function AdminPage() {
       }
 
       if (result.success && result.data && result.filename) {
-        const worksheet = XLSX.utils.json_to_sheet(result.data)
-        const workbook = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos')
-        XLSX.writeFile(workbook, result.filename)
+        downloadXlsx(result.data, result.filename)
         toast.success('Archivo Excel exportado exitosamente')
       } else {
         toast.error(result.error || 'Error al exportar')
@@ -373,12 +369,23 @@ export default function AdminPage() {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="newUserPassword">Contraseña (opcional)</Label>
+                <Input
+                  id="newUserPassword"
+                  type="password"
+                  placeholder="Dejar vacío para generar automática"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                />
+              </div>
+
               <Button type="submit" className="w-full">
                 Crear Usuario
               </Button>
             </form>
             <p className="text-xs text-gray-500 mt-2">
-              Nota: El usuario recibirá un email para establecer su contraseña
+              Si no asignas contraseña, se generará una automática que se mostrará al crear.
             </p>
           </CardContent>
         </Card>

@@ -2,8 +2,17 @@
 
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/modules/auth/auth.actions'
+import * as XLSX from 'xlsx'
 
 const TS = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+
+function buildWorkbook(data: Record<string, unknown>[], sheetName: string) {
+  const workbook = XLSX.utils.book_new()
+  const worksheet = XLSX.utils.json_to_sheet(data)
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
+  const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' })
+  return base64
+}
 
 export async function exportProductsToExcel() {
   await requireAdmin()
@@ -26,28 +35,19 @@ export async function exportProductsToExcel() {
 
     return {
       success: true,
-      data,
+      data: buildWorkbook(data, 'Productos'),
       filename: `productos_${TS()}.xlsx`,
     }
   } catch (_error) {
-    return {
-      success: false,
-      error: 'Error al exportar productos',
-    }
+    return { success: false, error: 'Error al exportar productos' }
   }
 }
 
 export async function exportSalesToExcel() {
+  await requireAdmin()
   try {
     const sales = await prisma.sale.findMany({
-      include: {
-        client: true,
-        saleItems: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { client: true, saleItems: { include: { product: true } } },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -62,28 +62,19 @@ export async function exportSalesToExcel() {
 
     return {
       success: true,
-      data,
+      data: buildWorkbook(data, 'Ventas'),
       filename: `ventas_${TS()}.xlsx`,
     }
   } catch (_error) {
-    return {
-      success: false,
-      error: 'Error al exportar ventas',
-    }
+    return { success: false, error: 'Error al exportar ventas' }
   }
 }
 
 export async function exportRepairsToExcel() {
+  await requireAdmin()
   try {
     const repairs = await prisma.repair.findMany({
-      include: {
-        client: true,
-        repairParts: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { client: true, repairParts: { include: { product: true } } },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -102,18 +93,16 @@ export async function exportRepairsToExcel() {
 
     return {
       success: true,
-      data,
+      data: buildWorkbook(data, 'Reparaciones'),
       filename: `reparaciones_${TS()}.xlsx`,
     }
   } catch (_error) {
-    return {
-      success: false,
-      error: 'Error al exportar reparaciones',
-    }
+    return { success: false, error: 'Error al exportar reparaciones' }
   }
 }
 
 export async function exportClientsToExcel() {
+  await requireAdmin()
   try {
     const clients = await prisma.client.findMany({
       where: { deletedAt: null },
@@ -130,13 +119,10 @@ export async function exportClientsToExcel() {
 
     return {
       success: true,
-      data,
+      data: buildWorkbook(data, 'Clientes'),
       filename: `clientes_${TS()}.xlsx`,
     }
   } catch (_error) {
-    return {
-      success: false,
-      error: 'Error al exportar clientes',
-    }
+    return { success: false, error: 'Error al exportar clientes' }
   }
 }
