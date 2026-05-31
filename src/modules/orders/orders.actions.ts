@@ -2,10 +2,12 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 import { CreateOrderSchema, UpdateOrderStatusSchema } from '@/lib/validations'
 import { getZodErrorMessage } from '@/lib/zod-error'
+import { logAudit } from '@/modules/audit/audit.service'
 import { OrderStatus } from '@prisma/client'
-import { requireAdmin } from '@/modules/auth/auth.actions'
 
 export async function getOrders(search?: string, status?: OrderStatus, page = 1, take = 20) {
   await requireAdmin()
@@ -292,6 +294,10 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
+
+    const auditAction = status === 'CANCELLED' ? 'CANCEL' : 'CONFIRM'
+    logAudit(auditAction, 'order', orderId, `${status}`)
+
     return { success: 'Estado actualizado exitosamente' }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

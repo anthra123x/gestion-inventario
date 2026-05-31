@@ -2,13 +2,14 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/modules/auth/auth.actions'
 import { CreateSaleSchema, UpdateSaleSchema } from '@/lib/validations'
-import { checkStockAvailability } from '@/lib/stock-check'
 import { getZodErrorMessage } from '@/lib/zod-error'
+import { logAudit } from '@/modules/audit/audit.service'
 import { validateSaleItemData, validateSalePriceAgainstCost } from '@/lib/validations-data'
 import { calcSubtotal, calcDiscountAmount, calcTotal, calcCost, calcProfit } from '@/lib/finance'
 import { PaymentMethod } from '@prisma/client'
-import { requireAdmin } from '@/modules/auth/auth.actions'
+import { checkStockAvailability } from '@/lib/stock-check'
 
 /**
  * Obtiene lista de ventas con filtros opcionales
@@ -371,6 +372,7 @@ export async function deleteSale(id: string) {
 
     revalidatePath('/sales')
     revalidatePath('/dashboard')
+    logAudit('DELETE', 'sale', id)
     return { success: 'Venta eliminada exitosamente. El stock ha sido restaurado.' }
   } catch (_error) {
     return { error: 'Error al eliminar la venta' }

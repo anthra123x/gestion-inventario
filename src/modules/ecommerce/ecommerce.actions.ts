@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireAdmin } from '@/modules/auth/auth.actions'
+import { logAudit } from '@/modules/audit/audit.service'
 
 export async function getEcommerceProducts(search?: string, page = 1, take = 20) {
   await requireAdmin()
@@ -176,6 +177,7 @@ export async function deleteEcommerceProduct(id: string) {
     })
     revalidatePath('/ecommerce')
     revalidatePath('/api/products')
+    logAudit('DELETE', 'ecommerce', id)
     return { success: 'Producto ocultado del catálogo' }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
