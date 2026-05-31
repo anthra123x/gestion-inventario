@@ -1,6 +1,5 @@
 'use server'
 
-import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
 import { z } from 'zod'
@@ -8,6 +7,7 @@ import { tryCatch } from '@/lib/errors'
 import { getString, getNumber, getBoolean } from '@/lib/form-data'
 import type { ActionResult } from '@/types'
 import { success, failure } from '@/types'
+import { getOrCreateSettings, updateSettings } from './settings.service'
 
 const UpdateSettingsSchema = z.object({
   companyName: z.string().min(1, 'Nombre de empresa requerido'),
@@ -23,12 +23,6 @@ const UpdateSettingsSchema = z.object({
   taxRate: z.coerce.number().min(0).max(100).default(0),
   receiptFooter: z.string().optional().default(''),
 })
-
-async function getOrCreateSettings() {
-  const existing = await prisma.systemSettings.findFirst()
-  if (existing) return existing
-  return await prisma.systemSettings.create({ data: {} })
-}
 
 export async function getSystemSettings() {
   await requireAuth()
@@ -56,12 +50,10 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
     return failure(firstError?.message || 'Datos de configuración inválidos')
   }
 
-  const result = await tryCatch(async () => {
-    const settings = await getOrCreateSettings()
-    const data = parsed.data
-    await prisma.systemSettings.update({
-      where: { id: settings.id },
-      data: {
+  const data = parsed.data
+  const result = await tryCatch(
+    () =>
+      updateSettings({
         companyName: data.companyName,
         companyAddress: data.companyAddress || null,
         companyPhone: data.companyPhone || null,
@@ -71,9 +63,9 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
         currency: data.currency,
         taxRate: data.taxRate,
         receiptFooter: data.receiptFooter || null,
-      },
-    })
-  }, { context: 'updateSystemSettings' })
+      }),
+    { context: 'updateSystemSettings' },
+  )
 
   if (result.success) {
     revalidatePath('/admin')
