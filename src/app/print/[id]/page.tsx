@@ -7,11 +7,12 @@ import { Printer, X, ArrowLeft } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { getPaymentMethodLabel } from '@/lib/labels'
 
+type SaleDetail = NonNullable<Awaited<ReturnType<typeof getSaleById>>>
+
 export default function PrintPage() {
   const params = useParams()
   const router = useRouter()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sale, setSale] = useState<any>(null)
+  const [sale, setSale] = useState<SaleDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,8 +67,7 @@ export default function PrintPage() {
     address: sale.clientAddress || '',
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subtotal = sale.saleItems.reduce((sum: number, item: any) => sum + item.unitPrice * item.quantity, 0)
+  const subtotal = sale.saleItems.reduce((sum: number, item) => sum + item.unitPrice * item.quantity, 0)
   const discountAmount = sale.discountAmount || (sale.discountPercent > 0 ? subtotal * (sale.discountPercent / 100) : 0)
 
   return (
@@ -144,8 +144,7 @@ export default function PrintPage() {
               </tr>
             </thead>
             <tbody>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {sale.saleItems.map((item: any) => (
+              {sale.saleItems.map((item) => (
                 <tr key={item.id} className="invoice-tr">
                   <td className="invoice-td invoice-td-product">
                     <div>

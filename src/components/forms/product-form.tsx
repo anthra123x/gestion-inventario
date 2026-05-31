@@ -68,8 +68,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
     setValue(fieldName, numericValue || 0)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function handleFormSubmit(data: any) {
+  async function handleFormSubmit(data: Record<string, unknown>) {
     setIsSubmitting(true)
     setError(null)
 
@@ -104,11 +103,11 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
           router.push(redirectTo)
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err?.message || 'Error al guardar producto')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al guardar producto'
+      setError(message)
       toast.error('Error al guardar producto', {
-        description: err?.message || 'Error desconocido',
+        description: message,
       })
     } finally {
       setIsSubmitting(false)

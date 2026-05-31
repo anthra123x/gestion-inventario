@@ -15,6 +15,8 @@ import { formatCurrency } from '@/lib/format'
 import { editRepair, getRepairById } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 
+type SearchProduct = Awaited<ReturnType<typeof getProducts>>['products'][number]
+
 interface RepairPart {
   productId: string
   quantity: number
@@ -33,8 +35,7 @@ export default function EditRepairPage({ params: _params }: EditRepairPageProps)
   const [isLoading, setIsLoading] = useState(false)
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState('')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<SearchProduct[]>([])
   const [selectedProducts, setSelectedProducts] = useState<RepairPart[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [cost, setCost] = useState<number>(0)
@@ -82,8 +83,7 @@ export default function EditRepairPage({ params: _params }: EditRepairPageProps)
         const laborCost = repairData.cost - repairData.partsCost
         setCost(isNaN(laborCost) || laborCost < 0 ? repairData.cost : laborCost)
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const existingParts: RepairPart[] = repairData.repairParts.map((rp: any) => ({
+        const existingParts: RepairPart[] = repairData.repairParts.map((rp) => ({
           productId: rp.productId,
           quantity: rp.quantity,
           unitCost: rp.unitCost,

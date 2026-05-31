@@ -322,10 +322,9 @@ export function SaleForm({ onSubmit, isLoading = false, redirectTo, initialData 
           router.push(redirectTo)
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err) {
       toast.error('Error al registrar venta', {
-        description: err?.message || 'Error desconocido',
+        description: err instanceof Error ? err.message : 'Error desconocido',
       })
     } finally {
       setIsSubmitting(false)

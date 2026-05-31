@@ -31,9 +31,11 @@ import {
   getProductsWithoutEcommerce,
 } from '@/modules/ecommerce/ecommerce.actions'
 
+type EcommerceProductRow = Awaited<ReturnType<typeof getEcommerceProducts>>['products'][number]
+type AvailableProduct = { id: string; name: string; category: string; salePrice: number; stock: number }
+
 export default function EcommerceProductsPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<EcommerceProductRow[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -42,15 +44,11 @@ export default function EcommerceProductsPage() {
   const [page, setPage] = useState(1)
   const pageSize = 20
 
-  // Add dialog
   const [addOpen, setAddOpen] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [availableProducts, setAvailableProducts] = useState<any[]>([])
+  const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([])
 
-  // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [deleteTarget, setDeleteTarget] = useState<any>(null)
+  const [deleteTarget, setDeleteTarget] = useState<EcommerceProductRow | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -165,8 +163,7 @@ export default function EcommerceProductsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {products.map((item: any) => (
+                {products.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -285,7 +282,7 @@ export default function EcommerceProductsPage() {
                 Todos los productos ya están en la tienda
               </p>
             ) : (
-              availableProducts.map((p: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+              availableProducts.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleAdd(p.id)}

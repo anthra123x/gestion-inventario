@@ -22,11 +22,12 @@ import {
   setPrimaryImage,
 } from '@/modules/ecommerce/ecommerce.actions'
 
+type EcommerceDetail = NonNullable<Awaited<ReturnType<typeof getEcommerceProductById>>>
+
 export default function EcommerceProductDetailPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [item, setItem] = useState<any>(null)
+  const [item, setItem] = useState<EcommerceDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -325,8 +326,7 @@ export default function EcommerceProductDetailPage() {
                     Sin imágenes
                   </div>
                 )}
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {item.media?.map((m: any) => (
+                {item.media?.map((m) => (
                   <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                     <div className="h-12 w-12 rounded-md bg-muted overflow-hidden shrink-0">
                       <img src={m.url} alt={m.alt || ''} className="h-full w-full object-cover" />

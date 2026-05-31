@@ -14,14 +14,19 @@ import { formatCurrency } from '@/lib/format'
 import { createRepair } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 
+type SearchProduct = Awaited<ReturnType<typeof getProducts>>['products'][number]
+interface SelectedPart {
+  productId: string
+  quantity: number
+  unitCost: number
+}
+
 export default function NewRepairPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [products, setProducts] = useState<any[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<SearchProduct[]>([])
+  const [selectedProducts, setSelectedProducts] = useState<SelectedPart[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [cost, setCost] = useState<number>(0)
   const [clientName, setClientName] = useState('')
@@ -131,7 +136,7 @@ export default function NewRepairPage() {
   function addProduct(productId: string) {
     const product = products.find((p) => p.id === productId)
     if (product) {
-      setSelectedProducts([...selectedProducts, { productId, quantity: 1 }])
+      setSelectedProducts([...selectedProducts, { productId, quantity: 1, unitCost: 0 }])
     }
   }
 

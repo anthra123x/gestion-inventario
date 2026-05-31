@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Settings, Trash2, UserPlus, Database, Download, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
+import { UserRole } from '@prisma/client'
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
 import {
@@ -28,8 +29,8 @@ import {
 } from '@/modules/export/export.actions'
 
 export default function AdminPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [users, setUsers] = useState<any[]>([])
+  type UserRow = Awaited<ReturnType<typeof getUsers>>[number]
+  const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserName, setNewUserName] = useState('')
@@ -42,7 +43,7 @@ export default function AdminPage() {
   const [exportExcelLoading, setExportExcelLoading] = useState<string | null>(null)
   const [backupLoading, setBackupLoading] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [settings, setSettings] = useState<any>(null)
+  const [settings, setSettings] = useState<any>({})
   const [settingsLoading, setSettingsLoading] = useState(true)
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function AdminPage() {
     async function loadSettings() {
       try {
         const result = await getSystemSettings()
-        if (result.success) setSettings(result.data as any)
+        if (result.success) setSettings(result.data)
       } catch (_error) {
         console.error('Error loading settings:', _error)
       } finally {
@@ -72,8 +73,7 @@ export default function AdminPage() {
   }, [])
 
   async function handleUpdateRole(userId: string, role: string) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await updateUserRole(userId, role as any)
+    const result = await updateUserRole(userId, role as UserRole)
     if (result.success) {
       const updated = await getUsers()
       setUsers(updated)
@@ -131,6 +131,7 @@ export default function AdminPage() {
     if (result.success) {
       toast.success('Configuración actualizada exitosamente')
       const updated = await getSystemSettings()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (updated.success) setSettings(updated.data as any)
     } else {
       toast.error(result.error)
@@ -302,7 +303,7 @@ export default function AdminPage() {
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Select value={user.role} onValueChange={(value) => handleUpdateRole(user.id, value)}>
+                        <Select value={user.role} onValueChange={(value) => handleUpdateRole(user.id, value ?? '')}>
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>

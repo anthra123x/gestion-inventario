@@ -65,8 +65,9 @@ const statusMessages: Record<OrderStatus, string> = {
   CANCELLED: 'lamentamos informarte que tu pedido fue cancelado.',
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getWhatsAppUrl(order: any): string {
+type OrderDetail = NonNullable<Awaited<ReturnType<typeof getOrderById>>>
+
+function getWhatsAppUrl(order: OrderDetail): string {
   const cleanPhone = order.clientPhone.replace(/[^0-9]/g, '')
   const finalPhone = cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`
   const status = order.status as OrderStatus
@@ -77,8 +78,7 @@ function getWhatsAppUrl(order: any): string {
 export default function OrderDetailPage() {
   const router = useRouter()
   const { id } = useParams() as { id: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [order, setOrder] = useState<any>(null)
+  const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [changingStatus, setChangingStatus] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -283,8 +283,7 @@ export default function OrderDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="divide-y">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {order.items?.map((item: any) => (
+                  {order.items?.map((item) => (
                   <div key={item.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                     <div>
                       <p className="text-sm font-medium">{item.product?.name || 'Producto'}</p>

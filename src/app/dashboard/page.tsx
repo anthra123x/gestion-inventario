@@ -24,9 +24,10 @@ import { getDashboardStats } from '@/modules/dashboard/dashboard.actions'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
+type DashboardData = Awaited<ReturnType<typeof getDashboardStats>>
+
 export default function DashboardPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -200,8 +201,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">Todo el stock está en niveles seguros</p>
             ) : (
               <div className="space-y-3">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {lowStockProducts.slice(0, 5).map((product: any) => (
+                {lowStockProducts.slice(0, 5).map((product) => (
                   <div
                     key={product.id}
                     className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
@@ -243,8 +243,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">No hay ventas registradas</p>
             ) : (
               <div className="space-y-3">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {recentSales.map((sale: any) => (
+                {recentSales.map((sale) => (
                   <div
                     key={sale.id}
                     className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
@@ -284,8 +283,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">No hay reparaciones activas</p>
             ) : (
               <div className="space-y-3">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {recentRepairs.map((repair: any) => (
+                {recentRepairs.map((repair) => (
                   <div
                     key={repair.id}
                     className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"

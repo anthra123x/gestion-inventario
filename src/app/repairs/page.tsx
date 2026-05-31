@@ -29,11 +29,12 @@ import { formatCurrency } from '@/lib/format'
 import { getRepairs, getRepairStats, updateRepairStatus } from '@/modules/repairs/repairs.actions'
 import { RepairStatus } from '@prisma/client'
 
+type RepairRow = Awaited<ReturnType<typeof getRepairs>>['repairs'][number]
+type RepairStatsData = Awaited<ReturnType<typeof getRepairStats>>
+
 export default function RepairsPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [repairs, setRepairs] = useState<any[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [stats, setStats] = useState<any>(null)
+  const [repairs, setRepairs] = useState<RepairRow[]>([])
+  const [stats, setStats] = useState<RepairStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<RepairStatus | 'ALL'>('ALL')

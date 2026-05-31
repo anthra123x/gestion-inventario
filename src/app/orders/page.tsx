@@ -30,11 +30,12 @@ const statusInfo: Record<
   CANCELLED: { label: 'Cancelado', variant: 'error' },
 }
 
+type OrderRow = Awaited<ReturnType<typeof getOrders>>['orders'][number]
+type OrderStats = Awaited<ReturnType<typeof getOrderStats>>
+
 export default function OrdersPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [orders, setOrders] = useState<any[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [stats, setStats] = useState<any>(null)
+  const [orders, setOrders] = useState<OrderRow[]>([])
+  const [stats, setStats] = useState<OrderStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL')

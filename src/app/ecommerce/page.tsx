@@ -10,9 +10,10 @@ import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { PageHeader } from '@/components/ui/page-header'
 import { getEcommerceStats } from '@/modules/ecommerce/ecommerce.actions'
 
+type EcommerceStats = Awaited<ReturnType<typeof getEcommerceStats>>
+
 export default function EcommercePage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<EcommerceStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -94,11 +95,11 @@ export default function EcommercePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {stats?.totalInventory > 0 ? (
+            {(stats?.totalInventory ?? 0) > 0 ? (
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
                   <p className="text-sm font-medium">
-                    {stats.totalInventory} productos del inventario no están en la tienda
+                    {stats?.totalInventory ?? 0} productos del inventario no están en la tienda
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Agrégalos al catálogo para que aparezcan en Tecnicell Store

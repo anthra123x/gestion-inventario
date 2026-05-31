@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma, ProductCategory } from '@prisma/client'
 
 export async function GET(request: Request) {
   try {
@@ -10,11 +11,10 @@ export async function GET(request: Request) {
     const take = parseInt(searchParams.get('limit') || '50')
     const ecommerce = searchParams.get('ecommerce') === 'true'
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       deletedAt: null,
       ...(ecommerce ? { ecommerce: { visible: true }, stock: { gt: 0 } } : { stock: { gt: 0 } }),
-      ...(category && { category }),
+      ...(category && { category: category as ProductCategory }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' as const } },
@@ -23,8 +23,7 @@ export async function GET(request: Request) {
       }),
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const select: any = {
+    const select: Prisma.ProductSelect = {
       id: true,
       name: true,
       description: true,
@@ -65,9 +64,9 @@ export async function GET(request: Request) {
       prisma.product.count({ where }),
     ])
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = products.map((p: any) => {
-      const base = {
+    const result: Record<string, unknown>[] = []
+    for (const p of products) {
+      const base: Record<string, unknown> = {
         id: p.id,
         name: p.name,
         description: p.description,
@@ -76,23 +75,25 @@ export async function GET(request: Request) {
         salePrice: p.salePrice,
       }
       if (ecommerce && p.ecommerce) {
-        return {
+        const ecom = p.ecommerce as Record<string, unknown>
+        result.push({
           ...base,
-          ecommerceId: p.ecommerce.id,
-          ecommercePrice: p.ecommerce.ecommercePrice,
-          compareAtPrice: p.ecommerce.compareAtPrice,
-          slug: p.ecommerce.slug,
-          shortDescription: p.ecommerce.shortDescription,
-          longDescription: p.ecommerce.longDescription,
-          badges: p.ecommerce.badges,
-          tags: p.ecommerce.tags,
-          showStock: p.ecommerce.showStock,
-          featured: p.ecommerce.featured,
-          image: p.ecommerce.media[0] || null,
-        }
+          ecommerceId: ecom.id,
+          ecommercePrice: ecom.ecommercePrice,
+          compareAtPrice: ecom.compareAtPrice,
+          slug: ecom.slug,
+          shortDescription: ecom.shortDescription,
+          longDescription: ecom.longDescription,
+          badges: ecom.badges,
+          tags: ecom.tags,
+          showStock: ecom.showStock,
+          featured: ecom.featured,
+          image: (ecom.media as { url: string; alt: string | null }[])?.[0] || null,
+        })
+      } else {
+        result.push(base)
       }
-      return base
-    })
+    }
 
     return NextResponse.json({ products: result, total, page, totalPages: Math.ceil(total / take) })
   } catch (_error) {

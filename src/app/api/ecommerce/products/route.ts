@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma, ProductCategory } from '@prisma/client'
 
 /**
  * GET /api/ecommerce/products
@@ -33,11 +33,9 @@ export async function GET(request: Request) {
         deletedAt: null,
         stock: { gt: 0 },
       },
-      ...(category &&
-        category !== 'ALL' && {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          product: { category: category as any },
-        }),
+      ...(category && category !== 'ALL'
+        ? { product: { category: category as ProductCategory } }
+        : {}),
       ...(featured === 'true' && { featured: true }),
       ...(slugsParam && {
         slug: {
@@ -51,8 +49,7 @@ export async function GET(request: Request) {
 
     if (search) {
       where.product = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...((where.product as any) || {}),
+        ...(where.product as Prisma.ProductWhereInput | undefined),
         name: { contains: search, mode: 'insensitive' as const },
       }
     }
