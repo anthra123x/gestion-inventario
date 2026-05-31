@@ -221,50 +221,71 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
       const becomesConfirmed = status === 'CONFIRMED' && currentOrder.status === 'PENDING'
 
       if (becomesConfirmed) {
+        const productIds = currentOrder.items.map((i) => i.productId)
+        const products = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, stock: true },
+        })
+        const stockMap = new Map(products.map((p) => [p.id, p.stock]))
+
         for (const item of currentOrder.items) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { stock: true },
-          })
-          if (!product || product.stock < item.quantity) {
+          const currentStock = stockMap.get(item.productId)
+          if (currentStock === undefined || currentStock < item.quantity) {
             throw new Error(`Stock insuficiente para confirmar pedido`)
           }
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } },
-          })
-          await tx.inventoryMovement.create({
-            data: {
-              productId: item.productId,
-              type: 'EXIT',
-              quantity: item.quantity,
-              reason: `Pedido online #${orderId.slice(-6)}`,
-              referenceId: orderId,
-              referenceType: 'order',
-            },
-          })
         }
+
+        await Promise.all(
+          currentOrder.items.map((item) =>
+            tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { decrement: item.quantity } },
+            }),
+          ),
+        )
+
+        await Promise.all(
+          currentOrder.items.map((item) =>
+            tx.inventoryMovement.create({
+              data: {
+                productId: item.productId,
+                type: 'EXIT',
+                quantity: item.quantity,
+                reason: `Pedido online #${orderId.slice(-6)}`,
+                referenceId: orderId,
+                referenceType: 'order',
+              },
+            }),
+          ),
+        )
       }
 
       if (status === 'CANCELLED') {
         const hadStockDecremented = STATUS_WITH_STOCK_DECREMENTED.includes(currentOrder.status)
         if (hadStockDecremented) {
-          for (const item of currentOrder.items) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stock: { increment: item.quantity } },
-            })
-            await tx.inventoryMovement.create({
-              data: {
-                productId: item.productId,
-                type: 'ENTRY',
-                quantity: item.quantity,
-                reason: `Cancelación pedido #${orderId.slice(-6)}`,
-                referenceId: orderId,
-                referenceType: 'order',
-              },
-            })
-          }
+          await Promise.all(
+            currentOrder.items.map((item) =>
+              tx.product.update({
+                where: { id: item.productId },
+                data: { stock: { increment: item.quantity } },
+              }),
+            ),
+          )
+
+          await Promise.all(
+            currentOrder.items.map((item) =>
+              tx.inventoryMovement.create({
+                data: {
+                  productId: item.productId,
+                  type: 'ENTRY',
+                  quantity: item.quantity,
+                  reason: `Cancelación pedido #${orderId.slice(-6)}`,
+                  referenceId: orderId,
+                  referenceType: 'order',
+                },
+              }),
+            ),
+          )
         }
       }
     })

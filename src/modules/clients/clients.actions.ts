@@ -6,7 +6,7 @@ import { getZodErrorMessage } from '@/lib/zod-error'
 import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
 import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
 
-export async function getClients(search?: string) {
+export async function getClients(search?: string, take = 100) {
   await requireAuth()
   const where = {
     deletedAt: null,
@@ -22,6 +22,7 @@ export async function getClients(search?: string) {
   return await prisma.client.findMany({
     where,
     orderBy: { createdAt: 'desc' },
+    take,
     include: {
       sales: {
         take: 5,

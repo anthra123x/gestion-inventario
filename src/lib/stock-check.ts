@@ -1,24 +1,32 @@
-import { PrismaClient } from '@prisma/client'
-
-type _Tx = PrismaClient['$extends'] extends never
-  ? ReturnType<Parameters<PrismaClient['$transaction']>[0] extends (tx: infer T) => unknown ? () => T : never>
-  : never
-
 interface StockItem {
   productId: string
   quantity: number
-  productName?: string
+}
+
+type TransactionClient = {
+  product: {
+    findMany: (args: {
+      where: { id: { in: string[] } }
+      select: { id: true; name: true; stock: true }
+    }) => Promise<Array<{ id: string; name: string; stock: number }>>
+  }
 }
 
 export async function checkStockAvailability(
-  tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>,
+  tx: TransactionClient,
   items: StockItem[],
 ): Promise<void> {
+  const productIds = items.map((i) => i.productId)
+
+  const products = await tx.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, name: true, stock: true },
+  })
+
+  const productMap = new Map(products.map((p) => [p.id, p]))
+
   for (const item of items) {
-    const product = await tx.product.findUnique({
-      where: { id: item.productId },
-      select: { name: true, stock: true },
-    })
+    const product = productMap.get(item.productId)
 
     if (!product) {
       throw new Error(`Producto con ID ${item.productId} no encontrado`)
