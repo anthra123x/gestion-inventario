@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
 import { z } from 'zod'
+import { tryCatch } from '@/lib/errors'
+import { getString, getNumber, getBoolean } from '@/lib/form-data'
+import type { ActionResult } from '@/types'
+import { success, failure } from '@/types'
 
 const UpdateSettingsSchema = z.object({
   companyName: z.string().min(1, 'Nombre de empresa requerido'),
@@ -28,40 +32,34 @@ async function getOrCreateSettings() {
 
 export async function getSystemSettings() {
   await requireAuth()
-  try {
-    return await getOrCreateSettings()
-  } catch (error) {
-    console.error('getSystemSettings error:', error)
-    return null
-  }
+  return tryCatch(() => getOrCreateSettings(), { context: 'getSystemSettings' })
 }
 
-export async function updateSystemSettings(formData: FormData) {
+export async function updateSystemSettings(formData: FormData): Promise<ActionResult> {
   await requireAdmin()
 
   const raw = {
-    companyName: formData.get('companyName'),
-    companyAddress: formData.get('companyAddress'),
-    companyPhone: formData.get('companyPhone'),
-    companyEmail: formData.get('companyEmail'),
-    defaultMinStock: formData.get('defaultMinStock'),
-    lowStockAlert: formData.get('lowStockAlert'),
-    currency: formData.get('currency'),
-    taxRate: formData.get('taxRate'),
-    receiptFooter: formData.get('receiptFooter'),
+    companyName: getString(formData, 'companyName') || '',
+    companyAddress: getString(formData, 'companyAddress'),
+    companyPhone: getString(formData, 'companyPhone'),
+    companyEmail: getString(formData, 'companyEmail'),
+    defaultMinStock: getNumber(formData, 'defaultMinStock') ?? 5,
+    lowStockAlert: getBoolean(formData, 'lowStockAlert'),
+    currency: getString(formData, 'currency') || 'COP',
+    taxRate: getNumber(formData, 'taxRate') ?? 0,
+    receiptFooter: getString(formData, 'receiptFooter'),
   }
 
   const parsed = UpdateSettingsSchema.safeParse(raw)
   if (!parsed.success) {
     const firstError = parsed.error.issues[0]
-    return { error: firstError?.message || 'Datos de configuración inválidos' }
+    return failure(firstError?.message || 'Datos de configuración inválidos')
   }
 
-  const data = parsed.data
-
-  try {
+  const result = await tryCatch(async () => {
     const settings = await getOrCreateSettings()
-    const updated = await prisma.systemSettings.update({
+    const data = parsed.data
+    await prisma.systemSettings.update({
       where: { id: settings.id },
       data: {
         companyName: data.companyName,
@@ -75,14 +73,12 @@ export async function updateSystemSettings(formData: FormData) {
         receiptFooter: data.receiptFooter || null,
       },
     })
+  }, { context: 'updateSystemSettings' })
 
+  if (result.success) {
     revalidatePath('/admin')
-    return {
-      success: 'Configuración actualizada exitosamente',
-      settings: updated,
-    }
-  } catch (error) {
-    console.error('updateSystemSettings error:', error)
-    return { error: 'Error al actualizar configuración' }
+    return success(undefined)
   }
+
+  return result
 }

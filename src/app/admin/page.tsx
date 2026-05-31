@@ -60,8 +60,8 @@ export default function AdminPage() {
 
     async function loadSettings() {
       try {
-        const data = await getSystemSettings()
-        setSettings(data)
+        const result = await getSystemSettings()
+        if (result.success) setSettings(result.data as any)
       } catch (_error) {
         console.error('Error loading settings:', _error)
       } finally {
@@ -129,9 +129,9 @@ export default function AdminPage() {
     const result = await updateSystemSettings(formData)
 
     if (result.success) {
-      toast.success(result.success)
+      toast.success('Configuración actualizada exitosamente')
       const updated = await getSystemSettings()
-      setSettings(updated)
+      if (updated.success) setSettings(updated.data as any)
     } else {
       toast.error(result.error)
     }
