@@ -3,7 +3,6 @@
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/modules/auth/auth.actions'
 import { CreateNotificationSchema } from '@/lib/validations'
-import { getZodErrorMessage } from '@/lib/zod-error'
 import type { NotificationType } from '@prisma/client'
 
 export async function createNotification(data: {
@@ -50,14 +49,15 @@ export async function notifyUsers(
   }
 }
 
-export async function getNotifications(page = 1, take = 20) {
+export async function getNotificationData(page = 1, take = 10) {
   try {
     const user = await getCurrentUser()
-    if (!user) return { notifications: [], total: 0, page, totalPages: 0 }
+    if (!user) return { notifications: [], unreadCount: 0, total: 0, page, totalPages: 0 }
 
     const where = { userId: user.id }
+    const unreadWhere = { ...where, read: false }
 
-    const [notifications, total] = await Promise.all([
+    const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -65,16 +65,12 @@ export async function getNotifications(page = 1, take = 20) {
         take,
       }),
       prisma.notification.count({ where }),
+      prisma.notification.count({ where: unreadWhere }),
     ])
 
-    return {
-      notifications,
-      total,
-      page,
-      totalPages: Math.ceil(total / take),
-    }
+    return { notifications, unreadCount, total, page, totalPages: Math.ceil(total / take) }
   } catch {
-    return { notifications: [], total: 0, page: 1, totalPages: 0 }
+    return { notifications: [], unreadCount: 0, total: 0, page: 1, totalPages: 0 }
   }
 }
 
@@ -89,6 +85,12 @@ export async function getUnreadCount() {
   } catch {
     return 0
   }
+}
+
+// Kept for backward compatibility
+export async function getNotifications(page = 1, take = 20) {
+  const result = await getNotificationData(page, take)
+  return { notifications: result.notifications, total: result.total, page: result.page, totalPages: result.totalPages }
 }
 
 export async function markAsRead(id: string) {

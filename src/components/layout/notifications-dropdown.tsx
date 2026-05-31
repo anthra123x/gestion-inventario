@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '@/modules/notifications/notifications.actions'
+import { getNotificationData, markAsRead, markAllAsRead } from '@/modules/notifications/notifications.actions'
 import { cn } from '@/lib/utils'
 import type { NotificationType } from '@prisma/client'
 
@@ -53,26 +53,23 @@ export function NotificationsDropdown() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    const [notifResult, count] = await Promise.all([
-      getNotifications(1, 10),
-      getUnreadCount(),
-    ])
-    setNotifications(notifResult.notifications as Notification[])
-    setUnreadCount(count)
-    setLoading(false)
+  const load = useCallback(async (showLoader?: boolean) => {
+    if (showLoader) setLoading(true)
+    const data = await getNotificationData(1, 10)
+    setNotifications(data.notifications as Notification[])
+    setUnreadCount(data.unreadCount)
+    if (showLoader) setLoading(false)
   }, [])
 
   useEffect(() => {
-    load()
-    const interval = setInterval(load, 30000)
+    void load()
+    const interval = setInterval(() => void load(), 30000)
     return () => clearInterval(interval)
   }, [load])
 
   async function handleOpenChange(open: boolean) {
     setOpen(open)
-    if (open) load()
+    if (open) load(true)
   }
 
   async function handleMarkAsRead(id: string) {
@@ -102,19 +99,21 @@ export function NotificationsDropdown() {
         }
       />
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notificaciones</span>
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllAsRead}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <CheckCheck className="h-3 w-3" />
-              Marcar todo leído
-            </button>
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex items-center justify-between">
+            <span>Notificaciones</span>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <CheckCheck className="h-3 w-3" />
+                Marcar todo leído
+              </button>
+            )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+        </DropdownMenuGroup>
         <div className="max-h-80 overflow-y-auto">
           {loading && notifications.length === 0 ? (
             <div className="flex justify-center py-8">
