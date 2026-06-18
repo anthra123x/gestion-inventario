@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Clock, DollarSign, User, Wrench, Package, Pencil, Printer } from 'lucide-react'
+import { WhatsAppButton } from '@/components/repair-whatsapp-button'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/format'
 import { getRepairStatusLabel, getRepairStatusColor } from '@/lib/labels'
@@ -34,6 +35,7 @@ export default async function RepairPage({ params }: RepairPageProps) {
             </Button>
           </Link>
           <div className="flex items-center gap-2">
+            <WhatsAppButton repairId={id} phone={repair.client.phone} clientName={repair.client.name} />
             <Link href={`/repairs/${id}/print`}>
               <Button variant="outline">
                 <Printer className="mr-2 h-4 w-4" />
