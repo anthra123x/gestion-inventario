@@ -133,118 +133,104 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply font-sans;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0 0 0 / 0.15);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0 0 0 / 0.25);
   }
 }
 
-@layer utilities {
-  .card-shadow {
-    box-shadow:
-      0 1px 3px 0 oklch(0 0 0 / 0.1),
-      0 1px 2px -1px oklch(0 0 0 / 0.1);
-  }
+@utility tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
 
-  .card-shadow-sm {
-    box-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.05);
-  }
+@utility bg-mesh {
+  background-image:
+    radial-gradient(ellipse at 20% 50%, oklch(0.55 0.2 250 / 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, oklch(0.65 0.2 280 / 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, oklch(0.55 0.2 250 / 0.04) 0%, transparent 50%);
+}
 
-  .card-shadow-md {
+@utility card-shadow {
+  box-shadow:
+    0 1px 3px 0 oklch(0 0 0 / 0.1),
+    0 1px 2px -1px oklch(0 0 0 / 0.1);
+}
+
+@utility card-shadow-sm {
+  box-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+}
+
+@utility card-shadow-md {
+  box-shadow:
+    0 4px 6px -1px oklch(0 0 0 / 0.1),
+    0 2px 4px -2px oklch(0 0 0 / 0.1);
+}
+
+@utility card-shadow-lg {
+  box-shadow:
+    0 10px 15px -3px oklch(0 0 0 / 0.1),
+    0 4px 6px -4px oklch(0 0 0 / 0.1);
+}
+
+@utility card-hover {
+  transition:
+    box-shadow 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
+  &:hover {
     box-shadow:
       0 4px 6px -1px oklch(0 0 0 / 0.1),
       0 2px 4px -2px oklch(0 0 0 / 0.1);
   }
+}
 
-  .card-hover {
-    transition:
-      box-shadow 0.2s ease-in-out,
-      transform 0.2s ease-in-out;
-  }
+@utility glass {
+  backdrop-filter: blur(12px);
+  background-color: oklch(1 0 0 / 0.8);
+}
 
-  .card-hover:hover {
-    box-shadow:
-      0 4px 6px -1px oklch(0 0 0 / 0.1),
-      0 2px 4px -2px oklch(0 0 0 / 0.1);
-  }
+.dark .glass {
+  background-color: oklch(0.145 0 0 / 0.8);
+}
 
-  .table-row-hover:hover {
-    background-color: oklch(0.97 0 0);
-  }
+@utility gradient-primary {
+  background: linear-gradient(135deg, oklch(0.55 0.2 250) 0%, oklch(0.65 0.2 280) 100%);
+}
 
-  .button-hover {
-    transition: all 0.15s ease-in-out;
-  }
+@utility text-gradient-primary {
+  background: linear-gradient(135deg, oklch(0.55 0.2 250), oklch(0.65 0.2 280));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
-  .glass {
-    backdrop-filter: blur(12px);
-    background-color: oklch(1 0 0 / 0.8);
-  }
+@utility page-container {
+  @apply px-4 sm:px-6 lg:px-8;
+}
 
-  .gradient-primary {
-    background: linear-gradient(135deg, oklch(0.55 0.2 250) 0%, oklch(0.65 0.2 280) 100%);
-  }
-
-  .text-gradient-primary {
-    background: linear-gradient(135deg, oklch(0.55 0.2 250), oklch(0.65 0.2 280));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.3s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .stat-card {
-    @apply relative overflow-hidden;
-  }
-
-  .stat-card::before {
-    content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-    background: linear-gradient(135deg, oklch(0.55 0.2 250 / 0.05) 0%, transparent 100%);
-  }
-
-  .stat-card:hover::before {
-    @apply opacity-100;
-  }
-
-  .page-container {
-    @apply px-4 sm:px-6 lg:px-8;
-  }
-
-  .section-spacing {
-    @apply space-y-6;
-  }
-
-  .card-prompt {
-    @apply bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground border-l-2 border-primary/30;
-  }
+@utility section-spacing {
+  @apply space-y-6;
 }

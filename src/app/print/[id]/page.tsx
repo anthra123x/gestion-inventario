@@ -88,7 +88,7 @@ export default function PrintPage() {
         {/* Header */}
         <div className="invoice-header">
           <div className="invoice-company">
-            <h1 className="invoice-company-name">Sistema de Gestión</h1>
+            <h1 className="invoice-company-name">Gesti\u00f3n</h1>
           </div>
           <div className="invoice-info">
             <h2 className="invoice-title">FACTURA</h2>
@@ -193,7 +193,7 @@ export default function PrintPage() {
           <p className="invoice-footer-meta">
             Factura generada el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}
           </p>
-          <p className="invoice-footer-brand">Generado por Sistema de Gestión</p>
+          <p className="invoice-footer-brand">Generado por Gesti\u00f3n</p>
         </div>
       </div>
 

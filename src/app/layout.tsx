@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Sistema de Gestión',
-  description: 'Sistema completo de inventario y gestión',
+  title: 'Gestión',
+  description: 'Sistema de gestión de inventario',
 }
 
 export default function RootLayout({
