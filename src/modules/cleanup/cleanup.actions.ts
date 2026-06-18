@@ -111,14 +111,19 @@ export async function exportData() {
 export async function cleanupProducts() {
   await requireAdmin()
   try {
-    const deletedMovements = await prisma.inventoryMovement.deleteMany({})
-    const deletedProducts = await prisma.product.deleteMany({})
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.saleItem.deleteMany({})
+      await tx.repairPart.deleteMany({})
+      const { count: movements } = await tx.inventoryMovement.deleteMany({})
+      const { count: products } = await tx.product.deleteMany({})
+      return { products, movements }
+    })
 
     revalidatePath('/inventory')
     revalidatePath('/admin')
 
     return {
-      success: `Limpieza completada: ${deletedProducts.count} productos y ${deletedMovements.count} movimientos eliminados`,
+      success: `Limpieza completada: ${result.products} productos eliminados`,
     }
   } catch (_error) {
     return { error: 'Error al limpiar productos' }
@@ -176,13 +181,17 @@ export async function cleanupRepairs() {
 export async function cleanupClients() {
   await requireAdmin()
   try {
-    const deletedClients = await prisma.client.deleteMany({})
+    await prisma.$transaction(async (tx) => {
+      await tx.saleItem.deleteMany({})
+      await tx.repairPart.deleteMany({})
+      await tx.sale.deleteMany({})
+      await tx.repair.deleteMany({})
+      await tx.client.deleteMany({})
+    })
 
     revalidatePath('/admin')
 
-    return {
-      success: `Limpieza completada: ${deletedClients.count} clientes eliminados`,
-    }
+    return { success: 'Limpieza de clientes completada' }
   } catch (_error) {
     return { error: 'Error al limpiar clientes' }
   }

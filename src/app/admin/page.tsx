@@ -181,21 +181,19 @@ export default function AdminPage() {
     setCleanupLoading(true)
 
     try {
-      // Primero exportar backup
-      const backupResult = await exportData()
-      if (!backupResult.success) {
-        toast.error('Error al generar backup. No se puede continuar con la limpieza.')
-        setCleanupLoading(false)
-        return
+      // Backup opcional — si falla, advertimos pero no bloqueamos
+      try {
+        const backupResult = await exportData()
+        if (backupResult.success && backupResult.data && backupResult.filename) {
+          downloadXlsx(backupResult.data, backupResult.filename.replace('backup_', 'backup_before_cleanup_'))
+          toast.success('Backup descargado automáticamente')
+        } else {
+          toast.warning('No se pudo generar el backup automático. La limpieza continuará de todos modos.')
+        }
+      } catch {
+        toast.warning('No se pudo generar el backup automático. La limpieza continuará de todos modos.')
       }
 
-      // Descargar backup automáticamente
-      if (backupResult.data && backupResult.filename) {
-        downloadXlsx(backupResult.data, backupResult.filename.replace('backup_', 'backup_before_cleanup_'))
-      }
-
-      // Backup descargado, proceder con limpieza
-      // (confirmación ya fue dada en el Dialog anterior)
       let result
       switch (cleanupType) {
         case 'products':
