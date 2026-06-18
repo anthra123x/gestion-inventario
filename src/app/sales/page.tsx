@@ -13,6 +13,7 @@ import {
   PiggyBank,
   TrendingDown,
   Receipt,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -20,7 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
+import { StatCard, StatCardGrid, MiniStatCard } from '@/components/ui/stat-card'
 import { SearchInput } from '@/components/ui/search-input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -185,7 +186,7 @@ export default function SalesPage() {
 
       {stats && (
         <>
-          <StatCardGrid columns={4}>
+          <StatCardGrid columns={4} className="animate-stagger-1">
             <StatCard
               title="Total Ventas"
               value={stats.totalSales}
@@ -220,45 +221,36 @@ export default function SalesPage() {
             />
           </StatCardGrid>
 
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <TrendingDown className="h-4 w-4" />
-                Costo Invertido
-              </div>
-              <div className="text-xl font-bold text-orange-600">{formatCurrency(stats.totalCost || 0)}</div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <TrendingUp className="h-4 w-4" />
-                Margen
-              </div>
-              <div className="text-xl font-bold text-blue-600">
-                {stats.totalRevenue > 0 ? `${((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1)}%` : '0%'}
-              </div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <DollarSign className="h-4 w-4" />
-                Promedio/Venta
-              </div>
-              <div className="text-xl font-bold">
-                {formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}
-              </div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <PiggyBank className="h-4 w-4" />
-                Ganancia/Promedio
-              </div>
-              <div className="text-xl font-bold text-emerald-600">
-                {formatCurrency(stats.totalSales > 0 ? stats.totalProfit / stats.totalSales : 0)}
-              </div>
-            </div>
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-stagger-content">
+            <MiniStatCard
+              icon={TrendingDown}
+              label="Costo Invertido"
+              value={formatCurrency(stats.totalCost || 0)}
+              color="orange"
+            />
+            <MiniStatCard
+              icon={TrendingUp}
+              label="Margen"
+              value={stats.totalRevenue > 0 ? `${((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1)}%` : '0%'}
+              color="blue"
+            />
+            <MiniStatCard
+              icon={DollarSign}
+              label="Promedio/Venta"
+              value={formatCurrency(stats.totalSales > 0 ? stats.totalRevenue / stats.totalSales : 0)}
+              color="info"
+            />
+            <MiniStatCard
+              icon={PiggyBank}
+              label="Ganancia/Promedio"
+              value={formatCurrency(stats.totalSales > 0 ? stats.totalProfit / stats.totalSales : 0)}
+              color="emerald"
+            />
           </div>
         </>
       )}
 
+      <div className="animate-stagger-content-2">
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -349,8 +341,11 @@ export default function SalesPage() {
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Eliminar Venta</DialogTitle>
-                              <DialogDescription>
+                              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-2">
+                                <AlertTriangle className="h-6 w-6 text-destructive" />
+                              </div>
+                              <DialogTitle className="text-center">Eliminar Venta</DialogTitle>
+                              <DialogDescription className="text-center">
                                 ¿Estás seguro de eliminar esta venta? El stock de los productos será restaurado automáticamente. Esta acción no se puede deshacer.
                               </DialogDescription>
                             </DialogHeader>
@@ -361,6 +356,7 @@ export default function SalesPage() {
                                 </Button>
                               </DialogTrigger>
                               <Button variant="destructive" onClick={() => handleDelete(sale.id)} disabled={isDeleting}>
+                                <Trash2 className="mr-2 h-4 w-4" />
                                 {isDeleting ? 'Eliminando...' : 'Eliminar'}
                               </Button>
                             </DialogFooter>
@@ -398,6 +394,7 @@ export default function SalesPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

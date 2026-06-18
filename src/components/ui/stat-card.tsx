@@ -26,12 +26,12 @@ const colorMap = {
 
 export function StatCard({ title, value, change, icon: Icon, color = 'default', className, href }: StatCardProps) {
   const content = (
-    <Card className={cn('stat-card group', href && 'cursor-pointer hover:shadow-md transition-shadow', className)}>
+    <Card className={cn('stat-card group card-hover hover:-translate-y-0.5', href && 'cursor-pointer', className)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <div className="text-2xl font-bold tracking-tight">{value}</div>
+            <div className="text-2xl font-bold tracking-tight tabular-nums">{value}</div>
             {change && <p className="text-xs text-muted-foreground/70">{change}</p>}
           </div>
           <div
@@ -49,6 +49,36 @@ export function StatCard({ title, value, change, icon: Icon, color = 'default', 
   }
 
   return content
+}
+
+interface MiniStatCardProps {
+  icon: LucideIcon
+  label: string
+  value: string
+  color?: 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'orange' | 'blue' | 'emerald'
+}
+
+const miniColorMap = {
+  success: 'text-emerald-600',
+  warning: 'text-amber-600',
+  danger: 'text-red-600',
+  info: 'text-blue-600',
+  purple: 'text-purple-600',
+  orange: 'text-orange-600',
+  blue: 'text-blue-600',
+  emerald: 'text-emerald-600',
+}
+
+export function MiniStatCard({ icon: Icon, label, value, color = 'info' }: MiniStatCardProps) {
+  return (
+    <div className="bg-muted/30 rounded-lg p-4 card-hover hover:-translate-y-0.5">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+        <Icon className="h-4 w-4" />
+        {label}
+      </div>
+      <div className={cn('text-xl font-bold tabular-nums', miniColorMap[color])}>{value}</div>
+    </div>
+  )
 }
 
 interface StatCardGridProps {

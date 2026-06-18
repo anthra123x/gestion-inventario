@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
+import { StatCard, StatCardGrid, MiniStatCard } from '@/components/ui/stat-card'
 import { SearchInput } from '@/components/ui/search-input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -185,7 +185,7 @@ export default function RepairsPage() {
 
       {stats && (
         <>
-          <StatCardGrid columns={4}>
+          <StatCardGrid columns={4} className="animate-stagger-1">
             <StatCard
               title="Total Reparaciones"
               value={stats.totalRepairs}
@@ -210,39 +210,36 @@ export default function RepairsPage() {
             />
           </StatCardGrid>
 
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <DollarSign className="h-4 w-4" />
-                Total Facturado
-              </div>
-              <div className="text-xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue || 0)}</div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <Wrench className="h-4 w-4" />
-                Costo Repuestos
-              </div>
-              <div className="text-xl font-bold text-orange-600">{formatCurrency(stats.totalPartsCost || 0)}</div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <TrendingUp className="h-4 w-4" />
-                Ganancia Promedio
-              </div>
-              <div className="text-xl font-bold">{formatCurrency(stats.avgProfit || 0)}</div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <AlertCircle className="h-4 w-4" />
-                Tasa Completación
-              </div>
-              <div className="text-xl font-bold text-purple-600">{completionRate}%</div>
-            </div>
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-stagger-content">
+            <MiniStatCard
+              icon={DollarSign}
+              label="Total Facturado"
+              value={formatCurrency(stats.totalRevenue || 0)}
+              color="emerald"
+            />
+            <MiniStatCard
+              icon={Wrench}
+              label="Costo Repuestos"
+              value={formatCurrency(stats.totalPartsCost || 0)}
+              color="orange"
+            />
+            <MiniStatCard
+              icon={TrendingUp}
+              label="Ganancia Promedio"
+              value={formatCurrency(stats.avgProfit || 0)}
+              color="info"
+            />
+            <MiniStatCard
+              icon={AlertCircle}
+              label="Tasa Completación"
+              value={`${completionRate}%`}
+              color="purple"
+            />
           </div>
         </>
       )}
 
+      <div className="animate-stagger-content-2">
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -371,6 +368,7 @@ export default function RepairsPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

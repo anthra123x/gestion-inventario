@@ -65,7 +65,7 @@ export default function DashboardPage() {
           ))}
         </StatCardGrid>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 animate-stagger-content">
           {[...Array(3)].map((_, i) => (
             <Card key={i}>
               <CardHeader>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
       />
 
       {/* Stats Cards */}
-      <StatCardGrid>
+      <StatCardGrid className="animate-stagger-1">
         <StatCard
           title="Ventas Hoy"
           value={formatCurrency(stats.salesComparison?.todayTotal || 0)}
@@ -199,15 +199,15 @@ export default function DashboardPage() {
             {lowStockProducts.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Todo el stock está en niveles seguros</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {lowStockProducts.slice(0, 5).map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                    className="flex items-center justify-between py-2.5 pl-3 -mx-3 rounded-r-lg border-l-2 border-l-amber-400 hover:bg-muted/30 transition-all duration-150"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground tabular-nums">
                         Stock: {product.stock} / Min: {product.minStock}
                       </p>
                     </div>
@@ -241,11 +241,11 @@ export default function DashboardPage() {
             {recentSales.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No hay ventas registradas</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {recentSales.map((sale) => (
                   <div
                     key={sale.id}
-                    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                    className="flex items-center justify-between py-2.5 pl-3 -mx-3 rounded-r-lg border-l-2 border-l-emerald-400 hover:bg-muted/30 transition-all duration-150"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{sale.client?.name || 'Cliente ocasional'}</p>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
                         {new Date(sale.createdAt).toLocaleDateString('es-CO')}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-emerald-600">{formatCurrency(sale.total || 0)}</span>
+                    <span className="text-sm font-semibold text-emerald-600 tabular-nums">{formatCurrency(sale.total || 0)}</span>
                   </div>
                 ))}
               </div>
@@ -281,11 +281,11 @@ export default function DashboardPage() {
             {recentRepairs.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No hay reparaciones activas</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {recentRepairs.map((repair) => (
                   <div
                     key={repair.id}
-                    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                    className="flex items-center justify-between py-2.5 pl-3 -mx-3 rounded-r-lg border-l-2 border-l-blue-400 hover:bg-muted/30 transition-all duration-150"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{repair.client?.name || 'Cliente'}</p>
@@ -302,6 +302,7 @@ export default function DashboardPage() {
                               : 'neutral'
                       }
                       dot
+                      pulse={repair.status === 'IN_PROGRESS'}
                     >
                       {repair.status === 'READY'
                         ? 'Listo'

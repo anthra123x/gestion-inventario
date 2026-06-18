@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, TrendingUp, AlertTriangle, XCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -170,7 +170,7 @@ export default function InventoryPage() {
         }
       />
 
-      <StatCardGrid columns={4}>
+      <StatCardGrid columns={4} className="animate-stagger-1">
         <StatCard
           title="Total Productos"
           value={totalProducts}
@@ -319,8 +319,11 @@ export default function InventoryPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Eliminar producto?</DialogTitle>
-            <DialogDescription>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-2">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </div>
+            <DialogTitle className="text-center">¿Eliminar producto?</DialogTitle>
+            <DialogDescription className="text-center">
               ¿Estás seguro de que deseas eliminar &ldquo;{productToDelete?.name}&rdquo;? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
@@ -329,6 +332,7 @@ export default function InventoryPage() {
               Cancelar
             </Button>
             <Button variant="destructive" onClick={() => productToDelete && handleDeleteProduct(productToDelete)}>
+              <Trash2 className="mr-2 h-4 w-4" />
               Eliminar
             </Button>
           </DialogFooter>

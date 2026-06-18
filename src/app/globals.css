@@ -228,7 +228,47 @@
 }
 
 @utility page-container {
-  @apply px-4 sm:px-6 lg:px-8;
+  @apply px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300;
+}
+
+@utility animate-stagger-1 {
+  animation: fade-in 0.4s ease-out, slide-in-from-bottom-3 0.4s ease-out;
+}
+
+@utility animate-stagger-2 {
+  animation: fade-in 0.4s ease-out 0.1s, slide-in-from-bottom-3 0.4s ease-out 0.1s;
+  animation-fill-mode: both;
+}
+
+@utility animate-stagger-3 {
+  animation: fade-in 0.4s ease-out 0.15s, slide-in-from-bottom-3 0.4s ease-out 0.15s;
+  animation-fill-mode: both;
+}
+
+@utility animate-stagger-4 {
+  animation: fade-in 0.4s ease-out 0.2s, slide-in-from-bottom-3 0.4s ease-out 0.2s;
+  animation-fill-mode: both;
+}
+
+@utility animate-stagger-content {
+  animation: fade-in 0.5s ease-out 0.25s, slide-in-from-bottom-3 0.5s ease-out 0.25s;
+  animation-fill-mode: both;
+}
+
+@utility animate-stagger-content-2 {
+  animation: fade-in 0.5s ease-out 0.35s, slide-in-from-bottom-3 0.5s ease-out 0.35s;
+  animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-stagger-1,
+  .animate-stagger-2,
+  .animate-stagger-3,
+  .animate-stagger-4,
+  .animate-stagger-content,
+  .animate-stagger-content-2 {
+    animation: none;
+  }
 }
 
 @utility section-spacing {
