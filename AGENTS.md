@@ -127,7 +127,7 @@ src/
 
 ## Documentación compartida
 
-Submodule en `docs/` → `github.com/anthra123x/tecnicell-docs`
+Submodule en `docs/` → eliminado
 
 **Leer primero:**
 - `docs/docs/architecture/00-SYSTEM_OVERVIEW.md` — Visión general
