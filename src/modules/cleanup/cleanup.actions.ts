@@ -102,7 +102,7 @@ export async function exportData() {
     const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' })
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 
-    return { success: true, data: base64, filename: `backup_tecnicell_${ts}.xlsx` }
+    return { success: true, data: base64, filename: `backup_${ts}.xlsx` }
   } catch (_error) {
     return { success: false, error: 'Error al exportar datos' }
   }

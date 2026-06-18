@@ -4,10 +4,8 @@ import {
   CreateProductSchema,
   CreateClientSchema,
   CreateRepairSchema,
-  CreateOrderSchema,
   PaymentMethodSchema,
   RepairStatusSchema,
-  OrderStatusSchema,
 } from './validations'
 
 describe('CreateSaleSchema', () => {
@@ -254,50 +252,6 @@ describe('CreateRepairSchema', () => {
   })
 })
 
-describe('CreateOrderSchema', () => {
-  it('validates a complete order', () => {
-    const result = CreateOrderSchema.safeParse({
-      clientName: 'Juan Pérez',
-      clientPhone: '3001234567',
-      subtotal: 50000,
-      shipping: 5000,
-      total: 55000,
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 50000 }],
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('rejects short phone', () => {
-    const result = CreateOrderSchema.safeParse({
-      clientName: 'Juan',
-      clientPhone: '123',
-      total: 10000,
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 10000 }],
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects empty items', () => {
-    const result = CreateOrderSchema.safeParse({
-      clientName: 'Juan',
-      clientPhone: '3001234567',
-      total: 0,
-      items: [],
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('allows optional fields', () => {
-    const result = CreateOrderSchema.safeParse({
-      clientName: 'Juan',
-      clientPhone: '3001234567',
-      total: 10000,
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 10000 }],
-    })
-    expect(result.success).toBe(true)
-  })
-})
-
 describe('Enums', () => {
   it('PaymentMethodSchema accepts valid values', () => {
     expect(PaymentMethodSchema.safeParse('CASH').success).toBe(true)
@@ -316,10 +270,5 @@ describe('Enums', () => {
     }
   })
 
-  it('OrderStatusSchema accepts valid statuses', () => {
-    const valid = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
-    for (const s of valid) {
-      expect(OrderStatusSchema.safeParse(s).success).toBe(true)
-    }
-  })
+
 })

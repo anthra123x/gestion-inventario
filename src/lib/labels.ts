@@ -59,26 +59,4 @@ export function getCategoryLabel(category: ProductCategory): string {
   return labels[category]
 }
 
-export function getOrderStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    PENDING: 'Pendiente',
-    CONFIRMED: 'Confirmado',
-    PREPARING: 'Preparando',
-    SHIPPED: 'Enviado',
-    DELIVERED: 'Entregado',
-    CANCELLED: 'Cancelado',
-  }
-  return labels[status] || status
-}
 
-export function getOrderStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    CONFIRMED: 'bg-blue-100 text-blue-800 border-blue-200',
-    PREPARING: 'bg-orange-100 text-orange-800 border-orange-200',
-    SHIPPED: 'bg-purple-100 text-purple-800 border-purple-200',
-    DELIVERED: 'bg-green-100 text-green-800 border-green-200',
-    CANCELLED: 'bg-red-100 text-red-800 border-red-200',
-  }
-  return colors[status] || 'default'
-}

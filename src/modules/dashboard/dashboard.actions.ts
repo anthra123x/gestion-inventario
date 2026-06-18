@@ -18,7 +18,6 @@ export async function getDashboardStats() {
     recentSales,
     recentRepairs,
     repairsReady,
-    pendingOrders,
     salesComparison,
   ] = await Promise.all([
     getSalesStats(new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()),
@@ -28,7 +27,6 @@ export async function getDashboardStats() {
     getRecentSales(),
     getRecentRepairs(),
     getRepairsReadyCount(),
-    getPendingOrdersCount(),
     getSalesComparison(),
   ])
 
@@ -40,7 +38,6 @@ export async function getDashboardStats() {
     recentSales,
     recentRepairs,
     repairsReady,
-    pendingOrders,
     salesComparison,
   }
 }
@@ -48,13 +45,6 @@ export async function getDashboardStats() {
 async function getRepairsReadyCount() {
   const count = await prisma.repair.count({
     where: { status: 'READY' },
-  })
-  return count
-}
-
-async function getPendingOrdersCount() {
-  const count = await prisma.order.count({
-    where: { status: 'PENDING' },
   })
   return count
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Bell, CheckCheck, Loader2, Package, Wrench, ShoppingCart, AlertTriangle, Info } from 'lucide-react'
+import { Bell, CheckCheck, Loader2, Wrench, ShoppingCart, AlertTriangle, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -30,7 +30,6 @@ type Notification = {
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
   STOCK_ALERT: AlertTriangle,
-  ORDER_STATUS: Package,
   REPAIR_READY: Wrench,
   SALE_COMPLETED: ShoppingCart,
   SYSTEM: Info,

@@ -6,8 +6,6 @@ import {
   getRepairStatusColor,
   getStockStatus,
   getCategoryLabel,
-  getOrderStatusLabel,
-  getOrderStatusColor,
 } from './labels'
 
 describe('getPaymentMethodLabel', () => {
@@ -93,22 +91,4 @@ describe('getCategoryLabel', () => {
   })
 })
 
-describe('getOrderStatusLabel', () => {
-  it('returns labels for all statuses', () => {
-    expect(getOrderStatusLabel('PENDING')).toBe('Pendiente')
-    expect(getOrderStatusLabel('CONFIRMED')).toBe('Confirmado')
-    expect(getOrderStatusLabel('PREPARING')).toBe('Preparando')
-    expect(getOrderStatusLabel('SHIPPED')).toBe('Enviado')
-    expect(getOrderStatusLabel('DELIVERED')).toBe('Entregado')
-    expect(getOrderStatusLabel('CANCELLED')).toBe('Cancelado')
-  })
-})
 
-describe('getOrderStatusColor', () => {
-  it('returns a color string for all statuses', () => {
-    const statuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
-    for (const s of statuses) {
-      expect(getOrderStatusColor(s)).toBeTruthy()
-    }
-  })
-})

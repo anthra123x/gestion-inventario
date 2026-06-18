@@ -16,10 +16,8 @@ type AuditEntity =
   | 'product'
   | 'repair'
   | 'client'
-  | 'order'
   | 'user'
   | 'setting'
-  | 'ecommerce'
   | 'inventory'
 
 export async function logAudit(

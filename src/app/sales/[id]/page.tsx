@@ -271,7 +271,7 @@ export default function SaleDetailPage() {
 
             {/* Footer */}
             <div className="border-t pt-4 text-sm text-gray-500 print:mt-8 print:border-t print:border-gray-300 print:pt-4">
-              <p className="print:text-xs">Generado por Tecnicell - Sistema de Gestión</p>
+              <p className="print:text-xs">Generado por Sistema de Gestión</p>
               <p className="print:text-xs">
                 Factura generada el {new Date().toLocaleDateString('es-CO')} a las{' '}
                 {new Date().toLocaleTimeString('es-CO')}

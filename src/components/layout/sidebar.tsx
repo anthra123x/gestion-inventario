@@ -8,8 +8,6 @@ import {
   Package,
   ShoppingCart,
   Wrench,
-  Globe,
-  Store,
   FileText,
   Settings,
   Keyboard,
@@ -20,8 +18,6 @@ const navigation = [
   { name: 'Inventario', href: '/inventory', icon: Package, shortcut: 'Alt+I' },
   { name: 'Ventas', href: '/sales', icon: ShoppingCart, shortcut: 'Alt+V' },
   { name: 'Reparaciones', href: '/repairs', icon: Wrench, shortcut: 'Alt+R' },
-  { name: 'Tienda Online', href: '/orders', icon: Globe, shortcut: 'Alt+O' },
-  { name: 'Catálogo Online', href: '/ecommerce/products', icon: Store, shortcut: 'Alt+C' },
   { name: 'Reportes', href: '/reports', icon: FileText, shortcut: 'Alt+P' },
 ]
 
@@ -35,7 +31,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   return (
     <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold tracking-tight">Tecnicell</h1>
+        <h1 className="text-xl font-bold tracking-tight">Sistema de Gesti\u00f3n</h1>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">

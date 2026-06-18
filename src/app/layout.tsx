@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Tecnicell - Sistema de Gestión',
-  description: 'Sistema completo de inventario y gestión para Tecnicell',
+  title: 'Sistema de Gestión',
+  description: 'Sistema completo de inventario y gestión',
 }
 
 export default function RootLayout({
