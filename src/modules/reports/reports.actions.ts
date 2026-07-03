@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import type { RepairStatus } from '@prisma/client'
-import { requireAdmin } from '@/modules/auth/auth.actions'
+import { requireAuth } from '@/modules/auth/auth.actions'
 
 export async function getRepairsReport(filters?: {
   startDate?: Date
@@ -10,7 +10,7 @@ export async function getRepairsReport(filters?: {
   status?: RepairStatus
   clientId?: string
 }) {
-  await requireAdmin()
+  await requireAuth()
   const where = {
     ...(filters?.startDate &&
       filters?.endDate && {
@@ -130,7 +130,7 @@ export async function getClientsReport(filters?: {
   endDate?: Date
   hasRepairs?: boolean
 }) {
-  await requireAdmin()
+  await requireAuth()
   const dateFilter =
     filters?.startDate && filters?.endDate
       ? {
@@ -223,7 +223,7 @@ interface ReportFilters {
 }
 
 export async function generateReportData(reportType: string, filters: ReportFilters) {
-  await requireAdmin()
+  await requireAuth()
   switch (reportType) {
     case 'repairs':
       return await getRepairsReport({

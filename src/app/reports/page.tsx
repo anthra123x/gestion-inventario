@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Filter, Users, Wrench, TrendingUp, DollarSign, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { FileText, Filter, Users, Wrench, TrendingUp, DollarSign, Search, ChevronUp, ChevronDown, FileDown, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { generateReportData } from '@/modules/reports/reports.actions'
+import { exportReportToExcel, exportReportToPdf } from '@/modules/export/export.actions'
 import { getRepairStatusLabel } from '@/lib/labels'
 
 type SortDir = 'asc' | 'desc'
@@ -84,6 +85,62 @@ export default function ReportsPage() {
   const [sortKey, setSortKey] = useState<string>('')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [detailSearch, setDetailSearch] = useState('')
+
+  async function handleExportExcel() {
+    if (!reportData) return
+    setLoading(true)
+    try {
+      const reportFilters: Record<string, unknown> = {
+        ...filters,
+        ...(dateRange.startDate && dateRange.endDate && {
+          startDate: new Date(dateRange.startDate),
+          endDate: new Date(dateRange.endDate + 'T23:59:59'),
+        }),
+      }
+      const result = await exportReportToExcel(selectedReport, reportFilters) as { success: boolean; data?: string; filename?: string; error?: string }
+      if (result.success) {
+        const link = document.createElement('a')
+        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${result.data}`
+        link.download = result.filename
+        link.click()
+        toast.success('Reporte exportado a Excel')
+      } else {
+        toast.error(result.error || 'Error al exportar')
+      }
+    } catch {
+      toast.error('Error al exportar a Excel')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleExportPdf() {
+    if (!reportData) return
+    setLoading(true)
+    try {
+      const reportFilters: Record<string, unknown> = {
+        ...filters,
+        ...(dateRange.startDate && dateRange.endDate && {
+          startDate: new Date(dateRange.startDate),
+          endDate: new Date(dateRange.endDate + 'T23:59:59'),
+        }),
+      }
+      const result = await exportReportToPdf(selectedReport, reportFilters) as { success: boolean; data?: string; filename?: string; error?: string }
+      if (result.success) {
+        const link = document.createElement('a')
+        link.href = `data:application/pdf;base64,${result.data}`
+        link.download = result.filename
+        link.click()
+        toast.success('Reporte exportado a PDF')
+      } else {
+        toast.error(result.error || 'Error al exportar')
+      }
+    } catch {
+      toast.error('Error al exportar a PDF')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function generateReport() {
     setLoading(true)
@@ -211,6 +268,18 @@ export default function ReportsPage() {
               <Button onClick={generateReport} disabled={loading} className="w-full">
                 {loading ? 'Generando...' : 'Generar Reporte'}
               </Button>
+              {reportData !== null && (
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={handleExportExcel} disabled={loading} variant="outline" size="sm" className="flex-1">
+                    <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+                    Excel
+                  </Button>
+                  <Button onClick={handleExportPdf} disabled={loading} variant="outline" size="sm" className="flex-1">
+                    <FileDown className="h-4 w-4 mr-1.5" />
+                    PDF
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/modules/auth/auth.actions'
+import { requireAuth } from '@/modules/auth/auth.actions'
 import { generateRepairPdf } from '@/lib/pdf'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  await requireAdmin()
+  await requireAuth()
 
   const repair = await prisma.repair.findUnique({
     where: { id },

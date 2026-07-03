@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { getRepairStatusLabel } from '@/lib/labels'
 
 function fmt(n: number): string {
   return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
@@ -270,6 +271,217 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
   const ds = now.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
   const ts = now.toLocaleTimeString('es-CO')
   doc.text(`Documento generado el ${ds} a las ${ts}`, pw / 2, y + 4, { align: 'center' })
+
+  const buf = doc.output('arraybuffer')
+  return new Uint8Array(buf)
+}
+
+interface ReportSummary {
+  totalRepairs?: number
+  totalRevenue?: number
+  totalPartsCost?: number
+  totalLabor?: number
+  averageRepair?: number
+  statusStats?: Record<string, { count: number; revenue: number; partsCost: number; laborCost: number }>
+  totalClients?: number
+  totalSpent?: number
+  averageSpent?: number
+  newClients?: number
+}
+
+interface ReportRow {
+  id: string
+  client?: { name: string; phone?: string | null } | null
+  device?: string
+  problem?: string
+  laborCost?: number
+  status?: string
+  createdAt?: string | Date
+  name?: string
+  phone?: string | null
+  email?: string | null
+  totalSpent?: number
+  totalTransactions?: number
+  repairParts?: { total: number }[]
+}
+
+export function generateReportPdf(
+  reportType: string,
+  summary: ReportSummary,
+  rows: ReportRow[],
+): Uint8Array {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const pw = doc.internal.pageSize.getWidth()
+  const m = 20
+  const cw = pw - 2 * m
+
+  let y = 25
+
+  function sectionHdr(text: string) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(text.toUpperCase(), m, y)
+    y += 5
+  }
+
+  function divider() {
+    doc.setDrawColor(220, 220, 220)
+    doc.line(m, y, pw - m, y)
+    y += 6
+  }
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.setTextColor(26, 26, 26)
+  doc.text('Gestión Reparaciones', m, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(150, 150, 150)
+  doc.text('Centro de Servicio Técnico', m, y)
+  y += 4
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.setTextColor(26, 26, 26)
+  const title = reportType === 'repairs' ? 'Reporte de Reparaciones' : 'Reporte de Clientes'
+  doc.text(title, m, y + 6)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(150, 150, 150)
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
+  doc.text(`Generado el ${dateStr}`, pw - m, y + 6, { align: 'right' })
+
+  y += 14
+  divider()
+
+  sectionHdr('Resumen')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(26, 26, 26)
+
+  if (reportType === 'repairs') {
+    const summaryData: [string, string][] = [
+      ['Total Reparaciones', String(summary.totalRepairs ?? 0)],
+      ['Total Facturado', `$${fmt(summary.totalRevenue ?? 0)}`],
+      ['Costo Repuestos', `$${fmt(summary.totalPartsCost ?? 0)}`],
+      ['Mano de Obra', `$${fmt(summary.totalLabor ?? 0)}`],
+      ['Promedio por Reparación', `$${fmt(summary.averageRepair ?? 0)}`],
+    ]
+    for (const [label, value] of summaryData) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(80, 80, 80)
+      doc.text(label, m, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(value, pw - m, y, { align: 'right' })
+      y += 5
+    }
+    y += 2
+
+    if (summary.statusStats && Object.keys(summary.statusStats).length > 0) {
+      sectionHdr('Por Estado')
+      autoTable(doc, {
+        startY: y + 2,
+        head: [['Estado', 'Cantidad', 'Facturado', 'Repuestos', 'Mano Obra']],
+        body: Object.entries(summary.statusStats).map(([status, sd]) => [
+          getRepairStatusLabel(status),
+          sd.count.toString(),
+          `$${fmt(sd.revenue)}`,
+          `$${fmt(sd.partsCost)}`,
+          `$${fmt(sd.laborCost)}`,
+        ]),
+        margin: { left: m, right: m },
+        tableWidth: cw,
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 25, halign: 'center' },
+          2: { cellWidth: 35, halign: 'right' },
+          3: { cellWidth: 35, halign: 'right' },
+          4: { cellWidth: 35, halign: 'right' },
+        },
+      })
+    }
+  } else {
+    const summaryData: [string, string][] = [
+      ['Total Clientes', String(summary.totalClients ?? 0)],
+      ['Gasto Total', `$${fmt(summary.totalSpent ?? 0)}`],
+      ['Gasto Promedio', `$${fmt(summary.averageSpent ?? 0)}`],
+      ['Nuevos Clientes', String(summary.newClients ?? 0)],
+    ]
+    for (const [label, value] of summaryData) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(80, 80, 80)
+      doc.text(label, m, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(value, pw - m, y, { align: 'right' })
+      y += 5
+    }
+  }
+
+  const tableStartY = y + 8
+
+  if (rows.length > 0) {
+    if (reportType === 'repairs') {
+      const tableData = rows.map((r) => [
+        `#${r.id.slice(-6).toUpperCase()}`,
+        r.client?.name || '—',
+        r.device || '—',
+        getRepairStatusLabel(r.status || ''),
+        `$${fmt(r.laborCost ?? 0)}`,
+      ])
+
+      autoTable(doc, {
+        startY: tableStartY,
+        head: [['ID', 'Cliente', 'Dispositivo', 'Estado', 'Mano Obra']],
+        body: tableData,
+        margin: { left: m, right: m },
+        tableWidth: cw,
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 30, halign: 'right' },
+        },
+      })
+    } else {
+      const tableData = rows.map((c) => [
+        c.name || '—',
+        c.phone || '—',
+        `$${fmt(c.totalSpent ?? 0)}`,
+        String(c.totalTransactions ?? 0),
+      ])
+
+      autoTable(doc, {
+        startY: tableStartY,
+        head: [['Cliente', 'Teléfono', 'Total Gastado', 'Reparaciones']],
+        body: tableData,
+        margin: { left: m, right: m },
+        tableWidth: cw,
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 35, halign: 'right' },
+          3: { cellWidth: 25, halign: 'center' },
+        },
+      })
+    }
+  }
 
   const buf = doc.output('arraybuffer')
   return new Uint8Array(buf)
