@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { getDashboardStats } from '@/modules/dashboard/dashboard.actions'
 import Link from 'next/link'
+import { StatusDonut, MonthlyBar, TopDevicesBar, TopPartsBar } from './charts'
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardStats>>
 
@@ -58,6 +59,19 @@ export default function DashboardPage() {
                     <Skeleton className="h-3 w-28" />
                   </div>
                   <Skeleton className="h-10 w-10 rounded-xl" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="card-shadow border-border/60">
+              <CardContent className="p-5">
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-[140px] w-full rounded-lg" />
                 </div>
               </CardContent>
             </Card>
@@ -143,6 +157,21 @@ export default function DashboardPage() {
           color="purple"
         />
       </StatCardGrid>
+
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="xl:col-span-1">
+          <StatusDonut data={stats.repairsByStatus || []} />
+        </div>
+        <div className="xl:col-span-1">
+          <MonthlyBar data={stats.repairsByMonth || []} />
+        </div>
+        <div className="xl:col-span-1">
+          <TopDevicesBar data={stats.repairsByDevice || []} />
+        </div>
+        <div className="xl:col-span-1">
+          <TopPartsBar data={stats.topParts || []} />
+        </div>
+      </div>
 
       <Card className="card-shadow border-border/60">
         <CardHeader className="pb-2">

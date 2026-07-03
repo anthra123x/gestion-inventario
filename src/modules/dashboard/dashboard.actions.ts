@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { getRepairStats } from '@/modules/repairs/repairs.actions'
+import { getRepairStats, getRepairsByDevice } from '@/modules/repairs/repairs.actions'
 import { getClientStats } from '@/modules/clients/clients.actions'
 import { requireAuth } from '@/modules/auth/auth.actions'
 
@@ -12,11 +12,19 @@ export async function getDashboardStats() {
     clientStats,
     recentRepairs,
     repairsReady,
+    repairsByStatus,
+    repairsByMonth,
+    topParts,
+    repairsByDevice,
   ] = await Promise.all([
     getRepairStats(),
     getClientStats(),
     getRecentRepairs(),
     getRepairsReadyCount(),
+    getRepairsByStatus(),
+    getRepairsByMonth(12),
+    getTopParts(30),
+    getRepairsByDevice(),
   ])
 
   return {
@@ -24,6 +32,10 @@ export async function getDashboardStats() {
     clientStats,
     recentRepairs,
     repairsReady,
+    repairsByStatus,
+    repairsByMonth,
+    topParts,
+    repairsByDevice,
   }
 }
 
