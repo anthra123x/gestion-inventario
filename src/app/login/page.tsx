@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +12,6 @@ import { LogIn, AlertCircle, Loader2, Wrench } from 'lucide-react'
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -46,7 +44,7 @@ export default function LoginPage() {
         }
       }
 
-      router.push('/dashboard')
+      window.location.replace('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
       setIsLoading(false)

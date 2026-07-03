@@ -44,7 +44,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </div>
-              <h1 className="text-base font-bold text-white">Gesti\u00f3n</h1>
+              <h1 className="text-base font-bold text-white">Gesti\u00f3n Reparaciones</h1>
             </div>
             <Button
               variant="ghost"
