@@ -72,7 +72,7 @@ export function Pagination({ page, totalPages, total, entity, onPageChange }: Pa
                 size="sm"
                 className={cn(
                   'min-w-9 transition-all duration-150',
-                  p === page && 'gradient-primary text-primary-foreground border-0 hover:opacity-90',
+                  p === page && 'bg-primary text-primary-foreground border-0 hover:opacity-90',
                 )}
                 onClick={() => onPageChange(p)}
               >

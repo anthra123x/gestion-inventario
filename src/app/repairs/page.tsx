@@ -9,10 +9,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  PiggyBank,
-  TrendingUp,
   DollarSign,
-  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -185,7 +182,7 @@ export default function RepairsPage() {
 
       {stats && (
         <>
-          <StatCardGrid columns={4} className="animate-stagger-1">
+          <StatCardGrid columns={3}>
             <StatCard
               title="Total Reparaciones"
               value={stats.totalRepairs}
@@ -201,36 +198,17 @@ export default function RepairsPage() {
               icon={CheckCircle}
               color="success"
             />
-            <StatCard
-              title="Ganancia Total"
-              value={formatCurrency(stats.totalProfit || 0)}
-              change={`Promedio: ${formatCurrency(stats.avgProfit || 0)}`}
-              icon={PiggyBank}
-              color="success"
-            />
           </StatCardGrid>
 
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 animate-stagger-content">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
             <MiniStatCard
               icon={DollarSign}
               label="Total Facturado"
-              value={formatCurrency(stats.totalRevenue || 0)}
+              value={formatCurrency(stats.totalLabor || 0)}
               color="emerald"
             />
             <MiniStatCard
-              icon={Wrench}
-              label="Costo Repuestos"
-              value={formatCurrency(stats.totalPartsCost || 0)}
-              color="orange"
-            />
-            <MiniStatCard
-              icon={TrendingUp}
-              label="Ganancia Promedio"
-              value={formatCurrency(stats.avgProfit || 0)}
-              color="info"
-            />
-            <MiniStatCard
-              icon={AlertCircle}
+              icon={Clock}
               label="Tasa Completación"
               value={`${completionRate}%`}
               color="purple"
@@ -239,7 +217,7 @@ export default function RepairsPage() {
         </>
       )}
 
-      <div className="animate-stagger-content-2">
+      <div>
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -270,7 +248,7 @@ export default function RepairsPage() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Dispositivo</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Costo</TableHead>
+                  <TableHead>Total</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -278,6 +256,8 @@ export default function RepairsPage() {
               <TableBody>
                 {repairs.map((repair) => {
                   const statusInfo = getStatusInfo(repair.status)
+                  const partsCost = repair.repairParts?.reduce((sum, p) => sum + p.total, 0) || 0
+                  const totalCost = repair.laborCost + partsCost
                   return (
                     <TableRow key={repair.id}>
                       <TableCell className="font-mono text-sm">#{repair.id.slice(-6)}</TableCell>
@@ -298,7 +278,7 @@ export default function RepairsPage() {
                           {statusInfo.label}
                         </StatusBadge>
                       </TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(repair.cost)}</TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(totalCost)}</TableCell>
                       <TableCell>
                         <div className="text-sm">{new Date(repair.createdAt).toLocaleDateString('es-CO')}</div>
                         <div className="text-xs text-muted-foreground">

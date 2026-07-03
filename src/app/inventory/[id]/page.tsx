@@ -2,17 +2,17 @@ import { ProductForm } from '@/components/forms/product-form'
 import { updateProduct, getProductById } from '@/modules/inventory/inventory.actions'
 import { notFound } from 'next/navigation'
 
-interface ProductPageProps {
+interface PartPageProps {
   params: Promise<{
     id: string
   }>
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function PartPage({ params }: PartPageProps) {
   const { id } = await params
-  const product = await getProductById(id)
+  const part = await getProductById(id)
 
-  if (!product) {
+  if (!part) {
     notFound()
   }
 
@@ -30,7 +30,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="container mx-auto py-6 min-h-screen">
-      <ProductForm product={product} onSubmit={handleSubmit} />
+      <ProductForm product={part} onSubmit={handleSubmit} />
     </div>
   )
 }

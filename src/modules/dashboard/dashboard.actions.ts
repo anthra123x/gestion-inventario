@@ -1,44 +1,29 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { getLowStockProducts } from '@/modules/inventory/inventory.actions'
-import { getSalesStats } from '@/modules/sales/sales.actions'
 import { getRepairStats } from '@/modules/repairs/repairs.actions'
 import { getClientStats } from '@/modules/clients/clients.actions'
-
 import { requireAuth } from '@/modules/auth/auth.actions'
 
 export async function getDashboardStats() {
   await requireAuth()
   const [
-    salesStats,
     repairStats,
     clientStats,
-    lowStockProducts,
-    recentSales,
     recentRepairs,
     repairsReady,
-    salesComparison,
   ] = await Promise.all([
-    getSalesStats(new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()),
     getRepairStats(),
     getClientStats(),
-    getLowStockProducts(),
-    getRecentSales(),
     getRecentRepairs(),
     getRepairsReadyCount(),
-    getSalesComparison(),
   ])
 
   return {
-    salesStats,
     repairStats,
     clientStats,
-    lowStockProducts,
-    recentSales,
     recentRepairs,
     repairsReady,
-    salesComparison,
   }
 }
 
@@ -49,56 +34,6 @@ async function getRepairsReadyCount() {
   return count
 }
 
-async function getSalesComparison() {
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterdayStart = new Date(todayStart)
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-
-  const todaySales = await prisma.sale.aggregate({
-    where: { createdAt: { gte: todayStart } },
-    _sum: { total: true },
-    _count: { id: true },
-  })
-
-  const yesterdaySales = await prisma.sale.aggregate({
-    where: { createdAt: { gte: yesterdayStart, lt: todayStart } },
-    _sum: { total: true },
-    _count: { id: true },
-  })
-
-  const todayTotal = todaySales._sum.total || 0
-  const yesterdayTotal = yesterdaySales._sum.total || 0
-
-  const change = yesterdayTotal > 0 ? ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100 : todayTotal > 0 ? 100 : 0
-
-  return {
-    todayTotal,
-    yesterdayTotal,
-    todayCount: todaySales._count.id,
-    yesterdayCount: yesterdaySales._count.id,
-    change,
-  }
-}
-
-async function getRecentSales() {
-  return await prisma.sale.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      total: true,
-      createdAt: true,
-      client: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  })
-}
-
 async function getRecentRepairs() {
   return await prisma.repair.findMany({
     take: 5,
@@ -107,6 +42,7 @@ async function getRecentRepairs() {
       id: true,
       device: true,
       status: true,
+      laborCost: true,
       createdAt: true,
       client: {
         select: {
@@ -118,11 +54,22 @@ async function getRecentRepairs() {
   })
 }
 
-export async function getSalesByMonth(months: number = 12) {
+export async function getRepairsByStatus() {
+  const repairs = await prisma.repair.groupBy({
+    by: ['status'],
+    _count: {
+      id: true,
+    },
+  })
+
+  return repairs
+}
+
+export async function getRepairsByMonth(months: number = 12) {
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - months)
 
-  const sales = await prisma.sale.findMany({
+  const repairs = await prisma.repair.findMany({
     where: {
       createdAt: {
         gte: startDate,
@@ -130,46 +77,45 @@ export async function getSalesByMonth(months: number = 12) {
     },
     select: {
       createdAt: true,
-      total: true,
+      laborCost: true,
     },
     orderBy: {
       createdAt: 'asc',
     },
   })
 
-  // Group by month
-  const salesByMonth = sales.reduce(
-    (acc, sale) => {
-      const date = new Date(sale.createdAt)
+  const repairsByMonth = repairs.reduce(
+    (acc, repair) => {
+      const date = new Date(repair.createdAt)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 
       if (!acc[monthKey]) {
         acc[monthKey] = {
           month: monthKey,
-          total: 0,
+          totalLabor: 0,
           count: 0,
         }
       }
 
-      acc[monthKey].total += sale.total
+      acc[monthKey].totalLabor += repair.laborCost
       acc[monthKey].count += 1
 
       return acc
     },
-    {} as Record<string, { month: string; total: number; count: number }>,
+    {} as Record<string, { month: string; totalLabor: number; count: number }>,
   )
 
-  return Object.values(salesByMonth)
+  return Object.values(repairsByMonth)
 }
 
-export async function getTopProducts(days: number = 30) {
+export async function getTopParts(days: number = 30) {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
 
-  const topProducts = await prisma.saleItem.groupBy({
-    by: ['productId'],
+  const topParts = await prisma.repairPart.groupBy({
+    by: ['partId'],
     where: {
-      sale: {
+      repair: {
         createdAt: {
           gte: startDate,
         },
@@ -190,76 +136,22 @@ export async function getTopProducts(days: number = 30) {
     take: 10,
   })
 
-  // Get product details
-  const productIds = topProducts.map((item) => item.productId)
-  const products = await prisma.product.findMany({
+  const partIds = topParts.map((item) => item.partId)
+  const parts = await prisma.part.findMany({
     where: {
       id: {
-        in: productIds,
+        in: partIds,
       },
       deletedAt: null,
     },
     select: {
       id: true,
       name: true,
-      category: true,
     },
   })
 
-  return topProducts.map((item) => ({
+  return topParts.map((item) => ({
     ...item,
-    product: products.find((p) => p.id === item.productId),
+    part: parts.find((p) => p.id === item.partId),
   }))
-}
-
-export async function getProductsByCategory() {
-  const products = await prisma.product.groupBy({
-    by: ['category'],
-    where: { deletedAt: null },
-    _count: {
-      id: true,
-    },
-    _sum: {
-      stock: true,
-    },
-  })
-
-  return products.map((item) => ({
-    category: item.category,
-    count: item._count.id,
-    totalStock: item._sum.stock || 0,
-  }))
-}
-
-export async function getRepairsByStatus() {
-  const repairs = await prisma.repair.groupBy({
-    by: ['status'],
-    _count: {
-      id: true,
-    },
-  })
-
-  return repairs
-}
-
-export async function getRevenueByPaymentMethod(days: number = 30) {
-  const startDate = new Date()
-  startDate.setDate(startDate.getDate() - days)
-
-  const revenue = await prisma.sale.groupBy({
-    by: ['paymentMethod'],
-    where: {
-      createdAt: {
-        gte: startDate,
-      },
-    },
-    _sum: {
-      total: true,
-    },
-    _count: {
-      id: true,
-    },
-  })
-
-  return revenue
 }

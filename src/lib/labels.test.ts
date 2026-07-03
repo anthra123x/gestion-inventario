@@ -1,48 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  getPaymentMethodLabel,
-  getPaymentMethodColor,
-  getRepairStatusLabel,
-  getRepairStatusColor,
-  getStockStatus,
-  getCategoryLabel,
-} from './labels'
-
-describe('getPaymentMethodLabel', () => {
-  it('returns label for CASH', () => {
-    expect(getPaymentMethodLabel('CASH')).toBe('Efectivo')
-  })
-
-  it('returns label for CARD', () => {
-    expect(getPaymentMethodLabel('CARD')).toBe('Tarjeta')
-  })
-
-  it('returns label for TRANSFER', () => {
-    expect(getPaymentMethodLabel('TRANSFER')).toBe('Transferencia')
-  })
-
-  it('returns input for unknown method', () => {
-    expect(getPaymentMethodLabel('CRYPTO')).toBe('CRYPTO')
-  })
-})
-
-describe('getPaymentMethodColor', () => {
-  it('returns default for CASH', () => {
-    expect(getPaymentMethodColor('CASH')).toBe('default')
-  })
-
-  it('returns secondary for CARD', () => {
-    expect(getPaymentMethodColor('CARD')).toBe('secondary')
-  })
-
-  it('returns outline for TRANSFER', () => {
-    expect(getPaymentMethodColor('TRANSFER')).toBe('outline')
-  })
-
-  it('returns default for unknown', () => {
-    expect(getPaymentMethodColor('CRYPTO')).toBe('default')
-  })
-})
+import { getRepairStatusLabel, getRepairStatusColor } from './labels'
 
 describe('getRepairStatusLabel', () => {
   it('returns label for all statuses', () => {
@@ -66,29 +23,3 @@ describe('getRepairStatusColor', () => {
     }
   })
 })
-
-describe('getStockStatus', () => {
-  it('returns agotado for zero stock', () => {
-    expect(getStockStatus(0, 5)).toEqual({ label: 'Agotado', variant: 'destructive' })
-  })
-
-  it('returns stock bajo when at or below minStock', () => {
-    expect(getStockStatus(3, 5)).toEqual({ label: 'Stock Bajo', variant: 'warning' })
-    expect(getStockStatus(5, 5)).toEqual({ label: 'Stock Bajo', variant: 'warning' })
-  })
-
-  it('returns en stock when above minStock', () => {
-    expect(getStockStatus(10, 5)).toEqual({ label: 'En Stock', variant: 'default' })
-  })
-})
-
-describe('getCategoryLabel', () => {
-  it('returns labels for all categories', () => {
-    expect(getCategoryLabel('ACCESSORY')).toBe('Accesorio')
-    expect(getCategoryLabel('REPAIR_PART')).toBe('Repuesto')
-    expect(getCategoryLabel('DEVICE')).toBe('Dispositivo')
-    expect(getCategoryLabel('OTHER')).toBe('Otro')
-  })
-})
-
-

@@ -23,6 +23,9 @@ export default async function RepairPage({ params }: RepairPageProps) {
     notFound()
   }
 
+  const partsTotal = repair.repairParts.reduce((sum, p) => sum + p.total, 0)
+  const totalCost = repair.laborCost + partsTotal
+
   return (
     <div className="container mx-auto py-6 min-h-screen">
       <div className="space-y-6">
@@ -124,16 +127,59 @@ export default async function RepairPage({ params }: RepairPageProps) {
               </div>
             )}
 
-            {/* Cost */}
-            {repair.cost !== null && repair.cost !== undefined && (
+            {/* Parts Used */}
+            {repair.repairParts.length > 0 && (
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Costo
+                  <Package className="h-5 w-5" />
+                  Repuestos Utilizados
                 </h3>
-                <p className="text-2xl font-bold">{formatCurrency(repair.cost)}</p>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left px-3 py-2 font-medium">Repuesto</th>
+                        <th className="text-right px-3 py-2 font-medium">Costo Unit.</th>
+                        <th className="text-center px-3 py-2 font-medium w-20">Cant.</th>
+                        <th className="text-right px-3 py-2 font-medium">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {repair.repairParts.map((rp) => (
+                        <tr key={rp.id} className="border-b last:border-0">
+                          <td className="px-3 py-2 font-medium">{rp.part.name}</td>
+                          <td className="px-3 py-2 text-right">{formatCurrency(rp.unitCost)}</td>
+                          <td className="px-3 py-2 text-center">{rp.quantity}</td>
+                          <td className="px-3 py-2 text-right font-semibold">{formatCurrency(rp.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
+
+            {/* Cost Breakdown */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Costos
+              </h3>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-500">Mano de Obra</p>
+                  <p className="text-xl font-bold">{formatCurrency(repair.laborCost)}</p>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-500">Repuestos</p>
+                  <p className="text-xl font-bold">{formatCurrency(partsTotal)}</p>
+                </div>
+                <div className="bg-primary/5 rounded-lg p-4 border-2 border-primary/10">
+                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(totalCost)}</p>
+                </div>
+              </div>
+            </div>
 
             {/* Notes */}
             {repair.notes && (

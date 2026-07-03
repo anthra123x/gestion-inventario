@@ -8,14 +8,20 @@ import { CreateProductSchema, UpdateProductSchema } from '@/lib/validations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Product, ProductCategory } from '@prisma/client'
+
+interface PartData {
+  id: string
+  name: string
+  description: string | null
+  supplier: string | null
+  price: number
+}
 
 interface ProductFormProps {
-  product?: Product
+  product?: PartData
   onSubmit: (data: FormData) => Promise<{ error?: string; success?: string }>
   isLoading?: boolean
   redirectTo?: string
@@ -29,8 +35,6 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(product ? UpdateProductSchema : CreateProductSchema),
@@ -38,35 +42,16 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
       ? {
           name: product.name,
           description: product.description || '',
-          category: product.category,
-          stock: product.stock,
-          minStock: product.minStock,
-          purchasePrice: product.purchasePrice,
-          salePrice: product.salePrice,
           supplier: product.supplier || '',
+          price: product.price,
         }
       : {
           name: '',
           description: '',
-          category: 'ACCESSORY' as ProductCategory,
-          stock: 0,
-          minStock: 5,
-          purchasePrice: 0,
-          salePrice: 0,
           supplier: '',
+          price: 0,
         },
   })
-
-  const selectedCategory = watch('category')
-
-  const _formatPrice = (value: number) => {
-    return new Intl.NumberFormat('es-CO').format(value)
-  }
-
-  const handlePriceChange = (value: string, fieldName: 'purchasePrice' | 'salePrice') => {
-    const numericValue = parseFloat(value.replace(/\./g, '').replace(/,/g, ''))
-    setValue(fieldName, numericValue || 0)
-  }
 
   async function handleFormSubmit(data: Record<string, unknown>) {
     setIsSubmitting(true)
@@ -77,10 +62,7 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
         ...data,
         description: data.description || null,
         supplier: data.supplier || null,
-        stock: Number(data.stock) || 0,
-        minStock: Number(data.minStock) || 0,
-        purchasePrice: Number(data.purchasePrice) || 0,
-        salePrice: Number(data.salePrice) || 0,
+        price: Number(data.price) || 0,
       }
 
       const formData = new FormData()
@@ -92,21 +74,21 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
 
       if (result?.error) {
         setError(result.error)
-        toast.error('Error al guardar producto', {
+        toast.error('Error al guardar repuesto', {
           description: result.error,
         })
       } else {
-        toast.success('Producto guardado exitosamente', {
-          description: product ? 'Los cambios se han guardado' : 'El producto ha sido creado',
+        toast.success('Repuesto guardado exitosamente', {
+          description: product ? 'Los cambios se han guardado' : 'El repuesto ha sido creado',
         })
         if (redirectTo) {
           router.push(redirectTo)
         }
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al guardar producto'
+      const message = err instanceof Error ? err.message : 'Error al guardar repuesto'
       setError(message)
-      toast.error('Error al guardar producto', {
+      toast.error('Error al guardar repuesto', {
         description: message,
       })
     } finally {
@@ -117,9 +99,9 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>{product ? 'Editar Producto' : 'Nuevo Producto'}</CardTitle>
+        <CardTitle>{product ? 'Editar Repuesto' : 'Nuevo Repuesto'}</CardTitle>
         <CardDescription>
-          {product ? 'Actualiza los datos del producto' : 'Completa los datos del nuevo producto'}
+          {product ? 'Actualiza los datos del repuesto' : 'Completa los datos del nuevo repuesto'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -140,29 +122,9 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
             <Textarea
               id="description"
               {...register('description')}
-              placeholder="Descripción del producto..."
+              placeholder="Descripción del repuesto..."
               disabled={isSubmitting || isLoading}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoría *</Label>
-            <Select
-              value={selectedCategory}
-              onValueChange={(value) => setValue('category', value as ProductCategory)}
-              disabled={isSubmitting || isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ACCESSORY">Accesorio</SelectItem>
-                <SelectItem value="REPAIR_PART">Repuesto</SelectItem>
-                <SelectItem value="DEVICE">Dispositivo</SelectItem>
-                <SelectItem value="OTHER">Otro</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.category && <p className="text-sm text-red-500">{errors.category.message?.toString()}</p>}
           </div>
 
           <div className="space-y-2">
@@ -170,61 +132,23 @@ export function ProductForm({ product, onSubmit, isLoading = false, redirectTo }
             <Input
               id="supplier"
               {...register('supplier')}
-              placeholder="Ej: Distribuidora Tech"
+              placeholder="Nombre del proveedor"
               disabled={isSubmitting || isLoading}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="stock">Stock Actual *</Label>
+            <Label htmlFor="price">Precio de Referencia *</Label>
             <Input
-              id="stock"
+              id="price"
               type="number"
               min="0"
-              {...register('stock', { valueAsNumber: true })}
+              step="100"
+              {...register('price', { valueAsNumber: true })}
               placeholder="0"
               disabled={isSubmitting || isLoading}
             />
-            {errors.stock && <p className="text-sm text-red-500">{errors.stock.message?.toString()}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="minStock">Stock Mínimo *</Label>
-            <Input
-              id="minStock"
-              type="number"
-              min="0"
-              {...register('minStock', { valueAsNumber: true })}
-              placeholder="5"
-              disabled={isSubmitting || isLoading}
-            />
-            {errors.minStock && <p className="text-sm text-red-500">{errors.minStock.message?.toString()}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="purchasePrice">Precio de Compra *</Label>
-            <Input
-              id="purchasePrice"
-              type="text"
-              {...register('purchasePrice')}
-              placeholder="0"
-              disabled={isSubmitting || isLoading}
-              onChange={(e) => handlePriceChange(e.target.value, 'purchasePrice')}
-            />
-            {errors.purchasePrice && <p className="text-sm text-red-500">{errors.purchasePrice.message?.toString()}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="salePrice">Precio de Venta *</Label>
-            <Input
-              id="salePrice"
-              type="text"
-              {...register('salePrice')}
-              placeholder="0"
-              disabled={isSubmitting || isLoading}
-              onChange={(e) => handlePriceChange(e.target.value, 'salePrice')}
-            />
-            {errors.salePrice && <p className="text-sm text-red-500">{errors.salePrice.message?.toString()}</p>}
+            {errors.price && <p className="text-sm text-red-500">{errors.price.message?.toString()}</p>}
           </div>
 
           {error && <div className="text-red-500 text-sm">{error}</div>}

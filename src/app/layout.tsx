@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Gestión',
+  title: 'Gestión Reparaciones',
   description: 'Sistema de gestión de inventario',
 }
 

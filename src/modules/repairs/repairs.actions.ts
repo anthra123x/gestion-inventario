@@ -3,16 +3,13 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { CreateRepairSchema, UpdateRepairSchema, EditRepairSchema } from '@/lib/validations'
-import { checkStockAvailability } from '@/lib/stock-check'
-import { getZodErrorMessage } from '@/lib/zod-error'
-import { validateRepairPartData, validateNonNegative } from '@/lib/validations-data'
 import { RepairStatus } from '@prisma/client'
-import { requireAdmin } from '@/modules/auth/auth.actions'
+import { requireAuth } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
 import { notifyUsers } from '@/modules/notifications/notifications.actions'
 
 export async function getRepairs(search?: string, status?: RepairStatus, page = 1, take = 20) {
-  await requireAdmin()
+  await requireAuth()
   const where = {
     ...(search && {
       OR: [
@@ -38,8 +35,7 @@ export async function getRepairs(search?: string, status?: RepairStatus, page = 
         problem: true,
         diagnosis: true,
         status: true,
-        cost: true,
-        profit: true,
+        laborCost: true,
         notes: true,
         estimatedDate: true,
         createdAt: true,
@@ -54,6 +50,9 @@ export async function getRepairs(search?: string, status?: RepairStatus, page = 
           select: {
             name: true,
           },
+        },
+        repairParts: {
+          select: { total: true },
         },
         _count: {
           select: {
@@ -74,14 +73,14 @@ export async function getRepairs(search?: string, status?: RepairStatus, page = 
 }
 
 export async function getRepairById(id: string) {
-  await requireAdmin()
+  await requireAuth()
   return await prisma.repair.findUnique({
     where: { id },
     include: {
       client: true,
       repairParts: {
         include: {
-          product: true,
+          part: true,
         },
       },
       user: {
@@ -94,10 +93,10 @@ export async function getRepairById(id: string) {
 }
 
 export async function createRepair(formData: FormData) {
-  await requireAdmin()
+  await requireAuth()
   const partsJson = formData.get('parts') as string
 
-  let rawParts: { productId: string; quantity: number; unitCost: number }[]
+  let rawParts: { partId: string; quantity: number; unitCost: number }[]
   try {
     rawParts = partsJson ? JSON.parse(partsJson) : []
   } catch {
@@ -107,7 +106,7 @@ export async function createRepair(formData: FormData) {
   }
 
   const parts = rawParts.map((part) => ({
-    productId: part.productId,
+    partId: part.partId,
     quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
     unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
   }))
@@ -150,14 +149,14 @@ export async function createRepair(formData: FormData) {
     }
   }
 
-  const costValue = parseFloat(formData.get('cost') as string)
+  const laborCostValue = parseFloat(formData.get('laborCost') as string)
 
   const validatedFields = CreateRepairSchema.safeParse({
     clientId: clientId,
     device: formData.get('device'),
     problem: formData.get('problem'),
     diagnosis: formData.get('diagnosis') || null,
-    cost: isNaN(costValue) ? 0 : costValue,
+    laborCost: isNaN(laborCostValue) ? 0 : laborCostValue,
     notes: formData.get('clientNotes') || null,
     internalNotes: formData.get('internalNotes') || null,
     estimatedDate: (formData.get('estimatedDate') as string) || null,
@@ -166,143 +165,44 @@ export async function createRepair(formData: FormData) {
 
   if (!validatedFields.success) {
     return {
-      error: getZodErrorMessage(validatedFields),
+      error: validatedFields.error.issues.map((e) => e.message).join(', '),
     }
   }
 
-  // Validate business logic
   try {
-    validateNonNegative(validatedFields.data.cost, 'Costo')
-    if (validatedFields.data.parts && validatedFields.data.parts.length > 0) {
-      for (const part of validatedFields.data.parts) {
-        validateRepairPartData({
-          quantity: part.quantity,
-          unitCost: part.unitCost,
-          total: part.unitCost * part.quantity,
-        })
-      }
-    }
-  } catch (validationError) {
-    return { error: parseError(validationError).message }
-  }
-
-  try {
-    const { clientId, device, problem, diagnosis, cost, notes, internalNotes, estimatedDate, parts } =
+    const { clientId, device, problem, diagnosis, laborCost, notes, internalNotes, estimatedDate, parts } =
       validatedFields.data
 
-    // Calculate parts total (what customer pays for parts)
-    const partsTotal = (parts || []).reduce((sum, part) => sum + part.unitCost * part.quantity, 0)
-    const total = cost + partsTotal
 
-    // Fetch purchase prices for profit calculation
-    const partsCostMap: Record<string, number> = {}
-    if (parts && parts.length > 0) {
-      const products = await prisma.product.findMany({
-        where: {
-          id: {
-            in: parts.map((p) => p.productId),
-          },
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          purchasePrice: true,
-        },
-      })
-
-      for (const product of products) {
-        partsCostMap[product.id] = product.purchasePrice
-      }
-    }
-
-    // Calculate actual parts cost (what business paid)
-    const partsCost = (parts || []).reduce((sum, part) => sum + (partsCostMap[part.productId] || 0) * part.quantity, 0)
-
-    // Validate: no losses allowed
-    if (cost < partsCost) {
-      return {
-        error: `El costo estimado (${cost}) es menor al costo de los repuestos (${partsCost}). No se permiten reparaciones con pérdida.`,
-      }
-    }
-
-    const profit = total - partsCost
-
-    // Use transaction for atomicity
-    const repair = await prisma.$transaction(async (tx) => {
-      // Check stock availability for parts
-      if (parts && parts.length > 0) {
-        await checkStockAvailability(
-          tx,
-          parts.map((part) => ({
-            productId: part.productId,
-            quantity: part.quantity,
-          })),
-        )
-      }
-
-      // Create repair with profit tracking
-      const newRepair = await tx.repair.create({
-        data: {
-          clientId,
-          device,
-          problem,
-          diagnosis,
-          cost: total,
-          partsCost,
-          profit,
-          notes,
-          internalNotes,
-          estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
-          repairParts:
-            parts && parts.length > 0
-              ? {
-                  create: parts.map((part) => ({
-                    productId: part.productId,
-                    quantity: part.quantity,
-                    unitCost: part.unitCost,
-                    total: part.unitCost * part.quantity,
-                    purchasePriceAtPart: partsCostMap[part.productId] || 0,
-                  })),
-                }
-              : undefined,
-        },
-        include: {
-          repairParts: {
-            include: {
-              product: true,
-            },
+    const repair = await prisma.repair.create({
+      data: {
+        clientId,
+        device,
+        problem,
+        diagnosis,
+        laborCost,
+        notes,
+        internalNotes,
+        estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
+        repairParts:
+          parts && parts.length > 0
+            ? {
+                create: parts.map((part) => ({
+                  partId: part.partId,
+                  quantity: part.quantity,
+                  unitCost: part.unitCost,
+                  total: part.unitCost * part.quantity,
+                })),
+              }
+            : undefined,
+      },
+      include: {
+        repairParts: {
+          include: {
+            part: true,
           },
         },
-      })
-
-      // Update stock and create inventory movements for parts
-      if (parts && parts.length > 0) {
-        for (const part of parts) {
-          // Update product stock
-          await tx.product.update({
-            where: { id: part.productId },
-            data: {
-              stock: {
-                decrement: part.quantity,
-              },
-            },
-          })
-
-          // Create inventory movement
-          await tx.inventoryMovement.create({
-            data: {
-              productId: part.productId,
-              type: 'EXIT',
-              quantity: part.quantity,
-              reason: `Reparación #${newRepair.id}`,
-              referenceId: newRepair.id,
-              referenceType: 'repair',
-            },
-          })
-        }
-      }
-
-      return newRepair
+      },
     })
 
     revalidatePath('/repairs')
@@ -317,12 +217,12 @@ export async function createRepair(formData: FormData) {
 }
 
 export async function updateRepair(id: string, formData: FormData) {
-  await requireAdmin()
+  await requireAuth()
 
   const validatedFields = UpdateRepairSchema.safeParse({
     status: formData.get('status') as RepairStatus,
     diagnosis: formData.get('diagnosis') || null,
-    cost: formData.get('cost') ? parseFloat(formData.get('cost') as string) : undefined,
+    laborCost: formData.get('laborCost') ? parseFloat(formData.get('laborCost') as string) : undefined,
     notes: formData.get('notes') || null,
     internalNotes: formData.get('internalNotes') || null,
     estimatedDate: formData.get('estimatedDate') ? String(formData.get('estimatedDate')) : undefined,
@@ -354,7 +254,7 @@ export async function updateRepair(id: string, formData: FormData) {
       success: 'Reparación actualizada exitosamente',
       repair,
     }
-  } catch (_error) {
+  } catch {
     return {
       error: 'Error al actualizar la reparación',
     }
@@ -362,10 +262,10 @@ export async function updateRepair(id: string, formData: FormData) {
 }
 
 export async function editRepair(id: string, formData: FormData) {
-  await requireAdmin()
+  await requireAuth()
   const partsJson = formData.get('parts') as string
 
-  let rawParts: { productId: string; quantity: number; unitCost: number }[]
+  let rawParts: { partId: string; quantity: number; unitCost: number }[]
   try {
     rawParts = partsJson ? JSON.parse(partsJson) : []
   } catch {
@@ -373,7 +273,7 @@ export async function editRepair(id: string, formData: FormData) {
   }
 
   const parts = rawParts.map((part) => ({
-    productId: part.productId,
+    partId: part.partId,
     quantity: isNaN(Number(part.quantity)) ? 1 : Number(part.quantity),
     unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
   }))
@@ -385,7 +285,7 @@ export async function editRepair(id: string, formData: FormData) {
 
   const finalPhone = clientPhone?.trim() || null
 
-  const costValue = parseFloat(formData.get('cost') as string)
+  const laborCostValue = parseFloat(formData.get('laborCost') as string)
   const statusValue = formData.get('status') as RepairStatus | null
 
   const validatedFields = EditRepairSchema.safeParse({
@@ -396,7 +296,7 @@ export async function editRepair(id: string, formData: FormData) {
     device: formData.get('device'),
     problem: formData.get('problem'),
     diagnosis: formData.get('diagnosis') || null,
-    cost: isNaN(costValue) ? 0 : costValue,
+    laborCost: isNaN(laborCostValue) ? 0 : laborCostValue,
     notes: formData.get('notes') || null,
     internalNotes: formData.get('internalNotes') || null,
     estimatedDate: (formData.get('estimatedDate') as string) || null,
@@ -405,22 +305,7 @@ export async function editRepair(id: string, formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    return { error: getZodErrorMessage(validatedFields) }
-  }
-
-  try {
-    validateNonNegative(validatedFields.data.cost, 'Costo')
-    if (validatedFields.data.parts && validatedFields.data.parts.length > 0) {
-      for (const part of validatedFields.data.parts) {
-        validateRepairPartData({
-          quantity: part.quantity,
-          unitCost: part.unitCost,
-          total: part.unitCost * part.quantity,
-        })
-      }
-    }
-  } catch (validationError) {
-    return { error: parseError(validationError).message }
+    return { error: validatedFields.error.issues.map((e) => e.message).join(', ') }
   }
 
   try {
@@ -443,7 +328,7 @@ export async function editRepair(id: string, formData: FormData) {
       device,
       problem,
       diagnosis,
-      cost,
+      laborCost,
       notes,
       internalNotes,
       estimatedDate,
@@ -451,144 +336,7 @@ export async function editRepair(id: string, formData: FormData) {
       parts,
     } = validatedFields.data
 
-    const partsTotal = (parts || []).reduce((sum, part) => sum + part.unitCost * part.quantity, 0)
-    const total = cost + partsTotal
-
-    const partsCostMap: Record<string, number> = {}
-    if (parts && parts.length > 0) {
-      const products = await prisma.product.findMany({
-        where: { id: { in: parts.map((p) => p.productId) }, deletedAt: null },
-        select: { id: true, purchasePrice: true },
-      })
-      for (const product of products) {
-        partsCostMap[product.id] = product.purchasePrice
-      }
-    }
-
-    const partsCost = (parts || []).reduce((sum, part) => sum + (partsCostMap[part.productId] || 0) * part.quantity, 0)
-
-    if (cost < partsCost) {
-      return {
-        error: `El costo estimado (${cost}) es menor al costo de los repuestos (${partsCost}). No se permiten reparaciones con pérdida.`,
-      }
-    }
-
-    const profit = total - partsCost
-
     await prisma.$transaction(async (tx) => {
-      const oldPartsMap: Record<string, { quantity: number; productId: string }> = {}
-      for (const part of existingRepair.repairParts) {
-        oldPartsMap[part.productId] = { quantity: part.quantity, productId: part.productId }
-      }
-
-      const newPartsMap: Record<string, number> = {}
-      for (const part of parts || []) {
-        newPartsMap[part.productId] = (newPartsMap[part.productId] || 0) + part.quantity
-      }
-
-      const allProductIds = [...new Set([...Object.keys(oldPartsMap), ...Object.keys(newPartsMap)])]
-
-      const currentStocks: Record<string, number> = {}
-      if (allProductIds.length > 0) {
-        const products = await tx.product.findMany({
-          where: { id: { in: allProductIds } },
-          select: { id: true, stock: true, name: true },
-        })
-        for (const p of products) {
-          currentStocks[p.id] = p.stock
-        }
-      }
-
-      for (const [productId, oldPart] of Object.entries(oldPartsMap)) {
-        const newQuantity = newPartsMap[productId] || 0
-        const diff = oldPart.quantity - newQuantity
-
-        if (diff !== 0) {
-          if (currentStocks[productId] === undefined) {
-            const product = await tx.product.findUnique({ where: { id: productId } })
-            currentStocks[productId] = product?.stock || 0
-          }
-
-          if (diff > 0) {
-            if (currentStocks[productId] < diff) {
-              const product = await tx.product.findUnique({ where: { id: productId } })
-              throw new Error(
-                `Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${diff}`,
-              )
-            }
-            await tx.product.update({
-              where: { id: productId },
-              data: { stock: { increment: diff } },
-            })
-            await tx.inventoryMovement.create({
-              data: {
-                productId,
-                type: 'ENTRY',
-                quantity: diff,
-                reason: `Ajuste reparación #${id} (devolución)`,
-                referenceId: id,
-                referenceType: 'repair',
-              },
-            })
-          } else if (diff < 0) {
-            const needed = Math.abs(diff)
-            if (currentStocks[productId] < needed) {
-              const product = await tx.product.findUnique({ where: { id: productId } })
-              throw new Error(
-                `Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${needed}`,
-              )
-            }
-            await tx.product.update({
-              where: { id: productId },
-              data: { stock: { decrement: needed } },
-            })
-            await tx.inventoryMovement.create({
-              data: {
-                productId,
-                type: 'EXIT',
-                quantity: needed,
-                reason: `Ajuste reparación #${id} (adición)`,
-                referenceId: id,
-                referenceType: 'repair',
-              },
-            })
-          }
-
-          currentStocks[productId] += diff
-        }
-      }
-
-      for (const [productId, newQuantity] of Object.entries(newPartsMap)) {
-        if (!oldPartsMap[productId]) {
-          if (currentStocks[productId] === undefined) {
-            const product = await tx.product.findUnique({ where: { id: productId } })
-            currentStocks[productId] = product?.stock || 0
-          }
-
-          if (currentStocks[productId] < newQuantity) {
-            const product = await tx.product.findUnique({ where: { id: productId } })
-            throw new Error(
-              `Stock insuficiente para ${product?.name || productId}. Disponible: ${currentStocks[productId]}, Necesario: ${newQuantity}`,
-            )
-          }
-          await tx.product.update({
-            where: { id: productId },
-            data: { stock: { decrement: newQuantity } },
-          })
-          await tx.inventoryMovement.create({
-            data: {
-              productId,
-              type: 'EXIT',
-              quantity: newQuantity,
-              reason: `Reparación #${id} (repuesto agregado)`,
-              referenceId: id,
-              referenceType: 'repair',
-            },
-          })
-        }
-      }
-
-      const _clientId = existingRepair.clientId
       if (finalPhone !== existingRepair.client.phone) {
         if (finalPhone) {
           const existingClient = await tx.client.findFirst({
@@ -640,9 +388,7 @@ export async function editRepair(id: string, formData: FormData) {
         device,
         problem,
         diagnosis,
-        cost: total,
-        partsCost,
-        profit,
+        laborCost,
         notes,
         internalNotes,
         estimatedDate: estimatedDate ? new Date(estimatedDate) : null,
@@ -664,11 +410,10 @@ export async function editRepair(id: string, formData: FormData) {
         await tx.repairPart.createMany({
           data: parts.map((part) => ({
             repairId: id,
-            productId: part.productId,
+            partId: part.partId,
             quantity: part.quantity,
             unitCost: part.unitCost,
             total: part.unitCost * part.quantity,
-            purchasePriceAtPart: partsCostMap[part.productId] || 0,
           })),
         })
       }
@@ -690,59 +435,18 @@ export async function editRepair(id: string, formData: FormData) {
 }
 
 export async function deleteRepair(id: string) {
-  await requireAdmin()
+  await requireAuth()
 
   try {
-    // Get repair with parts to restore stock
-    const repair = await prisma.repair.findUnique({
+    await prisma.repair.delete({
       where: { id },
-      include: {
-        repairParts: true,
-      },
-    })
-
-    if (!repair) {
-      return {
-        error: 'Reparación no encontrada',
-      }
-    }
-
-    // Atomic transaction: restore stock + movements + delete
-    await prisma.$transaction(async (tx) => {
-      // Restore stock for parts
-      for (const part of repair.repairParts) {
-        await tx.product.update({
-          where: { id: part.productId },
-          data: {
-            stock: {
-              increment: part.quantity,
-            },
-          },
-        })
-
-        await tx.inventoryMovement.create({
-          data: {
-            productId: part.productId,
-            type: 'ENTRY',
-            quantity: part.quantity,
-            reason: `Cancelación reparación #${repair.id}`,
-            referenceId: repair.id,
-            referenceType: 'repair',
-          },
-        })
-      }
-
-      // Delete repair (cascade deletes repair parts)
-      await tx.repair.delete({
-        where: { id },
-      })
     })
 
     revalidatePath('/repairs')
     return {
       success: 'Reparación eliminada exitosamente',
     }
-  } catch (_error) {
+  } catch {
     return {
       error: 'Error al eliminar la reparación',
     }
@@ -750,8 +454,8 @@ export async function deleteRepair(id: string) {
 }
 
 export async function getRepairStats() {
-  await requireAdmin()
-  const [totalRepairs, activeRepairs, completedRepairs, repairsByStatus, profitData] = await Promise.all([
+  await requireAuth()
+  const [totalRepairs, activeRepairs, completedRepairs, repairsByStatus, laborData] = await Promise.all([
     prisma.repair.count(),
     prisma.repair.count({
       where: {
@@ -773,12 +477,10 @@ export async function getRepairStats() {
     }),
     prisma.repair.aggregate({
       _sum: {
-        cost: true,
-        partsCost: true,
-        profit: true,
+        laborCost: true,
       },
       _avg: {
-        profit: true,
+        laborCost: true,
       },
     }),
   ])
@@ -788,15 +490,13 @@ export async function getRepairStats() {
     activeRepairs,
     completedRepairs,
     repairsByStatus,
-    totalRevenue: profitData._sum.cost || 0,
-    totalPartsCost: profitData._sum.partsCost || 0,
-    totalProfit: profitData._sum.profit || 0,
-    avgProfit: profitData._avg.profit || 0,
+    totalLabor: laborData._sum.laborCost || 0,
+    avgLabor: laborData._avg.laborCost || 0,
   }
 }
 
 export async function getRepairsByDevice() {
-  await requireAdmin()
+  await requireAuth()
   const repairs = await prisma.repair.groupBy({
     by: ['device'],
     _count: {
@@ -814,12 +514,11 @@ export async function getRepairsByDevice() {
 }
 
 export async function updateRepairStatus(id: string, status: RepairStatus) {
-  await requireAdmin()
+  await requireAuth()
 
   try {
     const updateData: { status: RepairStatus; dateDelivered?: Date } = { status }
 
-    // If status is DELIVERED, set dateDelivered
     if (status === 'DELIVERED') {
       updateData.dateDelivered = new Date()
     }
@@ -841,7 +540,7 @@ export async function updateRepairStatus(id: string, status: RepairStatus) {
       success: 'Estado actualizado exitosamente',
       repair,
     }
-  } catch (_error) {
+  } catch {
     return {
       error: 'Error al actualizar el estado',
     }

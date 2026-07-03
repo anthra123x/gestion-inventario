@@ -11,10 +11,7 @@ export async function updateSettings(data: {
   companyAddress: string | null
   companyPhone: string | null
   companyEmail: string | null
-  defaultMinStock: number
-  lowStockAlert: boolean
   currency: string
-  taxRate: number
   receiptFooter: string | null
 }) {
   const settings = await getOrCreateSettings()

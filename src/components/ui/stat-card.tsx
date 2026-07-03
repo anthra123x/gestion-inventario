@@ -1,7 +1,7 @@
 'use client'
 
 import { LucideIcon } from 'lucide-react'
-import { Card, CardContent } from './card'
+import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -16,26 +16,26 @@ interface StatCardProps {
 }
 
 const colorMap = {
-  default: 'bg-muted text-muted-foreground',
+  default: 'bg-primary/10 text-primary',
   success: 'bg-emerald-500/10 text-emerald-600',
   warning: 'bg-amber-500/10 text-amber-600',
   danger: 'bg-red-500/10 text-red-600',
-  info: 'bg-blue-500/10 text-blue-600',
+  info: 'bg-sky-500/10 text-sky-600',
   purple: 'bg-purple-500/10 text-purple-600',
 }
 
 export function StatCard({ title, value, change, icon: Icon, color = 'default', className, href }: StatCardProps) {
   const content = (
-    <Card className={cn('stat-card group card-hover hover:-translate-y-0.5', href && 'cursor-pointer', className)}>
-      <CardContent className="p-6">
+    <Card className={cn('stat-card', href && 'cursor-pointer card-hover', className)}>
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <div className="text-2xl font-bold tracking-tight tabular-nums">{value}</div>
             {change && <p className="text-xs text-muted-foreground/70">{change}</p>}
           </div>
           <div
-            className={cn('rounded-xl p-3 transition-transform duration-200 group-hover:scale-110', colorMap[color])}
+            className={cn('rounded-xl p-3 shrink-0', colorMap[color])}
           >
             <Icon className="h-5 w-5" />
           </div>
@@ -62,16 +62,16 @@ const miniColorMap = {
   success: 'text-emerald-600',
   warning: 'text-amber-600',
   danger: 'text-red-600',
-  info: 'text-blue-600',
+  info: 'text-sky-600',
   purple: 'text-purple-600',
   orange: 'text-orange-600',
-  blue: 'text-blue-600',
+  blue: 'text-sky-600',
   emerald: 'text-emerald-600',
 }
 
 export function MiniStatCard({ icon: Icon, label, value, color = 'info' }: MiniStatCardProps) {
   return (
-    <div className="bg-muted/30 rounded-lg p-4 card-hover hover:-translate-y-0.5">
+    <div className="bg-muted/30 rounded-lg p-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
         <Icon className="h-4 w-4" />
         {label}
@@ -94,5 +94,5 @@ export function StatCardGrid({ children, columns = 4, className }: StatCardGridP
     4: 'md:grid-cols-2 lg:grid-cols-4',
   }
 
-  return <div className={cn('grid gap-4 lg:gap-6', gridCols[columns], className)}>{children}</div>
+  return <div className={cn('grid gap-4 lg:gap-5', gridCols[columns], className)}>{children}</div>
 }

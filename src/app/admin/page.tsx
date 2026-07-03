@@ -13,19 +13,8 @@ import { toast } from 'sonner'
 import { UserRole } from '@prisma/client'
 import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
-import {
-  exportData,
-  cleanupProducts,
-  cleanupSales,
-  cleanupRepairs,
-  cleanupAll,
-} from '@/modules/cleanup/cleanup.actions'
-import {
-  exportProductsToExcel,
-  exportSalesToExcel,
-  exportRepairsToExcel,
-  exportClientsToExcel,
-} from '@/modules/export/export.actions'
+import { exportData, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
+import { exportPartsToExcel, exportRepairsToExcel, exportClientsToExcel } from '@/modules/export/export.actions'
 
 export default function AdminPage() {
   type UserRow = Awaited<ReturnType<typeof getUsers>>[number]
@@ -36,7 +25,7 @@ export default function AdminPage() {
   const [newUserRole, setNewUserRole] = useState('EMPLOYEE')
   const [newUserPassword, setNewUserPassword] = useState('')
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
-  const [cleanupType, setCleanupType] = useState<'products' | 'sales' | 'repairs' | 'all' | null>(null)
+  const [cleanupType, setCleanupType] = useState<'repairs' | 'all' | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
   const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
@@ -122,10 +111,7 @@ export default function AdminPage() {
     formData.append('companyAddress', settings.companyAddress || '')
     formData.append('companyPhone', settings.companyPhone || '')
     formData.append('companyEmail', settings.companyEmail || '')
-    formData.append('defaultMinStock', String(settings.defaultMinStock || 5))
-    formData.append('lowStockAlert', String(!!settings.lowStockAlert))
     formData.append('currency', settings.currency || 'COP')
-    formData.append('taxRate', String(settings.taxRate || 0))
     formData.append('receiptFooter', settings.receiptFooter || '')
 
     const result = await updateSystemSettings(formData)
@@ -170,7 +156,7 @@ export default function AdminPage() {
     }
   }
 
-  function openCleanupDialog(type: 'products' | 'sales' | 'repairs' | 'all') {
+  function openCleanupDialog(type: 'repairs' | 'all') {
     setCleanupType(type)
     setCleanupDialogOpen(true)
   }
@@ -196,12 +182,6 @@ export default function AdminPage() {
 
       let result
       switch (cleanupType) {
-        case 'products':
-          result = await cleanupProducts()
-          break
-        case 'sales':
-          result = await cleanupSales()
-          break
         case 'repairs':
           result = await cleanupRepairs()
           break
@@ -231,11 +211,8 @@ export default function AdminPage() {
     try {
       let result
       switch (type) {
-        case 'products':
-          result = await exportProductsToExcel()
-          break
-        case 'sales':
-          result = await exportSalesToExcel()
+        case 'parts':
+          result = await exportPartsToExcel()
           break
         case 'repairs':
           result = await exportRepairsToExcel()
@@ -439,16 +416,6 @@ export default function AdminPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="defaultMinStock">Stock Mínimo Predeterminado</Label>
-                  <Input
-                    id="defaultMinStock"
-                    type="number"
-                    value={settings?.defaultMinStock || 5}
-                    onChange={(e) => setSettings({ ...settings, defaultMinStock: Number(e.target.value) })}
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="currency">Moneda</Label>
                   <Select
                     value={settings?.currency || 'COP'}
@@ -463,27 +430,6 @@ export default function AdminPage() {
                       <SelectItem value="EUR">EUR - Euro</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="lowStockAlert"
-                    checked={settings?.lowStockAlert || false}
-                    onChange={(e) => setSettings({ ...settings, lowStockAlert: e.target.checked })}
-                  />
-                  <Label htmlFor="lowStockAlert">Alerta de stock bajo</Label>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="taxRate">Tasa de Impuesto (%)</Label>
-                  <Input
-                    id="taxRate"
-                    type="number"
-                    step="0.01"
-                    value={settings?.taxRate || 0}
-                    onChange={(e) => setSettings({ ...settings, taxRate: Number(e.target.value) })}
-                  />
                 </div>
 
                 <div className="space-y-2">
@@ -514,22 +460,13 @@ export default function AdminPage() {
           <CardContent>
             <div className="space-y-2">
               <Button
-                onClick={() => handleExportExcel('products')}
+                onClick={() => handleExportExcel('parts')}
                 variant="outline"
                 className="w-full"
                 disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {exportExcelLoading === 'products' ? 'Exportando...' : 'Exportar Productos'}
-              </Button>
-              <Button
-                onClick={() => handleExportExcel('sales')}
-                variant="outline"
-                className="w-full"
-                disabled={exportExcelLoading !== null}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {exportExcelLoading === 'sales' ? 'Exportando...' : 'Exportar Ventas'}
+                {exportExcelLoading === 'parts' ? 'Exportando...' : 'Exportar Repuestos'}
               </Button>
               <Button
                 onClick={() => handleExportExcel('repairs')}
@@ -565,12 +502,12 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
                   <Download className="h-4 w-4" />
                   Backup de Datos
                 </h4>
-                <p className="text-sm text-blue-800 mb-3">
+                <p className="text-sm text-primary/80 mb-3">
                   Exporta todos los datos del sistema antes de realizar cualquier limpieza.
                 </p>
                 <Button onClick={handleExportData} variant="default" className="w-full" disabled={backupLoading}>
@@ -589,12 +526,6 @@ export default function AdminPage() {
                   ejecutar.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={() => openCleanupDialog('products')} variant="destructive" size="sm">
-                    Productos
-                  </Button>
-                  <Button onClick={() => openCleanupDialog('sales')} variant="destructive" size="sm">
-                    Ventas
-                  </Button>
                   <Button onClick={() => openCleanupDialog('repairs')} variant="destructive" size="sm">
                     Reparaciones
                   </Button>
@@ -648,13 +579,7 @@ export default function AdminPage() {
               <br />
               <br />
               <strong>Tipo de limpieza:</strong>{' '}
-              {cleanupType === 'products'
-                ? 'Productos'
-                : cleanupType === 'sales'
-                  ? 'Ventas'
-                  : cleanupType === 'repairs'
-                    ? 'Reparaciones'
-                    : 'TODO'}
+              {cleanupType === 'repairs' ? 'Reparaciones' : 'TODO'}
               <br />
               <br />
               ¿Estás seguro de continuar?

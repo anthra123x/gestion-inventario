@@ -18,7 +18,8 @@ const COL = {
 interface PDFRepairPart {
   quantity: number
   unitCost: number
-  product: { name: string }
+  total: number
+  part: { name: string }
 }
 
 interface PDFRepair {
@@ -26,7 +27,7 @@ interface PDFRepair {
   device: string
   problem: string
   diagnosis: string | null
-  cost: number
+  laborCost: number
   notes: string | null
   client: {
     name: string
@@ -67,7 +68,7 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(20)
   doc.setTextColor(...COL.black)
-  doc.text('Gestión', m + 14, y + 1)
+  doc.text('Gestión Reparaciones', m + 14, y + 1)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
@@ -143,14 +144,14 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
     divider()
     sectionHdr('Repuestos Utilizados')
 
-    const partsTotal = repair.repairParts.reduce((s, p) => s + p.unitCost * p.quantity, 0)
-    const laborCost = repair.cost - partsTotal
+    const partsTotal = repair.repairParts.reduce((s, p) => s + p.total, 0)
+    const laborCost = repair.laborCost
 
     const tableData = repair.repairParts.map((p) => [
-      p.product.name,
+      p.part.name,
       p.quantity.toString(),
       `$${fmt(p.unitCost)}`,
-      `$${fmt(p.unitCost * p.quantity)}`,
+      `$${fmt(p.total)}`,
     ])
 
     autoTable(doc, {
@@ -201,7 +202,7 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
     doc.setFontSize(12)
     doc.setTextColor(...COL.black)
     doc.text('TOTAL', m, y)
-    doc.text(`$${fmt(repair.cost)}`, pw - m, y, { align: 'right' })
+    doc.text(`$${fmt(repair.laborCost + partsTotal)}`, pw - m, y, { align: 'right' })
     y += 8
   } else {
     divider()
@@ -209,7 +210,7 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(14)
     doc.setTextColor(...COL.black)
-    doc.text(`$${fmt(repair.cost)}`, m, y)
+    doc.text(`$${fmt(repair.laborCost)}`, m, y)
     y += 6
   }
 
@@ -260,7 +261,7 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(...COL.black)
-  doc.text('Gestión — Centro de Servicio Técnico', pw / 2, y, { align: 'center' })
+  doc.text('Gestión Reparaciones — Centro de Servicio Técnico', pw / 2, y, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)

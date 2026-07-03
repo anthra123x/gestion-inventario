@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react'
+import { Plus, Eye, Edit, Trash2, Users, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -15,35 +15,30 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-
 import { SearchInput } from '@/components/ui/search-input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
-import { Pagination } from '@/components/ui/pagination'
-import { formatCurrency } from '@/lib/format'
-import { toast } from 'sonner'
-import { getProducts, deleteProduct } from '@/modules/inventory/inventory.actions'
 
-interface Part {
+import { toast } from 'sonner'
+import { getClients, deleteClient } from '@/modules/clients/clients.actions'
+
+interface Client {
   id: string
   name: string
-  description: string | null
-  supplier: string | null
-  price: number
+  phone: string
+  email: string | null
+  address: string | null
   createdAt: Date
+  _count: { repairs: number }
 }
 
-export default function PartsPage() {
-  const [parts, setParts] = useState<Part[]>([])
+export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [partToDelete, setPartToDelete] = useState<Part | null>(null)
-  const [totalParts, setTotalParts] = useState(0)
-  const [totalPages, setTotalPages] = useState(1)
-  const [page, setPage] = useState(1)
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const pageSize = 20
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -51,31 +46,25 @@ export default function PartsPage() {
   }, [search])
 
   useEffect(() => {
-    loadParts()
+    loadClients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, page])
+  }, [debouncedSearch])
 
-  async function loadParts() {
+  async function loadClients() {
     try {
       setLoading(true)
-      const result = await getProducts(
-        debouncedSearch || undefined,
-        page,
-        pageSize,
-      )
-      setParts(result.products)
-      setTotalParts(result.total)
-      setTotalPages(result.totalPages)
+      const data = await getClients(debouncedSearch || undefined)
+      setClients(data as unknown as Client[])
     } catch (_error) {
-      console.error('Error loading parts:', _error)
+      console.error('Error loading clients:', _error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleDeletePart(part: Part) {
+  async function handleDeleteClient(client: Client) {
     try {
-      const result = await deleteProduct(part.id)
+      const result = await deleteClient(client.id)
 
       if (result?.error) {
         toast.error(result.error)
@@ -83,27 +72,26 @@ export default function PartsPage() {
       }
 
       if (result?.success) {
-        toast.success('Repuesto eliminado')
-        await loadParts()
+        toast.success('Cliente eliminado')
+        await loadClients()
         setDeleteDialogOpen(false)
-        setPartToDelete(null)
+        setClientToDelete(null)
       }
     } catch {
-      toast.error('Error al eliminar el repuesto')
+      toast.error('Error al eliminar el cliente')
     }
   }
 
-  if (loading && parts.length === 0) {
+  if (loading && clients.length === 0) {
     return (
       <div className="page-container py-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <Skeleton className="h-9 w-32 mb-2" />
+            <Skeleton className="h-9 w-40 mb-2" />
             <Skeleton className="h-5 w-48" />
           </div>
           <Skeleton className="h-10 w-40" />
         </div>
-
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-40 mb-1" />
@@ -113,6 +101,7 @@ export default function PartsPage() {
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4">
                 <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-32" />
                 <Skeleton className="h-10 w-24" />
                 <Skeleton className="h-10 w-20" />
               </div>
@@ -126,13 +115,13 @@ export default function PartsPage() {
   return (
     <div className="page-container py-6 space-y-6">
       <PageHeader
-        title="Repuestos"
-        description="Catálogo de repuestos"
+        title="Clientes"
+        description="Gestiona tus clientes"
         actions={
-          <Link href="/inventory/new">
+          <Link href="/clients/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo Repuesto
+              Nuevo Cliente
             </Button>
           </Link>
         }
@@ -142,7 +131,7 @@ export default function PartsPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <SearchInput value={search} onChange={setSearch} placeholder="Buscar repuestos..." />
+              <SearchInput value={search} onChange={setSearch} placeholder="Buscar clientes..." />
             </div>
           </div>
         </CardHeader>
@@ -151,32 +140,31 @@ export default function PartsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Repuesto</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead className="text-right">Precio Ref.</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Teléfono</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-center">Reparaciones</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {parts.map((part) => (
-                  <TableRow key={part.id}>
+                {clients.map((client) => (
+                  <TableRow key={client.id}>
                     <TableCell>
-                      <div className="font-medium">{part.name}</div>
+                      <div className="font-medium">{client.name}</div>
                     </TableCell>
-                    <TableCell>
-                      {part.description && (
-                        <div className="text-xs text-muted-foreground truncate max-w-[300px]">
-                          {part.description}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{part.supplier || '—'}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(part.price)}</TableCell>
+                    <TableCell>{client.phone}</TableCell>
+                    <TableCell className="text-muted-foreground">{client.email || '—'}</TableCell>
+                    <TableCell className="text-center">{client._count?.repairs || 0}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link href={`/inventory/${part.id}`}>
-                          <Button variant="ghost" size="icon-sm" aria-label="Editar repuesto">
+                        <Link href={`/clients/${client.id}`}>
+                          <Button variant="ghost" size="icon-sm" aria-label="Ver cliente">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/clients/${client.id}/edit`}>
+                          <Button variant="ghost" size="icon-sm" aria-label="Editar cliente">
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -184,9 +172,9 @@ export default function PartsPage() {
                           variant="ghost"
                           size="icon-sm"
                           className="text-destructive hover:text-destructive"
-                          aria-label="Eliminar repuesto"
+                          aria-label="Eliminar cliente"
                           onClick={() => {
-                            setPartToDelete(part)
+                            setClientToDelete(client)
                             setDeleteDialogOpen(true)
                           }}
                         >
@@ -200,28 +188,18 @@ export default function PartsPage() {
             </Table>
           </div>
 
-          {parts.length === 0 && (
+          {clients.length === 0 && (
             <EmptyState
-              icon={Package}
-              title={search ? 'Sin resultados' : 'Sin repuestos'}
+              icon={Users}
+              title={search ? 'Sin resultados' : 'Sin clientes'}
               description={
                 search
-                  ? 'No hay repuestos que coincidan con tu búsqueda'
-                  : 'Crea tu primer repuesto para comenzar'
+                  ? 'No hay clientes que coincidan con tu búsqueda'
+                  : 'Crea tu primer cliente para comenzar'
               }
               action={
-                search ? undefined : { label: 'Crear repuesto', href: '/inventory/new' }
+                search ? undefined : { label: 'Crear cliente', href: '/clients/new' }
               }
-            />
-          )}
-
-          {totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              total={totalParts}
-              entity="repuestos"
-              onPageChange={(p) => setPage(p)}
             />
           )}
         </CardContent>
@@ -233,16 +211,16 @@ export default function PartsPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-2">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <DialogTitle className="text-center">¿Eliminar repuesto?</DialogTitle>
+            <DialogTitle className="text-center">¿Eliminar cliente?</DialogTitle>
             <DialogDescription className="text-center">
-              ¿Estás seguro de que deseas eliminar &ldquo;{partToDelete?.name}&rdquo;? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar &ldquo;{clientToDelete?.name}&rdquo;? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={() => partToDelete && handleDeletePart(partToDelete)}>
+            <Button variant="destructive" onClick={() => clientToDelete && handleDeleteClient(clientToDelete)}>
               <Trash2 className="mr-2 h-4 w-4" />
               Eliminar
             </Button>

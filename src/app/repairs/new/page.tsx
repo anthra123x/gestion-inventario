@@ -7,16 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { ClientAutocomplete } from '@/components/forms/client-autocomplete'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { createRepair } from '@/modules/repairs/repairs.actions'
 import { getProducts } from '@/modules/inventory/inventory.actions'
 
-type SearchProduct = Awaited<ReturnType<typeof getProducts>>['products'][number]
+type Part = Awaited<ReturnType<typeof getProducts>>['products'][number]
 interface SelectedPart {
-  productId: string
+  partId: string
   quantity: number
   unitCost: number
 }
@@ -25,55 +24,46 @@ export default function NewRepairPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [products, setProducts] = useState<SearchProduct[]>([])
-  const [selectedProducts, setSelectedProducts] = useState<SelectedPart[]>([])
+  const [parts, setParts] = useState<Part[]>([])
+  const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [cost, setCost] = useState<number>(0)
+  const [laborCost, setLaborCost] = useState<number>(0)
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [clientEmail, setClientEmail] = useState('')
   const [clientAddress, setClientAddress] = useState('')
 
   useEffect(() => {
-    async function loadProducts() {
+    async function loadParts() {
       try {
-        const productsData = await getProducts(undefined, undefined, 1, 1000)
-        setProducts(productsData.products)
-      } catch (_err) {
-        toast.error('Error al cargar productos', {
-          description: 'No se pudieron cargar los productos disponibles',
+        const partsData = await getProducts(undefined, 1, 1000)
+        setParts(partsData.products)
+      } catch {
+        toast.error('Error al cargar repuestos', {
+          description: 'No se pudieron cargar los repuestos disponibles',
         })
       }
     }
-    loadProducts()
+    loadParts()
   }, [])
 
   const partsCost = useMemo(() => {
-    return selectedProducts.reduce((sum, item) => {
-      const product = products.find((p) => p.id === item.productId)
-      return sum + (product?.purchasePrice || 0) * item.quantity
+    return selectedParts.reduce((sum, item) => {
+      const part = parts.find((p) => p.id === item.partId)
+      return sum + (part?.price || 0) * item.quantity
     }, 0)
-  }, [selectedProducts, products])
+  }, [selectedParts, parts])
 
-  const estimatedProfit = cost - partsCost
+  const totalCost = laborCost + partsCost
 
-  const hasLoss = cost > 0 && partsCost > cost
-
-  const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products
+  const filteredParts = useMemo(() => {
+    if (!searchTerm) return parts
     const term = searchTerm.toLowerCase()
-    return products.filter((p) => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
-  }, [searchTerm, products])
+    return parts.filter((p) => p.name.toLowerCase().includes(term) || p.description?.toLowerCase().includes(term))
+  }, [searchTerm, parts])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-
-    if (hasLoss) {
-      toast.error('No se puede crear la reparación', {
-        description: 'El costo estimado es menor al costo de los repuestos. Se produciría una pérdida.',
-      })
-      return
-    }
 
     setIsLoading(true)
     setError('')
@@ -84,7 +74,7 @@ export default function NewRepairPage() {
       const diagnosis = formData.get('diagnosis') as string
       if (diagnosis === '') formData.set('diagnosis', '')
 
-      formData.set('cost', (Number(cost) || 0).toString())
+      formData.set('laborCost', (Number(laborCost) || 0).toString())
 
       const notes = formData.get('clientNotes') as string
       if (notes === '') formData.set('clientNotes', '')
@@ -95,7 +85,7 @@ export default function NewRepairPage() {
       const estimatedDate = formData.get('estimatedDate') as string
       if (estimatedDate === '') formData.delete('estimatedDate')
 
-      formData.append('parts', JSON.stringify(selectedProducts))
+      formData.append('parts', JSON.stringify(selectedParts))
 
       const result = await createRepair(formData)
 
@@ -133,21 +123,21 @@ export default function NewRepairPage() {
     setClientAddress(client.address || '')
   }
 
-  function addProduct(productId: string) {
-    const product = products.find((p) => p.id === productId)
-    if (product) {
-      setSelectedProducts([...selectedProducts, { productId, quantity: 1, unitCost: 0 }])
+  function addPart(partId: string) {
+    const part = parts.find((p) => p.id === partId)
+    if (part) {
+      setSelectedParts([...selectedParts, { partId, quantity: 1, unitCost: part.price }])
     }
   }
 
-  function removeProduct(index: number) {
-    setSelectedProducts(selectedProducts.filter((_, i) => i !== index))
+  function removePart(index: number) {
+    setSelectedParts(selectedParts.filter((_, i) => i !== index))
   }
 
-  function updateProductQuantity(index: number, quantity: number) {
-    const updated = [...selectedProducts]
+  function updatePartQuantity(index: number, quantity: number) {
+    const updated = [...selectedParts]
     updated[index].quantity = quantity
-    setSelectedProducts(updated)
+    setSelectedParts(updated)
   }
 
   return (
@@ -229,15 +219,15 @@ export default function NewRepairPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cost">Costo Estimado / Mano de Obra (COP)</Label>
+                  <Label htmlFor="laborCost">Mano de Obra (COP)</Label>
                   <Input
-                    id="cost"
-                    name="cost"
+                    id="laborCost"
+                    name="laborCost"
                     type="number"
                     step="100"
                     placeholder="Ej: 50000"
-                    value={cost}
-                    onChange={(e) => setCost(Number(e.target.value) || 0)}
+                    value={laborCost}
+                    onChange={(e) => setLaborCost(Number(e.target.value) || 0)}
                     required
                   />
                 </div>
@@ -266,50 +256,41 @@ export default function NewRepairPage() {
             <div className="space-y-4">
               <Label>Repuestos</Label>
 
-              {/* Buscador de productos */}
               <Input
-                placeholder="Buscar producto por nombre..."
+                placeholder="Buscar repuesto por nombre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
 
-              {/* Resultados de búsqueda */}
               {searchTerm && (
                 <Card>
                   <CardContent className="p-1 max-h-64 overflow-y-auto">
-                    {filteredProducts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground p-3">No se encontraron productos</p>
+                    {filteredParts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground p-3">No se encontraron repuestos</p>
                     ) : (
                       <div className="space-y-0.5">
-                        {filteredProducts.map((product) => {
-                          const alreadyAdded = selectedProducts.some((p) => p.productId === product.id)
+                        {filteredParts.map((part) => {
+                          const alreadyAdded = selectedParts.some((p) => p.partId === part.id)
                           return (
                             <button
-                              key={product.id}
+                              key={part.id}
                               type="button"
                               disabled={alreadyAdded}
                               onClick={() => {
-                                addProduct(product.id)
+                                addPart(part.id)
                                 setSearchTerm('')
                               }}
                               className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded text-left transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium truncate">{product.name}</p>
-                                <p className="text-xs text-muted-foreground">{formatCurrency(product.salePrice)}</p>
+                                <p className="text-sm font-medium truncate">{part.name}</p>
+                                {part.description && (
+                                  <p className="text-xs text-muted-foreground truncate">{part.description}</p>
+                                )}
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Badge
-                                  variant={
-                                    product.stock === 0 ? 'destructive' : product.stock <= 3 ? 'warning' : 'default'
-                                  }
-                                >
-                                  {product.stock} uds.
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  Costo: {formatCurrency(product.purchasePrice || 0)}
-                                </span>
-                              </div>
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {formatCurrency(part.price)}
+                              </span>
                             </button>
                           )
                         })}
@@ -319,13 +300,12 @@ export default function NewRepairPage() {
                 </Card>
               )}
 
-              {/* Lista de repuestos seleccionados */}
-              {selectedProducts.length > 0 && (
+              {selectedParts.length > 0 && (
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="text-left px-3 py-2 font-medium">Producto</th>
+                        <th className="text-left px-3 py-2 font-medium">Repuesto</th>
                         <th className="text-right px-3 py-2 font-medium">Costo unit.</th>
                         <th className="text-center px-3 py-2 font-medium w-24">Cant.</th>
                         <th className="text-right px-3 py-2 font-medium">Subtotal</th>
@@ -333,16 +313,15 @@ export default function NewRepairPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedProducts.map((item, index) => {
-                        const product = products.find((p) => p.id === item.productId)
-                        const subtotal = (product?.purchasePrice || 0) * item.quantity
+                      {selectedParts.map((item, index) => {
+                        const part = parts.find((p) => p.id === item.partId)
+                        const subtotal = (part?.price || 0) * item.quantity
                         return (
                           <tr key={index} className="border-b last:border-0">
                             <td className="px-3 py-2">
-                              <p className="font-medium truncate max-w-48">{product?.name}</p>
-                              <p className="text-xs text-muted-foreground">Stock: {product?.stock ?? 0}</p>
+                              <p className="font-medium truncate max-w-48">{part?.name}</p>
                             </td>
-                            <td className="px-3 py-2 text-right">{formatCurrency(product?.purchasePrice || 0)}</td>
+                            <td className="px-3 py-2 text-right">{formatCurrency(part?.price || 0)}</td>
                             <td className="px-3 py-2">
                               <Input
                                 type="number"
@@ -350,7 +329,7 @@ export default function NewRepairPage() {
                                 value={item.quantity}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value)
-                                  if (val > 0) updateProductQuantity(index, val)
+                                  if (val > 0) updatePartQuantity(index, val)
                                 }}
                                 className="w-20 h-8 mx-auto text-center"
                               />
@@ -361,7 +340,7 @@ export default function NewRepairPage() {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => removeProduct(index)}
+                                onClick={() => removePart(index)}
                                 className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                               >
                                 <svg
@@ -390,38 +369,32 @@ export default function NewRepairPage() {
               )}
             </div>
 
-            {/* Profit Summary */}
-            <Card className={hasLoss ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}>
-              <CardContent className="pt-6">
-                <h4 className="font-semibold mb-3">Resumen de Rentabilidad</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Costo repuestos:</span>
-                    <span className="font-medium">{formatCurrency(partsCost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Mano de obra:</span>
-                    <span className="font-medium">{formatCurrency(cost)}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2 mt-2">
-                    <span className="font-semibold">Ganancia estimada:</span>
-                    <span className={`font-bold text-lg ${hasLoss ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatCurrency(estimatedProfit)}
-                    </span>
-                  </div>
-                  {hasLoss && (
-                    <div className="text-red-600 text-xs mt-2 font-medium">
-                      ⚠️ Esta reparación generaría una pérdida. Ajusta el costo estimado o reduce los repuestos.
+            {selectedParts.length > 0 && (
+              <Card className="bg-muted/30">
+                <CardContent className="pt-4">
+                  <h4 className="font-semibold mb-2">Resumen</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Repuestos:</span>
+                      <span className="font-medium">{formatCurrency(partsCost)}</span>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mano de obra:</span>
+                      <span className="font-medium">{formatCurrency(laborCost)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span className="font-semibold">Total:</span>
+                      <span className="font-bold text-lg">{formatCurrency(totalCost)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {error && <div className="text-red-500 text-sm">{error}</div>}
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={isLoading || hasLoss}>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Creando...' : 'Crear Reparación'}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.push('/repairs')}>

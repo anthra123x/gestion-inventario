@@ -1,7 +1,7 @@
 import { ProductForm } from '@/components/forms/product-form'
 import { createProduct } from '@/modules/inventory/inventory.actions'
 
-export default function NewProductPage() {
+export default function NewPartPage() {
   async function handleSubmit(formData: FormData) {
     'use server'
     return await createProduct(formData)

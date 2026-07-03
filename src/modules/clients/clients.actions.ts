@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getZodErrorMessage } from '@/lib/zod-error'
 import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
-import { requireAdmin, requireAuth } from '@/modules/auth/auth.actions'
+import { requireAuth } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
 
 export async function getClients(search?: string, take = 100) {
@@ -25,15 +25,6 @@ export async function getClients(search?: string, take = 100) {
     orderBy: { createdAt: 'desc' },
     take,
     include: {
-      sales: {
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          total: true,
-          createdAt: true,
-        },
-      },
       repairs: {
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -41,12 +32,12 @@ export async function getClients(search?: string, take = 100) {
           id: true,
           device: true,
           status: true,
+          laborCost: true,
           createdAt: true,
         },
       },
       _count: {
         select: {
-          sales: true,
           repairs: true,
         },
       },
@@ -84,22 +75,12 @@ export async function getClientById(id: string) {
   return await prisma.client.findFirst({
     where: { id, deletedAt: null },
     include: {
-      sales: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          saleItems: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      },
       repairs: {
         orderBy: { createdAt: 'desc' },
         include: {
           repairParts: {
             include: {
-              product: true,
+              part: true,
             },
           },
         },
@@ -109,7 +90,7 @@ export async function getClientById(id: string) {
 }
 
 export async function createClient(formData: FormData) {
-  await requireAdmin()
+  await requireAuth()
   const validatedFields = CreateClientSchema.safeParse({
     name: formData.get('name'),
     phone: formData.get('phone'),
@@ -147,7 +128,7 @@ export async function createClient(formData: FormData) {
 }
 
 export async function updateClient(id: string, formData: FormData) {
-  await requireAdmin()
+  await requireAuth()
 
   const validatedFields = UpdateClientSchema.safeParse({
     name: formData.get('name'),
@@ -188,7 +169,7 @@ export async function updateClient(id: string, formData: FormData) {
 }
 
 export async function deleteClient(id: string) {
-  await requireAdmin()
+  await requireAuth()
 
   try {
     await prisma.client.update({
@@ -200,7 +181,7 @@ export async function deleteClient(id: string) {
     return {
       success: 'Cliente eliminado exitosamente',
     }
-  } catch (_error) {
+  } catch {
     return {
       error: 'Error al eliminar el cliente',
     }
@@ -223,30 +204,28 @@ export async function getClientStats() {
       where: { deletedAt: null },
       take: 10,
       orderBy: {
-        sales: {
+        repairs: {
           _count: 'desc',
         },
       },
       include: {
         _count: {
           select: {
-            sales: true,
             repairs: true,
           },
         },
-        sales: {
+        repairs: {
           select: {
-            total: true,
+            laborCost: true,
           },
         },
       },
     }),
   ])
 
-  // Calculate total spent for each top client
   const topClientsWithSpending = topClients.map((client) => ({
     ...client,
-    totalSpent: client.sales.reduce((sum, sale) => sum + sale.total, 0),
+    totalLabor: client.repairs.reduce((sum, r) => sum + r.laborCost, 0),
   }))
 
   return {

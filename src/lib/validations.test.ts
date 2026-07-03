@@ -1,155 +1,33 @@
 import { describe, it, expect } from 'vitest'
 import {
-  CreateSaleSchema,
   CreateProductSchema,
   CreateClientSchema,
   CreateRepairSchema,
-  PaymentMethodSchema,
   RepairStatusSchema,
 } from './validations'
 
-describe('CreateSaleSchema', () => {
-  it('validates a complete sale', () => {
-    const result = CreateSaleSchema.safeParse({
-      clientName: 'Juan Pérez',
-      clientPhone: '3001234567',
-      items: [{ productId: 'p1', quantity: 2, unitPrice: 1000 }],
-      discountPercent: 10,
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('rejects empty items', () => {
-    const result = CreateSaleSchema.safeParse({
-      items: [],
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects negative unit price', () => {
-    const result = CreateSaleSchema.safeParse({
-      items: [{ productId: 'p1', quantity: 1, unitPrice: -100 }],
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects invalid payment method', () => {
-    const result = CreateSaleSchema.safeParse({
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-      paymentMethod: 'BITCOIN',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('allows optional client fields', () => {
-    const result = CreateSaleSchema.safeParse({
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-      paymentMethod: 'CARD',
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('allows null clientId', () => {
-    const result = CreateSaleSchema.safeParse({
-      clientId: null,
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('validates client email format', () => {
-    const result = CreateSaleSchema.safeParse({
-      clientEmail: 'invalid-email',
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('defaults discountPercent to 0', () => {
-    const result = CreateSaleSchema.safeParse({
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.discountPercent).toBe(0)
-    }
-  })
-
-  it('rejects discount over 100%', () => {
-    const result = CreateSaleSchema.safeParse({
-      items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-      discountPercent: 150,
-      paymentMethod: 'CASH',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('validates all payment methods', () => {
-    const valid = ['CASH', 'CARD', 'TRANSFER'] as const
-    for (const method of valid) {
-      const result = CreateSaleSchema.safeParse({
-        items: [{ productId: 'p1', quantity: 1, unitPrice: 1000 }],
-        paymentMethod: method,
-      })
-      expect(result.success).toBe(true)
-    }
-  })
-})
-
 describe('CreateProductSchema', () => {
-  it('validates a complete product', () => {
+  it('validates a complete part', () => {
     const result = CreateProductSchema.safeParse({
       name: 'Cargador USB',
-      category: 'ACCESSORY',
-      stock: 10,
-      minStock: 5,
-      purchasePrice: 5000,
-      salePrice: 10000,
+      description: 'Cargador tipo C',
+      price: 15000,
     })
     expect(result.success).toBe(true)
   })
 
   it('rejects short name', () => {
-    const result = CreateProductSchema.safeParse({
-      name: 'C',
-      category: 'ACCESSORY',
-      stock: 10,
-      minStock: 5,
-      purchasePrice: 5000,
-      salePrice: 10000,
-    })
+    const result = CreateProductSchema.safeParse({ name: 'C' })
     expect(result.success).toBe(false)
   })
 
-  it('rejects negative stock', () => {
-    const result = CreateProductSchema.safeParse({
-      name: 'Test',
-      category: 'ACCESSORY',
-      stock: -1,
-      minStock: 5,
-      purchasePrice: 5000,
-      salePrice: 10000,
-    })
+  it('rejects negative price', () => {
+    const result = CreateProductSchema.safeParse({ name: 'Test', price: -1 })
     expect(result.success).toBe(false)
   })
 
-  it('allows optional description and supplier', () => {
-    const result = CreateProductSchema.safeParse({
-      name: 'Test',
-      category: 'ACCESSORY',
-      stock: 10,
-      minStock: 5,
-      purchasePrice: 5000,
-      salePrice: 10000,
-      description: 'A product',
-      supplier: 'Supplier X',
-    })
+  it('allows optional description', () => {
+    const result = CreateProductSchema.safeParse({ name: 'Test' })
     expect(result.success).toBe(true)
   })
 })
@@ -205,11 +83,11 @@ describe('CreateRepairSchema', () => {
       clientId: 'c1',
       device: 'iPhone 12',
       problem: 'La pantalla no funciona después de una caída',
-      cost: 50000,
+      laborCost: 50000,
       notes: 'Traer el lunes',
       internalNotes: 'Revisar flex',
       estimatedDate: '2026-06-01',
-      parts: [{ productId: 'p1', quantity: 1, unitCost: 15000 }],
+      parts: [{ partId: 'p1', quantity: 1, unitCost: 15000 }],
     })
     expect(result.success).toBe(true)
   })
@@ -252,23 +130,11 @@ describe('CreateRepairSchema', () => {
   })
 })
 
-describe('Enums', () => {
-  it('PaymentMethodSchema accepts valid values', () => {
-    expect(PaymentMethodSchema.safeParse('CASH').success).toBe(true)
-    expect(PaymentMethodSchema.safeParse('CARD').success).toBe(true)
-    expect(PaymentMethodSchema.safeParse('TRANSFER').success).toBe(true)
-  })
-
-  it('PaymentMethodSchema rejects invalid values', () => {
-    expect(PaymentMethodSchema.safeParse('CRYPTO').success).toBe(false)
-  })
-
-  it('RepairStatusSchema accepts valid statuses', () => {
+describe('RepairStatusSchema', () => {
+  it('accepts valid statuses', () => {
     const valid = ['RECEIVED', 'IN_PROGRESS', 'READY', 'DELIVERED', 'CANCELLED']
     for (const s of valid) {
       expect(RepairStatusSchema.safeParse(s).success).toBe(true)
     }
   })
-
-
 })

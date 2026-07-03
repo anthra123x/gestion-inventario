@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { createClientSupabase } from '@/lib/supabase'
 import { ensureUserExists } from '@/modules/auth/auth.actions'
-import { LogIn, AlertCircle, LayoutDashboard } from 'lucide-react'
+import { LogIn, AlertCircle, Loader2, Wrench } from 'lucide-react'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -54,69 +54,81 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-mesh p-4">
+    <div className="relative min-h-screen flex flex-col">
+      <div className="absolute inset-0 bg-mesh" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
-      <Card className="relative w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <CardHeader className="space-y-1 pb-6">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-lg">
-            <LayoutDashboard className="h-7 w-7 text-white" />
+
+      <div className="relative flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="text-center space-y-3">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
+              <Wrench className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Gesti\u00f3n Reparaciones</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Inicia sesi\u00f3n para acceder al sistema
+              </p>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center tracking-tight">Gesti\u00f3n</CardTitle>
-          <CardDescription className="text-center text-balance">Inicia sesi\u00f3n para acceder al sistema</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="tu@email.com"
-                required
-                disabled={isLoading}
-                className="h-10"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Contrase\u00f1a</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Ingresa tu contrase\u00f1a"
-                required
-                disabled={isLoading}
-                className="h-10"
-              />
-            </div>
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-            <Button type="submit" className="w-full h-10" disabled={isLoading}>
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Iniciando sesi\u00f3n...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <LogIn className="h-4 w-4" />
-                  Iniciar sesi\u00f3n
-                </span>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+
+          <Card className="border-border/60 card-shadow">
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="tu@email.com"
+                    required
+                    disabled={isLoading}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">Contrase\u00f1a</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Ingresa tu contrase\u00f1a"
+                    required
+                    disabled={isLoading}
+                    className="h-10"
+                  />
+                </div>
+                {error && (
+                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <Button type="submit" className="w-full h-10" disabled={isLoading}>
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Iniciando sesi\u00f3n...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <LogIn className="h-4 w-4" />
+                      Iniciar sesi\u00f3n
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <p className="text-center text-xs text-muted-foreground/60">
+            Gesti\u00f3n Reparaciones &mdash; Sistema de gesti\u00f3n de taller
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

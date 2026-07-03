@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Bell, CheckCheck, Loader2, Wrench, ShoppingCart, AlertTriangle, Info } from 'lucide-react'
+import { Bell, CheckCheck, Loader2, Wrench, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,9 +29,7 @@ type Notification = {
 }
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
-  STOCK_ALERT: AlertTriangle,
   REPAIR_READY: Wrench,
-  SALE_COMPLETED: ShoppingCart,
   SYSTEM: Info,
 }
 
@@ -61,10 +59,20 @@ export function NotificationsDropdown() {
   }, [])
 
   useEffect(() => {
-    void load()
-    const interval = setInterval(() => void load(), 30000)
-    return () => clearInterval(interval)
-  }, [load])
+    let mounted = true
+    async function fetchData() {
+      const data = await getNotificationData(1, 10)
+      if (!mounted) return
+      setNotifications(data.notifications as Notification[])
+      setUnreadCount(data.unreadCount)
+    }
+    void fetchData()
+    const interval = setInterval(() => void fetchData(), 30000)
+    return () => {
+      mounted = false
+      clearInterval(interval)
+    }
+  }, [])
 
   async function handleOpenChange(open: boolean) {
     setOpen(open)

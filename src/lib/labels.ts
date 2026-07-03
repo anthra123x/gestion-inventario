@@ -1,23 +1,3 @@
-import { ProductCategory } from '@prisma/client'
-
-export function getPaymentMethodLabel(method: string): string {
-  const labels: Record<string, string> = {
-    CASH: 'Efectivo',
-    CARD: 'Tarjeta',
-    TRANSFER: 'Transferencia',
-  }
-  return labels[method] || method
-}
-
-export function getPaymentMethodColor(method: string): string {
-  const colors: Record<string, string> = {
-    CASH: 'default',
-    CARD: 'secondary',
-    TRANSFER: 'outline',
-  }
-  return colors[method] || 'default'
-}
-
 export function getRepairStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     RECEIVED: 'Recibido',
@@ -39,24 +19,3 @@ export function getRepairStatusColor(status: string): string {
   }
   return colors[status] || 'default'
 }
-
-export function getStockStatus(
-  stock: number,
-  minStock: number,
-): { label: string; variant: 'default' | 'destructive' | 'warning' } {
-  if (stock === 0) return { label: 'Agotado', variant: 'destructive' }
-  if (stock <= minStock) return { label: 'Stock Bajo', variant: 'warning' }
-  return { label: 'En Stock', variant: 'default' }
-}
-
-export function getCategoryLabel(category: ProductCategory): string {
-  const labels: Record<ProductCategory, string> = {
-    ACCESSORY: 'Accesorio',
-    REPAIR_PART: 'Repuesto',
-    DEVICE: 'Dispositivo',
-    OTHER: 'Otro',
-  }
-  return labels[category]
-}
-
-

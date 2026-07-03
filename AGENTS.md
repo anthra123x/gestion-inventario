@@ -22,15 +22,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | Charts | Ninguno | - | `recharts` eliminado (no se usaba) |
 | PDF | Ninguno | - | `jspdf`/`pdf-lib`/`react-pdf` eliminados (no se usaban) |
 | Excel | xlsx (SheetJS) | 0.18.5 | Exportación de reportes |
-| Testing | Vitest | 4.1.7 | 77 tests en 3 files |
+| Testing | Vitest | 4.1.7 | 114 tests en 6 files |
 | Lint | ESLint | 9.x | `eslint-config-next` + `unused-imports` |
 | Format | Prettier | - | Config en `.prettierrc` |
 
 ## Comandos esenciales
 
 ```bash
-npm run dev         # Dev server (http://localhost:3000) + React Scan for rerenders
-npm run build       # Prisma generate + Next build
+npm run dev         # Dev server (http://localhost:3000) + React Scan for rerenders (usa Webpack + WASM SWC)
+npm run build       # Prisma generate + Next build (usa Webpack + WASM SWC)
 npm run lint        # ESLint (incluye detección de imports muertos)
 npm run typecheck   # TypeScript check sin emitir
 npm run test        # Vitest (77 tests)
@@ -197,6 +197,12 @@ git submodule update --remote docs && git add docs && git commit -m "docs: sync 
 | `vercel-react-view-transitions` | Animaciones entre rutas, transiciones de estado |
 | `tailwind-design-system` | Sistema de diseño, tokens, componentes reutilizables |
 | `web-design-guidelines` | Auditoría de UI/UX, accesibilidad, diseño |
+
+## Entorno local (Fedora 44 + glibc 2.43)
+
+- **Node.js**: Usar v22.x via nvm (`.nvmrc` configurado)
+- **SWC**: El binario nativo de SWC es incompatible con glibc 2.43 (SIGBUS). Se usa WASM + Webpack.
+- `npm run dev` y `npm run build` ya incluyen `NEXT_TEST_WASM=1 next --webpack`
 
 ## Deuda técnica conocida
 

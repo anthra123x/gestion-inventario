@@ -54,8 +54,8 @@ export default function RepairTechSheetPage() {
   if (loading) return <TechSheetSkeleton />
   if (error || !repair) return <TechSheetError message={error || 'Reparación no encontrada'} onBack={() => router.push('/repairs')} />
 
-  const partsTotal = repair.repairParts.reduce((sum, p) => sum + p.unitCost * p.quantity, 0)
-  const laborCost = repair.cost - partsTotal
+  const partsTotal = repair.repairParts.reduce((sum, p) => sum + p.total, 0)
+  const laborCost = repair.laborCost
   const repairId = repair.id.slice(-6).toUpperCase()
 
   return (
@@ -85,7 +85,7 @@ export default function RepairTechSheetPage() {
             <div className="tech-sheet-header-left">
               <div className="tech-sheet-brand-mark" />
               <div>
-                <h1 className="tech-sheet-company-name">Gestión</h1>
+                <h1 className="tech-sheet-company-name">Gestión Reparaciones</h1>
                 <p className="tech-sheet-company-tagline">Centro de Servicio Técnico</p>
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function RepairTechSheetPage() {
                     {repair.repairParts.map((part, i) => (
                       <tr key={part.id} className={i % 2 === 0 ? 'tech-sheet-tr-even' : 'tech-sheet-tr-odd'}>
                         <td className="tech-sheet-td tech-sheet-td-product">
-                          <span className="tech-sheet-product-name">{part.product.name}</span>
+                          <span className="tech-sheet-product-name">{part.part.name}</span>
                         </td>
                         <td className="tech-sheet-td tech-sheet-td-qty">
                           <span className="tech-sheet-qty-badge">{part.quantity}</span>
@@ -240,7 +240,7 @@ export default function RepairTechSheetPage() {
                 <div className="tech-sheet-total-divider" />
                 <div className="tech-sheet-total-row tech-sheet-total-row-final">
                   <span className="tech-sheet-total-label">Total</span>
-                  <span className="tech-sheet-total-amount-final">{formatCurrency(repair.cost)}</span>
+                  <span className="tech-sheet-total-amount-final">{formatCurrency(repair.laborCost + partsTotal)}</span>
                 </div>
               </div>
             </div>
@@ -317,7 +317,7 @@ export default function RepairTechSheetPage() {
 
           {/* FOOTER */}
           <div className="tech-sheet-footer">
-            <p className="tech-sheet-footer-msg">Gestión — Centro de Servicio Técnico</p>
+            <p className="tech-sheet-footer-msg">Gestión Reparaciones — Centro de Servicio Técnico</p>
             <p className="tech-sheet-footer-meta">
               Documento generado el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}
             </p>

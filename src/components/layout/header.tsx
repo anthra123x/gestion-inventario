@@ -32,9 +32,9 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-md px-4 lg:px-6 sticky top-0 z-30">
+    <header className="flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 lg:px-6 sticky top-0 z-30">
       <div className="flex items-center gap-3 lg:gap-4">
-        <Button variant="ghost" size="icon" onClick={onMenuClick} className="lg:hidden">
+        <Button variant="ghost" size="icon" onClick={onMenuClick} className="lg:hidden -ml-1.5">
           <Menu className="h-5 w-5" />
         </Button>
         <div className="relative flex-1 max-w-sm lg:max-w-md">
@@ -57,7 +57,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
               <div className="text-sm font-medium leading-tight">{user.name}</div>
               <div className="text-xs text-muted-foreground/70 capitalize">{user.role.toLowerCase()}</div>
             </div>
-            <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center shrink-0 shadow-sm">
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0">
               <span className="text-sm font-semibold text-primary-foreground">{user.name.charAt(0).toUpperCase()}</span>
             </div>
           </DropdownMenuTrigger>
