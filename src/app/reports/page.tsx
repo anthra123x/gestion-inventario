@@ -100,8 +100,8 @@ export default function ReportsPage() {
       const result = await exportReportToExcel(selectedReport, reportFilters) as { success: boolean; data?: string; filename?: string; error?: string }
       if (result.success) {
         const link = document.createElement('a')
-        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${result.data}`
-        link.download = result.filename
+        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${result.data || ''}`
+        link.download = result.filename || ''
         link.click()
         toast.success('Reporte exportado a Excel')
       } else {
@@ -128,8 +128,8 @@ export default function ReportsPage() {
       const result = await exportReportToPdf(selectedReport, reportFilters) as { success: boolean; data?: string; filename?: string; error?: string }
       if (result.success) {
         const link = document.createElement('a')
-        link.href = `data:application/pdf;base64,${result.data}`
-        link.download = result.filename
+        link.href = `data:application/pdf;base64,${result.data || ''}`
+        link.download = result.filename || ''
         link.click()
         toast.success('Reporte exportado a PDF')
       } else {
