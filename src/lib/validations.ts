@@ -53,7 +53,7 @@ export const UpdateRepairSchema = z.object({
 })
 
 export const EditRepairSchema = z.object({
-  clientName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  clientName: z.string().optional(),
   clientPhone: z.string().optional().nullable(),
   clientEmail: z.string().email('Email inválido').optional().nullable(),
   clientAddress: z.string().optional().nullable(),

@@ -111,7 +111,7 @@ export async function createRepair(formData: FormData) {
     unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
   }))
 
-  const clientName = formData.get('clientName') as string
+  const clientName = (formData.get('clientName') as string) || 'Cliente'
   const clientPhone = formData.get('clientPhone') as string | null
   const clientEmail = formData.get('clientEmail') as string
   const clientAddress = formData.get('clientAddress') as string
@@ -278,7 +278,7 @@ export async function editRepair(id: string, formData: FormData) {
     unitCost: isNaN(Number(part.unitCost)) ? 0 : Number(part.unitCost),
   }))
 
-  const clientName = formData.get('clientName') as string
+  const clientName = formData.get('clientName') as string | null
   const clientPhone = formData.get('clientPhone') as string | null
   const clientEmail = formData.get('clientEmail') as string
   const clientAddress = formData.get('clientAddress') as string
@@ -289,7 +289,7 @@ export async function editRepair(id: string, formData: FormData) {
   const statusValue = formData.get('status') as RepairStatus | null
 
   const validatedFields = EditRepairSchema.safeParse({
-    clientName,
+    clientName: clientName || undefined,
     clientPhone: finalPhone,
     clientEmail: clientEmail || null,
     clientAddress: clientAddress || null,
@@ -337,6 +337,12 @@ export async function editRepair(id: string, formData: FormData) {
     } = validatedFields.data
 
     await prisma.$transaction(async (tx) => {
+      const clientUpdateData: Record<string, unknown> = {}
+      if (clientName) clientUpdateData.name = clientName
+      if (finalPhone !== undefined) clientUpdateData.phone = finalPhone
+      clientUpdateData.email = clientEmail || null
+      clientUpdateData.address = clientAddress || null
+
       if (finalPhone !== existingRepair.client.phone) {
         if (finalPhone) {
           const existingClient = await tx.client.findFirst({
@@ -350,33 +356,19 @@ export async function editRepair(id: string, formData: FormData) {
           } else {
             await tx.client.update({
               where: { id: existingRepair.clientId },
-              data: {
-                name: clientName,
-                phone: finalPhone,
-                email: clientEmail || null,
-                address: clientAddress || null,
-              },
+              data: clientUpdateData,
             })
           }
         } else {
           await tx.client.update({
             where: { id: existingRepair.clientId },
-            data: {
-              name: clientName,
-              phone: null,
-              email: clientEmail || null,
-              address: clientAddress || null,
-            },
+            data: { ...clientUpdateData, phone: null },
           })
         }
       } else {
         await tx.client.update({
           where: { id: existingRepair.clientId },
-          data: {
-            name: clientName,
-            email: clientEmail || null,
-            address: clientAddress || null,
-          },
+          data: clientUpdateData,
         })
       }
 

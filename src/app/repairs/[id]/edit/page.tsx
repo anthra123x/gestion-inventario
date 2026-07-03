@@ -221,7 +221,7 @@ export default function EditRepairPage() {
               <h3 className="text-lg font-semibold">Datos del Cliente</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="clientName">Nombre del Cliente *</Label>
+                  <Label htmlFor="clientName">Nombre del Cliente</Label>
                   <ClientAutocomplete
                     name="clientName"
                     value={clientName}
