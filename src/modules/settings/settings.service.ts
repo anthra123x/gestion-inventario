@@ -6,14 +6,22 @@ export async function getOrCreateSettings() {
   return await prisma.systemSettings.create({ data: {} })
 }
 
-export async function updateSettings(data: {
+export type SettingsData = {
   companyName: string
   companyAddress: string | null
   companyPhone: string | null
   companyEmail: string | null
   currency: string
+  receiptTitle: string
+  receiptTagline: string | null
   receiptFooter: string | null
-}) {
+  warrantyText: string
+  invoicePrefix: string
+  defaultWarrantyDays: number
+  lowStockThreshold: number
+}
+
+export async function updateSettings(data: Partial<SettingsData>) {
   const settings = await getOrCreateSettings()
   return await prisma.systemSettings.update({
     where: { id: settings.id },

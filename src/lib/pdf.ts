@@ -2,6 +2,28 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getRepairStatusLabel } from '@/lib/labels'
 
+export interface PDFSettings {
+  companyName: string
+  receiptTagline: string | null
+  receiptTitle: string
+  warrantyText: string
+  invoicePrefix: string
+  receiptFooter: string | null
+  defaultWarrantyDays: number
+  currency: string
+}
+
+const defaultPDFSettings: PDFSettings = {
+  companyName: 'Gestión Reparaciones',
+  receiptTagline: 'Centro de Servicio Técnico',
+  receiptTitle: 'FICHA TÉCNICA',
+  warrantyText: 'Este servicio técnico cuenta con una garantía de 30 días en mano de obra a partir de la fecha de entrega. Los repuestos instalados cubren la garantía otorgada por el fabricante. La garantía no cubre daños por mal uso, golpes, humedad o manipulación por terceros no autorizados.',
+  invoicePrefix: 'REP-',
+  receiptFooter: null,
+  defaultWarrantyDays: 30,
+  currency: 'COP',
+}
+
 function fmt(n: number): string {
   return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
@@ -40,7 +62,8 @@ interface PDFRepair {
   user: { name: string } | null
 }
 
-export function generateRepairPdf(repair: PDFRepair): Uint8Array {
+export function generateRepairPdf(repair: PDFRepair, pdfSettings?: PDFSettings): Uint8Array {
+  const s = { ...defaultPDFSettings, ...pdfSettings }
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pw = doc.internal.pageSize.getWidth()
   const m = 20
@@ -69,17 +92,17 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(20)
   doc.setTextColor(...COL.black)
-  doc.text('Gestión Reparaciones', m + 14, y + 1)
+  doc.text(s.companyName, m + 14, y + 1)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(...COL.muted)
-  doc.text('Centro de Servicio Técnico', m + 14, y + 6)
+  doc.text(s.receiptTagline || '', m + 14, y + 6)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7)
   doc.setTextColor(100, 100, 100)
-  const badge = 'FICHA TÉCNICA'
+  const badge = s.receiptTitle
   const bw = doc.getTextWidth(badge) + 8
   doc.setDrawColor(200, 200, 200)
   doc.setFillColor(250, 250, 250)
@@ -89,7 +112,7 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
   doc.setTextColor(...COL.black)
-  doc.text(`#REP-${repair.id.slice(-6).toUpperCase()}`, pw - m, y + 11, { align: 'right' })
+  doc.text(`#${s.invoicePrefix}${repair.id.slice(-6).toUpperCase()}`, pw - m, y + 11, { align: 'right' })
 
   y += 20
   divider()
@@ -251,18 +274,16 @@ export function generateRepairPdf(repair: PDFRepair): Uint8Array {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
   doc.setTextColor(130, 130, 130)
-  const warrantyLines = doc.splitTextToSize(
-    'Este servicio técnico cuenta con una garantía de 30 días en mano de obra a partir de la fecha de entrega. Los repuestos instalados cubren la garantía otorgada por el fabricante. La garantía no cubre daños por mal uso, golpes, humedad o manipulación por terceros no autorizados.',
-    cw - 8,
-  )
+  const warrantyLines = doc.splitTextToSize(s.warrantyText, cw - 8)
   doc.text(warrantyLines, m + 4, y + 12)
 
   y += 38
 
+  const footerText = s.receiptFooter || `${s.companyName} — ${s.receiptTagline || 'Centro de Servicio Técnico'}`
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(...COL.black)
-  doc.text('Gestión Reparaciones — Centro de Servicio Técnico', pw / 2, y, { align: 'center' })
+  doc.text(footerText, pw / 2, y, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
@@ -309,7 +330,9 @@ export function generateReportPdf(
   reportType: string,
   summary: ReportSummary,
   rows: ReportRow[],
+  pdfSettings?: PDFSettings,
 ): Uint8Array {
+  const s = { ...defaultPDFSettings, ...pdfSettings }
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pw = doc.internal.pageSize.getWidth()
   const m = 20
@@ -334,13 +357,13 @@ export function generateReportPdf(
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(26, 26, 26)
-  doc.text('Gestión Reparaciones', m, y)
+  doc.text(s.companyName, m, y)
   y += 7
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(150, 150, 150)
-  doc.text('Centro de Servicio Técnico', m, y)
+  doc.text(s.receiptTagline || '', m, y)
   y += 4
 
   doc.setFont('helvetica', 'bold')

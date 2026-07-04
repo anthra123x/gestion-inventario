@@ -103,7 +103,13 @@ model SystemSettings {
   companyPhone    String?
   companyEmail    String?
   currency        String   @default("COP")
+  receiptTitle    String   @default("FICHA TÉCNICA")
+  receiptTagline  String?  @default("Centro de Servicio Técnico")
   receiptFooter   String?
+  warrantyText    String   @default("Este servicio técnico cuenta con una garantía de 30 días en mano de obra a partir de la fecha de entrega. Los repuestos instalados cubren la garantía otorgada por el fabricante. La garantía no cubre daños por mal uso, golpes, humedad o manipulación por terceros no autorizados.")
+  invoicePrefix   String   @default("REP-")
+  defaultWarrantyDays Int  @default(30)
+  lowStockThreshold    Int  @default(5)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

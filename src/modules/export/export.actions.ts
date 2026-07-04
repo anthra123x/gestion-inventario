@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/modules/auth/auth.actions'
-import { generateReportPdf } from '@/lib/pdf'
+import { generateReportPdf, type PDFSettings } from '@/lib/pdf'
 import * as XLSX from 'xlsx'
 
 interface ReportRepair {
@@ -208,7 +208,21 @@ export async function exportReportToPdf(
       ? (result as unknown as { repairs: ReportRepair[] }).repairs
       : (result as unknown as { clients: ReportClient[] }).clients
 
-    const pdf = generateReportPdf(reportType, summary, rows)
+    const dbSettings = await prisma.systemSettings.findFirst()
+    const pdfSettings: PDFSettings | undefined = dbSettings
+      ? {
+          companyName: dbSettings.companyName,
+          receiptTagline: dbSettings.receiptTagline,
+          receiptTitle: dbSettings.receiptTitle,
+          warrantyText: dbSettings.warrantyText,
+          invoicePrefix: dbSettings.invoicePrefix,
+          receiptFooter: dbSettings.receiptFooter,
+          defaultWarrantyDays: dbSettings.defaultWarrantyDays,
+          currency: dbSettings.currency,
+        }
+      : undefined
+
+    const pdf = generateReportPdf(reportType, summary, rows, pdfSettings)
     const base64 = Buffer.from(pdf).toString('base64')
 
     return {

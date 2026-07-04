@@ -3,10 +3,22 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getRepairById } from '@/modules/repairs/repairs.actions'
+import { getSystemSettings } from '@/modules/settings/settings.actions'
 import { formatCurrency } from '@/lib/format'
 import { getRepairStatusLabel } from '@/lib/labels'
 
 type RepairDetail = NonNullable<Awaited<ReturnType<typeof getRepairById>>>
+
+interface PrintSettings {
+  companyName: string
+  receiptTagline: string | null
+  receiptTitle: string
+  warrantyText: string
+  invoicePrefix: string
+  receiptFooter: string | null
+  defaultWarrantyDays: number
+  currency: string
+}
 
 function TechSheetSkeleton() {
   return (
@@ -33,14 +45,22 @@ export default function RepairTechSheetPage() {
   const params = useParams()
   const router = useRouter()
   const [repair, setRepair] = useState<RepairDetail | null>(null)
+  const [settings, setSettings] = useState<PrintSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getRepairById(params.id as string)
+        const [data, settingsResult] = await Promise.all([
+          getRepairById(params.id as string),
+          getSystemSettings(),
+        ])
         setRepair(data)
+        if (settingsResult.success && settingsResult.data) {
+          const s = settingsResult.data as unknown as PrintSettings
+          setSettings(s)
+        }
       } catch (err) {
         setError('Error al cargar la reparación')
         console.error(err)
@@ -50,6 +70,17 @@ export default function RepairTechSheetPage() {
     }
     load()
   }, [params.id])
+
+  const s = settings ?? {
+    companyName: 'Gestión Reparaciones',
+    receiptTagline: 'Centro de Servicio Técnico',
+    receiptTitle: 'FICHA TÉCNICA',
+    warrantyText: 'Este servicio técnico cuenta con una garantía de 30 días en mano de obra a partir de la fecha de entrega. Los repuestos instalados cubren la garantía otorgada por el fabricante. La garantía no cubre daños por mal uso, golpes, humedad o manipulación por terceros no autorizados.',
+    invoicePrefix: 'REP-',
+    receiptFooter: null,
+    defaultWarrantyDays: 30,
+    currency: 'COP',
+  }
 
   if (loading) return <TechSheetSkeleton />
   if (error || !repair) return <TechSheetError message={error || 'Reparación no encontrada'} onBack={() => router.push('/repairs')} />
@@ -85,13 +116,13 @@ export default function RepairTechSheetPage() {
             <div className="tech-sheet-header-left">
               <div className="tech-sheet-brand-mark" />
               <div>
-                <h1 className="tech-sheet-company-name">Gestión Reparaciones</h1>
-                <p className="tech-sheet-company-tagline">Centro de Servicio Técnico</p>
+                <h1 className="tech-sheet-company-name">{s.companyName}</h1>
+                <p className="tech-sheet-company-tagline">{s.receiptTagline}</p>
               </div>
             </div>
             <div className="tech-sheet-header-right">
-              <div className="tech-sheet-doc-badge">FICHA TÉCNICA</div>
-              <p className="tech-sheet-doc-ref">#REP-{repairId}</p>
+                <div className="tech-sheet-doc-badge">{s.receiptTitle}</div>
+                <p className="tech-sheet-doc-ref">#{s.invoicePrefix}{repairId}</p>
               <p className="tech-sheet-doc-date">
                 Emitida: {new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
@@ -206,8 +237,8 @@ export default function RepairTechSheetPage() {
                         <td className="tech-sheet-td tech-sheet-td-qty">
                           <span className="tech-sheet-qty-badge">{part.quantity}</span>
                         </td>
-                        <td className="tech-sheet-td tech-sheet-td-price">{formatCurrency(part.unitCost)}</td>
-                        <td className="tech-sheet-td tech-sheet-td-total">{formatCurrency(part.unitCost * part.quantity)}</td>
+                        <td className="tech-sheet-td tech-sheet-td-price">{formatCurrency(part.unitCost, s.currency)}</td>
+                        <td className="tech-sheet-td tech-sheet-td-total">{formatCurrency(part.unitCost * part.quantity, s.currency)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -230,17 +261,17 @@ export default function RepairTechSheetPage() {
                 {partsTotal > 0 && (
                   <div className="tech-sheet-total-row">
                     <span className="tech-sheet-total-label">Repuestos</span>
-                    <span className="tech-sheet-total-amount">{formatCurrency(partsTotal)}</span>
+                    <span className="tech-sheet-total-amount">{formatCurrency(partsTotal, s.currency)}</span>
                   </div>
                 )}
                 <div className="tech-sheet-total-row">
                   <span className="tech-sheet-total-label">Mano de obra</span>
-                  <span className="tech-sheet-total-amount">{formatCurrency(laborCost)}</span>
+                  <span className="tech-sheet-total-amount">{formatCurrency(laborCost, s.currency)}</span>
                 </div>
                 <div className="tech-sheet-total-divider" />
                 <div className="tech-sheet-total-row tech-sheet-total-row-final">
                   <span className="tech-sheet-total-label">Total</span>
-                  <span className="tech-sheet-total-amount-final">{formatCurrency(repair.laborCost + partsTotal)}</span>
+                  <span className="tech-sheet-total-amount-final">{formatCurrency(repair.laborCost + partsTotal, s.currency)}</span>
                 </div>
               </div>
             </div>
@@ -307,17 +338,13 @@ export default function RepairTechSheetPage() {
             </div>
             <div>
               <p className="tech-sheet-warranty-title">Garantía</p>
-              <p className="tech-sheet-warranty-text">
-                Este servicio técnico cuenta con una garantía de 30 días en mano de obra a partir de la fecha de entrega.
-                Los repuestos instalados cubren la garantía otorgada por el fabricante. La garantía no cubre daños por mal uso,
-                golpes, humedad o manipulación por terceros no autorizados.
-              </p>
+              <p className="tech-sheet-warranty-text">{s.warrantyText}</p>
             </div>
           </div>
 
           {/* FOOTER */}
           <div className="tech-sheet-footer">
-            <p className="tech-sheet-footer-msg">Gestión Reparaciones — Centro de Servicio Técnico</p>
+            <p className="tech-sheet-footer-msg">{s.receiptFooter || `${s.companyName} — ${s.receiptTagline}`}</p>
             <p className="tech-sheet-footer-meta">
               Documento generado el {new Date().toLocaleDateString('es-CO')} a las {new Date().toLocaleTimeString('es-CO')}
             </p>

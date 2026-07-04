@@ -11,6 +11,7 @@ import {
   Keyboard,
   Users,
   Package,
+  Sliders,
 } from 'lucide-react'
 
 const navigation = [
@@ -74,7 +75,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         })}
 
         {userRole === 'ADMIN' && (
-          <div className="pt-4 mt-4 border-t border-sidebar-border">
+          <div className="pt-4 mt-4 border-t border-sidebar-border space-y-0.5">
             <Link
               href="/admin"
               className={cn(
@@ -89,6 +90,21 @@ export function Sidebar({ userRole }: SidebarProps) {
                 pathname === '/admin' ? 'opacity-100' : 'opacity-70 group-hover:opacity-100',
               )} />
               <span className="flex-1">Administraci\u00f3n</span>
+            </Link>
+            <Link
+              href="/settings"
+              className={cn(
+                'group relative flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                pathname === '/settings'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90',
+              )}
+            >
+              <Sliders className={cn(
+                'mr-3 h-4 w-4 shrink-0 transition-all duration-150',
+                pathname === '/settings' ? 'opacity-100' : 'opacity-70 group-hover:opacity-100',
+              )} />
+              <span className="flex-1">Configuraci\u00f3n</span>
             </Link>
           </div>
         )}

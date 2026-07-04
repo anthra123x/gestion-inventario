@@ -15,7 +15,13 @@ const UpdateSettingsSchema = z.object({
   companyPhone: z.string().optional().default(''),
   companyEmail: z.string().email('Email inválido').optional().or(z.literal('')),
   currency: z.enum(['COP', 'USD', 'EUR']).default('COP'),
+  receiptTitle: z.string().min(1, 'Título del recibo requerido').default('FICHA TÉCNICA'),
+  receiptTagline: z.string().optional().default('Centro de Servicio Técnico'),
   receiptFooter: z.string().optional().default(''),
+  warrantyText: z.string().min(1, 'Texto de garantía requerido'),
+  invoicePrefix: z.string().min(1, 'Prefijo requerido').default('REP-'),
+  defaultWarrantyDays: z.coerce.number().int().min(0).default(30),
+  lowStockThreshold: z.coerce.number().int().min(0).default(5),
 })
 
 export async function getSystemSettings() {
@@ -32,7 +38,13 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
     companyPhone: getString(formData, 'companyPhone'),
     companyEmail: getString(formData, 'companyEmail'),
     currency: getString(formData, 'currency') || 'COP',
+    receiptTitle: getString(formData, 'receiptTitle') || 'FICHA TÉCNICA',
+    receiptTagline: getString(formData, 'receiptTagline') || '',
     receiptFooter: getString(formData, 'receiptFooter'),
+    warrantyText: getString(formData, 'warrantyText') || '',
+    invoicePrefix: getString(formData, 'invoicePrefix') || 'REP-',
+    defaultWarrantyDays: Number(getString(formData, 'defaultWarrantyDays') || 30),
+    lowStockThreshold: Number(getString(formData, 'lowStockThreshold') || 5),
   }
 
   const parsed = UpdateSettingsSchema.safeParse(raw)
@@ -50,12 +62,19 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
         companyPhone: data.companyPhone || null,
         companyEmail: data.companyEmail || null,
         currency: data.currency,
+        receiptTitle: data.receiptTitle,
+        receiptTagline: data.receiptTagline || null,
         receiptFooter: data.receiptFooter || null,
+        warrantyText: data.warrantyText,
+        invoicePrefix: data.invoicePrefix,
+        defaultWarrantyDays: data.defaultWarrantyDays,
+        lowStockThreshold: data.lowStockThreshold,
       }),
     { context: 'updateSystemSettings' },
   )
 
   if (result.success) {
+    revalidatePath('/settings')
     revalidatePath('/admin')
     return success(undefined)
   }
