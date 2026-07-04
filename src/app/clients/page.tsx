@@ -39,22 +39,28 @@ export default function ClientsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1)
+    }, 300)
     return () => clearTimeout(timer)
   }, [search])
 
   useEffect(() => {
     loadClients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch])
+  }, [debouncedSearch, page])
 
   async function loadClients() {
     try {
       setLoading(true)
-      const data = await getClients(debouncedSearch || undefined)
-      setClients(data as unknown as Client[])
+      const data = await getClients(debouncedSearch || undefined, page)
+      setClients(data.clients as unknown as Client[])
+      setTotalPages(data.totalPages)
     } catch (_error) {
       console.error('Error loading clients:', _error)
     } finally {
@@ -187,6 +193,32 @@ export default function ClientsPage() {
               </TableBody>
             </Table>
           </div>
+
+          {clients.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <p className="text-xs text-muted-foreground">
+                Página {page} de {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
 
           {clients.length === 0 && (
             <EmptyState

@@ -250,6 +250,8 @@ export async function updateRepair(id: string, formData: FormData) {
 
     revalidatePath('/repairs')
     revalidatePath(`/repairs/${id}`)
+    revalidatePath('/dashboard')
+    revalidatePath('/reports')
     return {
       success: 'Reparación actualizada exitosamente',
       repair,

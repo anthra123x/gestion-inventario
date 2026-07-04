@@ -74,6 +74,7 @@ model Repair {
   user          User?        @relation(fields: [userId], references: [id])
 
   @@index([clientId])
+  @@index([clientId, createdAt])
   @@index([status])
   @@index([createdAt])
   @@index([status, createdAt])

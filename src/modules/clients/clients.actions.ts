@@ -7,7 +7,7 @@ import { CreateClientSchema, UpdateClientSchema } from '@/lib/validations'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
 
-export async function getClients(search?: string, take = 100) {
+export async function getClients(search?: string, page = 1, take = 20) {
   await requireAuth()
   const where = {
     deletedAt: null,
@@ -20,29 +20,35 @@ export async function getClients(search?: string, take = 100) {
     }),
   }
 
-  return await prisma.client.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take,
-    include: {
-      repairs: {
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          device: true,
-          status: true,
-          laborCost: true,
-          createdAt: true,
+  const [clients, total] = await Promise.all([
+    prisma.client.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * take,
+      take,
+      include: {
+        repairs: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            device: true,
+            status: true,
+            laborCost: true,
+            createdAt: true,
+          },
+        },
+        _count: {
+          select: {
+            repairs: true,
+          },
         },
       },
-      _count: {
-        select: {
-          repairs: true,
-        },
-      },
-    },
-  })
+    }),
+    prisma.client.count({ where }),
+  ])
+
+  return { clients, total, page, totalPages: Math.ceil(total / take) }
 }
 
 export async function searchClients(search: string) {

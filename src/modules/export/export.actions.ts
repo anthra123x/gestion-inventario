@@ -60,6 +60,7 @@ export async function exportPartsToExcel() {
   await requireAuth()
   try {
     const parts = await prisma.part.findMany({
+      where: { deletedAt: null },
       orderBy: { name: 'asc' },
     })
 
