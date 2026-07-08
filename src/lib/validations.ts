@@ -121,3 +121,16 @@ export const CreateSavingGoalSchema = z.object({
 })
 
 export const UpdateSavingGoalSchema = CreateSavingGoalSchema.partial()
+
+export const BudgetPeriodStatusSchema = z.enum(['ACTIVE', 'CLOSED'])
+
+export const CreateBudgetPeriodSchema = z.object({
+  startDate: z.string(),
+  endDate: z.string(),
+  initialBalance: z.coerce.number().min(0).default(0),
+  notes: z.string().optional().nullable(),
+})
+
+export const CloseWeekSchema = z.object({
+  savingsTarget: z.coerce.number().min(0).optional().nullable(),
+})

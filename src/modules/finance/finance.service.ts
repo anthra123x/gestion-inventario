@@ -1,13 +1,234 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
+export function getWeekPeriod(date: Date = new Date()) {
+  const day = date.getDay()
+  const diffToMonday = day === 0 ? -6 : 1 - day
+  const monday = new Date(date)
+  monday.setHours(0, 0, 0, 0)
+  monday.setDate(monday.getDate() + diffToMonday)
+  const sunday = new Date(monday)
+  sunday.setDate(sunday.getDate() + 6)
+  sunday.setHours(23, 59, 59, 999)
+  return { startDate: monday, endDate: sunday }
+}
+
+export async function getOrCreateActivePeriod() {
+  const { startDate, endDate } = getWeekPeriod()
+  let period = await prisma.budgetPeriod.findFirst({
+    where: { status: 'ACTIVE' },
+    include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+  })
+  if (!period) {
+    period = await prisma.budgetPeriod.create({
+      data: { startDate, endDate },
+      include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+    })
+  }
+  return period
+}
+
+export async function getPeriodById(periodId: string) {
+  return await prisma.budgetPeriod.findUnique({
+    where: { id: periodId },
+    include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+  })
+}
+
+export async function getClosedPeriods(limit = 10) {
+  return await prisma.budgetPeriod.findMany({
+    where: { status: 'CLOSED' },
+    orderBy: { endDate: 'desc' },
+    take: limit,
+    include: { transactions: { take: 3, include: { category: true }, orderBy: { date: 'desc' } } },
+  })
+}
+
+export type DailySummary = {
+  date: string
+  totalIncome: number
+  totalExpenses: number
+  balance: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transactions: any[]
+  expenseByCategory: { category: string; amount: number; color: string | null }[]
+}
+
+export async function getDailySummary(dateStr?: string): Promise<DailySummary> {
+  const date = dateStr ? new Date(dateStr) : new Date()
+  const start = new Date(date)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(date)
+  end.setHours(23, 59, 59, 999)
+
+  const transactions = await prisma.transaction.findMany({
+    where: { date: { gte: start, lte: end } },
+    include: { category: true },
+    orderBy: { date: 'desc' },
+  })
+
+  const totalIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const totalExpenses = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+  const expenseByCategory = aggregateByCategory(transactions.filter((t) => t.type === 'EXPENSE'))
+
+  return {
+    date: date.toISOString().split('T')[0],
+    totalIncome,
+    totalExpenses,
+    balance: totalIncome - totalExpenses,
+    transactions: transactions as unknown as DailySummary['transactions'],
+    expenseByCategory,
+  }
+}
+
+function aggregateByCategory(
+  transactions: Array<{ amount: number; category: { name: string; color: string | null } }>,
+): { category: string; amount: number; color: string | null }[] {
+  const map = new Map<string, { amount: number; color: string | null }>()
+  for (const tx of transactions) {
+    const name = tx.category?.name || 'Sin categoría'
+    const existing = map.get(name)
+    if (existing) existing.amount += tx.amount
+    else map.set(name, { amount: tx.amount, color: tx.category?.color || null })
+  }
+  return Array.from(map.entries()).map(([category, data]) => ({ category, ...data })).sort((a, b) => b.amount - a.amount)
+}
+
+export type PeriodSummary = {
+  period: NonNullable<Awaited<ReturnType<typeof getOrCreateActivePeriod>>>
+  totalIncome: number
+  totalExpenses: number
+  balance: number
+  netAfterSavings: number
+  dailyBreakdown: { date: string; income: number; expenses: number; balance: number }[]
+  expenseByCategory: { category: string; amount: number; color: string | null }[]
+  incomeByCategory: { category: string; amount: number; color: string | null }[]
+}
+
+export async function getPeriodSummary(periodId?: string): Promise<PeriodSummary> {
+  const period = periodId ? await getActivePeriodById(periodId) : await getOrCreateActivePeriod()
+  const transactions = period.transactions
+
+  const totalIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const totalExpenses = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+  const balance = totalIncome - totalExpenses
+
+  const dailyMap = new Map<string, { income: number; expenses: number }>()
+  for (let d = new Date(period.startDate); d <= period.endDate; d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().split('T')[0]
+    dailyMap.set(key, { income: 0, expenses: 0 })
+  }
+  for (const tx of transactions) {
+    const key = tx.date.toISOString().split('T')[0]
+    const entry = dailyMap.get(key)
+    if (entry) {
+      if (tx.type === 'INCOME') entry.income += tx.amount
+      else entry.expenses += tx.amount
+    }
+  }
+  const dailyBreakdown = Array.from(dailyMap.entries()).map(([date, data]) => ({
+    date,
+    ...data,
+    balance: data.income - data.expenses,
+  }))
+
+  return {
+    period,
+    totalIncome,
+    totalExpenses,
+    balance,
+    netAfterSavings: balance - period.savingsAllocated,
+    dailyBreakdown,
+    expenseByCategory: aggregateByCategory(transactions.filter((t) => t.type === 'EXPENSE')),
+    incomeByCategory: aggregateByCategory(transactions.filter((t) => t.type === 'INCOME')),
+  }
+}
+
+export async function closeCurrentPeriod(savingsTarget?: number) {
+  const period = await getOrCreateActivePeriod()
+  const { totalIncome, totalExpenses } = await getPeriodTotals(period.id)
+  const balance = totalIncome - totalExpenses
+
+  const savingsAmount = savingsTarget !== undefined ? Math.min(savingsTarget, Math.max(balance, 0)) : (balance > 0 ? balance : 0)
+
+  if (savingsAmount > 0) {
+    const savingCategory = await prisma.category.findFirst({
+      where: { name: 'Ahorro', type: 'SAVING_GOAL', deletedAt: null },
+    })
+    if (savingCategory) {
+      await prisma.transaction.create({
+        data: {
+          type: 'INCOME',
+          amount: savingsAmount,
+          description: `Ahorro semanal - ${period.startDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}`,
+          date: period.endDate,
+          categoryId: savingCategory.id,
+          periodId: period.id,
+          notes: 'Ahorro generado al cerrar la semana',
+        },
+      })
+
+      const activeGoal = await prisma.savingGoal.findFirst({ orderBy: { createdAt: 'desc' } })
+      if (activeGoal) {
+        await prisma.savingGoal.update({
+          where: { id: activeGoal.id },
+          data: { currentAmount: { increment: savingsAmount } },
+        })
+      }
+    }
+  }
+
+  const { startDate, endDate } = getWeekPeriod(new Date(period.endDate.getTime() + 86400000))
+
+  await prisma.budgetPeriod.update({
+    where: { id: period.id },
+    data: {
+      status: 'CLOSED',
+      savingsAllocated: savingsAmount,
+    },
+  })
+
+  const newPeriod = await prisma.budgetPeriod.create({
+    data: { startDate, endDate },
+    include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+  })
+
+  return { closedPeriod: period, newPeriod, savingsAmount }
+}
+
+async function getActivePeriodById(periodId: string) {
+  return await prisma.budgetPeriod.findUniqueOrThrow({
+    where: { id: periodId },
+    include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+  })
+}
+
+async function getPeriodTotals(periodId: string) {
+  const agg = await prisma.transaction.aggregate({
+    where: { periodId },
+    _sum: { amount: true },
+  })
+  const incomeAgg = await prisma.transaction.aggregate({
+    where: { periodId, type: 'INCOME' },
+    _sum: { amount: true },
+  })
+  const expenseAgg = await prisma.transaction.aggregate({
+    where: { periodId, type: 'EXPENSE' },
+    _sum: { amount: true },
+  })
+  return {
+    totalIncome: incomeAgg._sum.amount || 0,
+    totalExpenses: expenseAgg._sum.amount || 0,
+    total: agg._sum.amount || 0,
+  }
+}
+
+// ─── Existing functions adapted ───
+
 export async function getCategories(type?: string) {
   const where: Prisma.CategoryWhereInput = { deletedAt: null }
   if (type) where.type = type as 'INCOME' | 'EXPENSE' | 'SAVING_GOAL'
-  return await prisma.category.findMany({
-    where,
-    orderBy: { name: 'asc' },
-  })
+  return await prisma.category.findMany({ where, orderBy: { name: 'asc' } })
 }
 
 export async function getCategoryById(id: string) {
@@ -24,24 +245,12 @@ export async function createCategory(data: {
   return await prisma.category.create({ data })
 }
 
-export async function updateCategory(
-  id: string,
-  data: {
-    name?: string
-    type?: 'INCOME' | 'EXPENSE' | 'SAVING_GOAL'
-    color?: string | null
-    icon?: string | null
-    budget?: number | null
-  },
-) {
+export async function updateCategory(id: string, data: Record<string, unknown>) {
   return await prisma.category.update({ where: { id }, data })
 }
 
 export async function deleteCategory(id: string) {
-  return await prisma.category.update({
-    where: { id },
-    data: { deletedAt: new Date() },
-  })
+  return await prisma.category.update({ where: { id }, data: { deletedAt: new Date() } })
 }
 
 export type TransactionFilters = {
@@ -50,6 +259,7 @@ export type TransactionFilters = {
   startDate?: string
   endDate?: string
   isRecurring?: boolean
+  periodId?: string
   page?: number
   pageSize?: number
 }
@@ -58,6 +268,7 @@ export async function getTransactions(filters: TransactionFilters = {}) {
   const where: Prisma.TransactionWhereInput = {}
   if (filters.type) where.type = filters.type
   if (filters.categoryId) where.categoryId = filters.categoryId
+  if (filters.periodId) where.periodId = filters.periodId
   if (filters.isRecurring !== undefined) where.isRecurring = filters.isRecurring
   if (filters.startDate || filters.endDate) {
     where.date = {}
@@ -72,7 +283,7 @@ export async function getTransactions(filters: TransactionFilters = {}) {
   const [items, total] = await Promise.all([
     prisma.transaction.findMany({
       where,
-      include: { category: true },
+      include: { category: true, period: true },
       orderBy: { date: 'desc' },
       skip,
       take: pageSize,
@@ -84,10 +295,7 @@ export async function getTransactions(filters: TransactionFilters = {}) {
 }
 
 export async function getTransactionById(id: string) {
-  return await prisma.transaction.findUnique({
-    where: { id },
-    include: { category: true },
-  })
+  return await prisma.transaction.findUnique({ where: { id }, include: { category: true, period: true } })
 }
 
 export async function createTransaction(data: {
@@ -96,10 +304,12 @@ export async function createTransaction(data: {
   description: string
   date?: string | Date
   categoryId: string
+  periodId?: string
   isRecurring?: boolean
   recurringDay?: number | null
   notes?: string | null
 }) {
+  const periodId = data.periodId || (await getOrCreateActivePeriod()).id
   return await prisma.transaction.create({
     data: {
       type: data.type,
@@ -107,41 +317,20 @@ export async function createTransaction(data: {
       description: data.description,
       date: data.date ? new Date(data.date) : new Date(),
       categoryId: data.categoryId,
+      periodId,
       isRecurring: data.isRecurring ?? false,
       recurringDay: data.recurringDay ?? null,
       notes: data.notes ?? null,
     },
-    include: { category: true },
+    include: { category: true, period: true },
   })
 }
 
-export async function updateTransaction(
-  id: string,
-  data: {
-    type?: 'INCOME' | 'EXPENSE'
-    amount?: number
-    description?: string
-    date?: string | Date
-    categoryId?: string
-    isRecurring?: boolean
-    recurringDay?: number | null
-    notes?: string | null
-  },
-) {
-  const updateData: Prisma.TransactionUpdateInput = {}
-  if (data.type !== undefined) updateData.type = data.type
-  if (data.amount !== undefined) updateData.amount = data.amount
-  if (data.description !== undefined) updateData.description = data.description
-  if (data.date !== undefined) updateData.date = new Date(data.date)
-  if (data.categoryId !== undefined) updateData.category = { connect: { id: data.categoryId } }
-  if (data.isRecurring !== undefined) updateData.isRecurring = data.isRecurring
-  if (data.recurringDay !== undefined) updateData.recurringDay = data.recurringDay
-  if (data.notes !== undefined) updateData.notes = data.notes
-
+export async function updateTransaction(id: string, data: Record<string, unknown>) {
   return await prisma.transaction.update({
     where: { id },
-    data: updateData,
-    include: { category: true },
+    data,
+    include: { category: true, period: true },
   })
 }
 
@@ -153,10 +342,13 @@ export type FinanceSummary = {
   totalIncome: number
   totalExpenses: number
   balance: number
+  dailySummary: DailySummary | null
+  periodSummary: PeriodSummary | null
   incomeByCategory: { category: string; amount: number; color: string | null }[]
   expenseByCategory: { category: string; amount: number; color: string | null }[]
   monthlyData: { month: string; income: number; expenses: number }[]
-  recentTransactions: Awaited<ReturnType<typeof getTransactions>>['items']
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  recentTransactions: any[]
   savingGoals: Awaited<ReturnType<typeof getSavingGoals>>
 }
 
@@ -167,31 +359,28 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
   const startOfYear = new Date(now.getFullYear(), 0, 1)
   const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59)
 
-  const [monthlyIncomeAgg, monthlyExpenseAgg, monthlyAgg, recentTransactions, savingGoals] =
-    await Promise.all([
-      prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: { type: 'INCOME', date: { gte: startOfMonth, lte: endOfMonth } },
-      }),
-      prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: { type: 'EXPENSE', date: { gte: startOfMonth, lte: endOfMonth } },
-      }),
-      prisma.transaction.groupBy({
-        by: ['categoryId', 'type'],
-        where: { date: { gte: startOfMonth, lte: endOfMonth } },
-        _sum: { amount: true },
-      }),
-      prisma.transaction.findMany({
-        take: 5,
-        include: { category: true },
-        orderBy: { date: 'desc' },
-      }),
-      getSavingGoals(),
-    ])
+  const [dailySummary, periodSummary, monthlyAgg, recentTransactions, savingGoals] = await Promise.all([
+    getDailySummary(),
+    getPeriodSummary().catch(() => null),
+    prisma.transaction.groupBy({
+      by: ['categoryId', 'type'],
+      where: { date: { gte: startOfMonth, lte: endOfMonth } },
+      _sum: { amount: true },
+    }),
+    prisma.transaction.findMany({
+      take: 5,
+      include: { category: true },
+      orderBy: { date: 'desc' },
+    }),
+    getSavingGoals(),
+  ])
 
-  const totalIncome = monthlyIncomeAgg._sum.amount || 0
-  const totalExpenses = monthlyExpenseAgg._sum.amount || 0
+  const totalIncome = monthlyAgg
+    .filter((g) => g.type === 'INCOME')
+    .reduce((sum, g) => sum + (g._sum.amount || 0), 0)
+  const totalExpenses = monthlyAgg
+    .filter((g) => g.type === 'EXPENSE')
+    .reduce((sum, g) => sum + (g._sum.amount || 0), 0)
 
   const categoryIds = monthlyAgg.map((g) => g.categoryId)
   const categories = categoryIds.length > 0
@@ -234,15 +423,14 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
       else entry.expenses += tx.amount
     }
   }
-  const monthlyData = Array.from(monthlyMap.entries()).map(([month, data]) => ({
-    month,
-    ...data,
-  }))
+  const monthlyData = Array.from(monthlyMap.entries()).map(([month, data]) => ({ month, ...data }))
 
   return {
     totalIncome,
     totalExpenses,
     balance: totalIncome - totalExpenses,
+    dailySummary,
+    periodSummary,
     incomeByCategory,
     expenseByCategory,
     monthlyData,
@@ -277,26 +465,10 @@ export async function createSavingGoal(data: {
   })
 }
 
-export async function updateSavingGoal(
-  id: string,
-  data: {
-    name?: string
-    targetAmount?: number
-    currentAmount?: number
-    deadline?: string | null
-    categoryId?: string | null
-  },
-) {
-  const updateData: Record<string, unknown> = {}
-  if (data.name !== undefined) updateData.name = data.name
-  if (data.targetAmount !== undefined) updateData.targetAmount = data.targetAmount
-  if (data.currentAmount !== undefined) updateData.currentAmount = data.currentAmount
-  if (data.deadline !== undefined) updateData.deadline = data.deadline ? new Date(data.deadline) : null
-  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
-
+export async function updateSavingGoal(id: string, data: Record<string, unknown>) {
   return await prisma.savingGoal.update({
     where: { id },
-    data: updateData,
+    data,
     include: { category: true },
   })
 }
@@ -336,6 +508,8 @@ export async function autoGenerateMonthlyIncome() {
   const amount = totalLabor._sum.laborCost || 0
   if (amount <= 0) return
 
+  const period = await getOrCreateActivePeriod()
+
   await prisma.transaction.create({
     data: {
       type: 'INCOME',
@@ -343,6 +517,7 @@ export async function autoGenerateMonthlyIncome() {
       description: `Ingresos del taller - ${startOfMonth.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}`,
       date: endOfMonth,
       categoryId: incomeCategory.id,
+      periodId: period.id,
       notes: 'Generado automáticamente del taller',
     },
   })
@@ -352,12 +527,10 @@ export async function autoGenerateRecurringExpenses() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  const period = await getOrCreateActivePeriod()
 
   const recurringTemplates = await prisma.transaction.findMany({
-    where: {
-      isRecurring: true,
-      recurringDay: { not: null },
-    },
+    where: { isRecurring: true, recurringDay: { not: null } },
     include: { category: true },
   })
 
@@ -368,14 +541,13 @@ export async function autoGenerateRecurringExpenses() {
         categoryId: template.categoryId,
         description: template.description,
         date: { gte: startOfMonth, lte: endOfMonth },
-        notes: `Gasto recurrente - generado automáticamente`,
+        notes: 'Gasto recurrente - generado automáticamente',
       },
     })
     if (existingThisMonth) continue
 
     const scheduledDay = Math.min(template.recurringDay || 1, endOfMonth.getDate())
     const scheduledDate = new Date(now.getFullYear(), now.getMonth(), scheduledDay)
-
     if (scheduledDate > endOfMonth) continue
 
     await prisma.transaction.create({
@@ -385,6 +557,7 @@ export async function autoGenerateRecurringExpenses() {
         description: template.description,
         date: scheduledDate,
         categoryId: template.categoryId,
+        periodId: period.id,
         notes: 'Gasto recurrente - generado automáticamente',
       },
     })

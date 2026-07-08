@@ -178,6 +178,11 @@ enum TransactionType {
   EXPENSE
 }
 
+enum BudgetPeriodStatus {
+  ACTIVE
+  CLOSED
+}
+
 model Category {
   id        String        @id @default(cuid())
   name      String
@@ -196,6 +201,23 @@ model Category {
   @@map("categories")
 }
 
+model BudgetPeriod {
+  id               String              @id @default(cuid())
+  startDate        DateTime
+  endDate          DateTime
+  status           BudgetPeriodStatus  @default(ACTIVE)
+  initialBalance   Float               @default(0)
+  savingsAllocated Float               @default(0)
+  notes            String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  transactions     Transaction[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("budget_periods")
+}
+
 model Transaction {
   id           String          @id @default(cuid())
   type         TransactionType
@@ -204,6 +226,8 @@ model Transaction {
   date         DateTime        @default(now())
   categoryId   String
   category     Category        @relation(fields: [categoryId], references: [id])
+  periodId     String?
+  period       BudgetPeriod?   @relation(fields: [periodId], references: [id])
   isRecurring  Boolean         @default(false)
   recurringDay Int?
   notes        String?
@@ -213,6 +237,7 @@ model Transaction {
   @@index([date])
   @@index([type])
   @@index([categoryId])
+  @@index([periodId])
   @@index([isRecurring])
   @@map("transactions")
 }

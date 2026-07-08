@@ -27,6 +27,12 @@ import {
   deleteSavingGoal,
   autoGenerateMonthlyIncome,
   autoGenerateRecurringExpenses,
+  getDailySummary,
+  getPeriodSummary,
+  getOrCreateActivePeriod,
+  closeCurrentPeriod,
+  getClosedPeriods,
+  
 } from './finance.service'
 
 export async function getFinanceCategories(type?: string) {
@@ -245,6 +251,43 @@ export async function deleteSavingGoalAction(goalId: string) {
     revalidatePath('/finances/goals')
     revalidatePath('/finances')
     return { success: 'Meta de ahorro eliminada exitosamente' }
+  } catch (error) {
+    return { error: parseError(error).message }
+  }
+}
+
+// ─── Budget Period Actions ───
+
+export async function getActivePeriodAction() {
+  await requireAuth()
+  return await getOrCreateActivePeriod()
+}
+
+export async function getPeriodSummaryAction(periodId?: string) {
+  await requireAuth()
+  return await getPeriodSummary(periodId)
+}
+
+export async function getDailySummaryAction(dateStr?: string) {
+  await requireAuth()
+  return await getDailySummary(dateStr)
+}
+
+export async function getClosedPeriodsAction(limit = 10) {
+  await requireAuth()
+  return await getClosedPeriods(limit)
+}
+
+export async function closeWeekAction(formData: FormData) {
+  await requireAuth()
+  const savingsTarget = formData.get('savingsTarget')
+    ? Number(formData.get('savingsTarget'))
+    : undefined
+  try {
+    const result = await closeCurrentPeriod(savingsTarget)
+    revalidatePath('/finances')
+    revalidatePath('/finances/plan')
+    return { success: `Semana cerrada exitosamente. Ahorro: $${result.savingsAmount.toLocaleString('es-CO')}` }
   } catch (error) {
     return { error: parseError(error).message }
   }
