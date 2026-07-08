@@ -166,3 +166,67 @@ enum NotificationType {
   REPAIR_READY
   SYSTEM
 }
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+  SAVING_GOAL
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model Category {
+  id        String        @id @default(cuid())
+  name      String
+  type      CategoryType
+  color     String?
+  icon      String?
+  budget    Float?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  deletedAt DateTime?
+  transactions Transaction[]
+  savingGoals  SavingGoal[]
+
+  @@index([type])
+  @@index([deletedAt])
+  @@map("categories")
+}
+
+model Transaction {
+  id           String          @id @default(cuid())
+  type         TransactionType
+  amount       Float
+  description  String
+  date         DateTime        @default(now())
+  categoryId   String
+  category     Category        @relation(fields: [categoryId], references: [id])
+  isRecurring  Boolean         @default(false)
+  recurringDay Int?
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryId])
+  @@index([isRecurring])
+  @@map("transactions")
+}
+
+model SavingGoal {
+  id            String    @id @default(cuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  deadline      DateTime?
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("saving_goals")
+}

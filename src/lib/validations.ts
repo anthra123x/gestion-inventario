@@ -84,3 +84,40 @@ export const CreateNotificationSchema = z.object({
   entityType: z.string().optional().nullable(),
   entityId: z.string().optional().nullable(),
 })
+
+// Finance schemas
+export const CategoryTypeSchema = z.enum(['INCOME', 'EXPENSE', 'SAVING_GOAL'])
+export const TransactionTypeSchema = z.enum(['INCOME', 'EXPENSE'])
+
+export const CreateCategorySchema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  type: CategoryTypeSchema,
+  color: z.string().optional().nullable(),
+  icon: z.string().optional().nullable(),
+  budget: z.coerce.number().min(0, 'El presupuesto debe ser positivo').optional().nullable(),
+})
+
+export const UpdateCategorySchema = CreateCategorySchema.partial()
+
+export const CreateTransactionSchema = z.object({
+  type: TransactionTypeSchema,
+  amount: z.coerce.number().min(1, 'El monto debe ser mayor a 0'),
+  description: z.string().min(2, 'La descripción debe tener al menos 2 caracteres'),
+  date: z.string().optional(),
+  categoryId: z.string(),
+  isRecurring: z.boolean().optional().default(false),
+  recurringDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
+  notes: z.string().optional().nullable(),
+})
+
+export const UpdateTransactionSchema = CreateTransactionSchema.partial()
+
+export const CreateSavingGoalSchema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  targetAmount: z.coerce.number().min(1, 'La meta debe ser mayor a 0'),
+  currentAmount: z.coerce.number().min(0).default(0),
+  deadline: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+})
+
+export const UpdateSavingGoalSchema = CreateSavingGoalSchema.partial()

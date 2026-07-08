@@ -12,6 +12,7 @@ import {
   Users,
   Package,
   Sliders,
+  DollarSign,
 } from 'lucide-react'
 
 const navigation = [
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Reparaciones', href: '/repairs', icon: Wrench },
   { name: 'Repuestos', href: '/inventory', icon: Package },
   { name: 'Clientes', href: '/clients', icon: Users },
+  { name: 'Finanzas', href: '/finances', icon: DollarSign },
   { name: 'Reportes', href: '/reports', icon: FileText },
 ]
 
