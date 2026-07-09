@@ -151,6 +151,10 @@ export async function closeCurrentPeriod(savingsTarget?: number) {
 
   const savingsAmount = savingsTarget !== undefined ? Math.min(savingsTarget, Math.max(balance, 0)) : (balance > 0 ? balance : 0)
 
+  let goalReached = false
+  let goalName = ''
+  let activeGoalId: string | undefined
+
   if (savingsAmount > 0) {
     const savingCategory = await prisma.category.findFirst({
       where: { name: 'Ahorro', type: 'SAVING_GOAL', deletedAt: null },
@@ -170,10 +174,16 @@ export async function closeCurrentPeriod(savingsTarget?: number) {
 
       const activeGoal = await prisma.savingGoal.findFirst({ orderBy: { createdAt: 'desc' } })
       if (activeGoal) {
+        activeGoalId = activeGoal.id
+        const newAmount = activeGoal.currentAmount + savingsAmount
         await prisma.savingGoal.update({
           where: { id: activeGoal.id },
-          data: { currentAmount: { increment: savingsAmount } },
+          data: { currentAmount: newAmount },
         })
+        if (newAmount >= activeGoal.targetAmount && activeGoal.currentAmount < activeGoal.targetAmount) {
+          goalReached = true
+          goalName = activeGoal.name
+        }
       }
     }
   }
@@ -193,7 +203,44 @@ export async function closeCurrentPeriod(savingsTarget?: number) {
     include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
   })
 
+  // Create notifications
+  const users = await prisma.user.findMany({ select: { id: true } })
+  if (users.length > 0) {
+    const weekLabel = period.startDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })
+    const message = savingsAmount > 0
+      ? `Balance: ${formatAmount(balance)} · Ahorrado: ${formatAmount(savingsAmount)}`
+      : `Balance: ${formatAmount(balance)} · No se asignó ahorro`
+
+    await prisma.notification.createMany({
+      data: users.map((u) => ({
+        userId: u.id,
+        type: 'WEEK_CLOSED',
+        title: `Semana del ${weekLabel} cerrada`,
+        message,
+        entityType: 'budget_period',
+        entityId: period.id,
+      })),
+    })
+
+    if (goalReached) {
+      await prisma.notification.createMany({
+        data: users.map((u) => ({
+          userId: u.id,
+          type: 'SAVING_GOAL_REACHED',
+          title: `Meta de ahorro "${goalName}" cumplida`,
+          message: `Has alcanzado tu meta de ahorro. Sigue así.`,
+          entityType: 'saving_goal',
+          entityId: activeGoalId,
+        })),
+      })
+    }
+  }
+
   return { closedPeriod: period, newPeriod, savingsAmount }
+}
+
+function formatAmount(amount: number): string {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount)
 }
 
 async function getActivePeriodById(periodId: string) {

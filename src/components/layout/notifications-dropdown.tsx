@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Bell, CheckCheck, Loader2, Wrench, Info } from 'lucide-react'
+import { Bell, CheckCheck, Loader2, Wrench, Info, PiggyBank, Package, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,6 +31,10 @@ type Notification = {
 const typeIcons: Record<NotificationType, typeof Bell> = {
   REPAIR_READY: Wrench,
   SYSTEM: Info,
+  WEEK_CLOSED: PiggyBank,
+  SAVING_GOAL_REACHED: PiggyBank,
+  LOW_STOCK: Package,
+  BUDGET_ALERT: DollarSign,
 }
 
 function timeAgo(date: Date) {

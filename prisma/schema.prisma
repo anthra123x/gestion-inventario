@@ -165,6 +165,10 @@ enum RepairStatus {
 enum NotificationType {
   REPAIR_READY
   SYSTEM
+  WEEK_CLOSED
+  SAVING_GOAL_REACHED
+  LOW_STOCK
+  BUDGET_ALERT
 }
 
 enum CategoryType {

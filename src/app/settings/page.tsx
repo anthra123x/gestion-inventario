@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Building2, FileText, Settings2, Save } from 'lucide-react'
+import { Building2, FileText, Settings2, Bell, Save, Wrench, PiggyBank, Target, Package, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
 
@@ -129,6 +129,10 @@ export default function SettingsPage() {
             <TabsTrigger value="rules" className="flex items-center gap-2">
               <Settings2 className="h-4 w-4" />
               Reglas de Negocio
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notificaciones
             </TabsTrigger>
           </TabsList>
 
@@ -316,6 +320,75 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notificaciones del Sistema</CardTitle>
+                <CardDescription>Eventos que generan notificaciones en la aplicación</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                      <Wrench className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Reparación lista</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Cuando una reparación cambia a estado "Listo" o "Entregado"
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+                      <PiggyBank className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Cierre de semana financiera</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Al cerrar la semana en Finanzas, con resumen de ingresos, gastos y ahorro
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-600">
+                      <Target className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Meta de ahorro cumplida</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Cuando el ahorro acumulado alcanza o supera la meta establecida
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                      <Package className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Stock bajo de repuestos</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Cuando un repuesto tiene cantidad menor al umbral definido en Reglas de Negocio
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                      <DollarSign className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Alerta de presupuesto</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Cuando los gastos en una categoría superan el presupuesto mensual asignado
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
 
         <div className="flex justify-end pt-4">

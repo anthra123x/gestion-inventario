@@ -87,7 +87,31 @@ export async function getUnreadCount() {
   }
 }
 
-// Kept for backward compatibility
+export async function notifyCurrentUser(
+  type: NotificationType,
+  title: string,
+  message?: string | null,
+  entityType?: string | null,
+  entityId?: string | null,
+) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return
+
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        type,
+        title,
+        message: message || null,
+        entityType: entityType || null,
+        entityId: entityId || null,
+      },
+    })
+  } catch {
+    // Notification failures should never break the main operation
+  }
+}
 export async function getNotifications(page = 1, take = 20) {
   const result = await getNotificationData(page, take)
   return { notifications: result.notifications, total: result.total, page: result.page, totalPages: result.totalPages }

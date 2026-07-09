@@ -60,3 +60,15 @@ export function getCategoryColor(color: string | null): string {
   }
   return colors[color || ''] || 'bg-gray-500'
 }
+
+export function getNotificationTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    REPAIR_READY: 'Reparación lista',
+    SYSTEM: 'Sistema',
+    WEEK_CLOSED: 'Semana cerrada',
+    SAVING_GOAL_REACHED: 'Meta de ahorro',
+    LOW_STOCK: 'Stock bajo',
+    BUDGET_ALERT: 'Alerta de presupuesto',
+  }
+  return labels[type] || type
+}
