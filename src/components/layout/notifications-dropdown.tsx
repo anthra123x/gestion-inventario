@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getNotificationData, markAsRead, markAllAsRead } from '@/modules/notifications/notifications.actions'
 import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 import type { NotificationType } from '@prisma/client'
 
 type Notification = {
@@ -28,13 +29,13 @@ type Notification = {
   createdAt: Date
 }
 
-const typeIcons: Record<NotificationType, typeof Bell> = {
-  REPAIR_READY: Wrench,
-  SYSTEM: Info,
-  WEEK_CLOSED: PiggyBank,
-  SAVING_GOAL_REACHED: PiggyBank,
-  LOW_STOCK: Package,
-  BUDGET_ALERT: DollarSign,
+const typeConfig: Record<NotificationType, { icon: typeof Bell; color: string }> = {
+  REPAIR_READY: { icon: Wrench, color: 'bg-blue-100 text-blue-600' },
+  SYSTEM: { icon: Info, color: 'bg-gray-100 text-gray-600' },
+  WEEK_CLOSED: { icon: PiggyBank, color: 'bg-green-100 text-green-600' },
+  SAVING_GOAL_REACHED: { icon: PiggyBank, color: 'bg-teal-100 text-teal-600' },
+  LOW_STOCK: { icon: Package, color: 'bg-orange-100 text-orange-600' },
+  BUDGET_ALERT: { icon: DollarSign, color: 'bg-red-100 text-red-600' },
 }
 
 function timeAgo(date: Date) {
@@ -45,10 +46,22 @@ function timeAgo(date: Date) {
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}h`
   const days = Math.floor(hours / 24)
-  return `${days}d`
+  if (days < 7) return `${days}d`
+  return new Date(date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+}
+
+function getEntityRoute(entityType: string | null, entityId: string | null): string | null {
+  if (!entityType || !entityId) return null
+  switch (entityType) {
+    case 'repair': return `/repairs/${entityId}`
+    case 'budget_period': return '/finances'
+    case 'saving_goal': return '/finances/goals'
+    default: return null
+  }
 }
 
 export function NotificationsDropdown() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -83,10 +96,14 @@ export function NotificationsDropdown() {
     if (open) load(true)
   }
 
-  async function handleMarkAsRead(id: string) {
-    await markAsRead(id)
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-    setUnreadCount((prev) => Math.max(0, prev - 1))
+  async function handleClick(notif: Notification) {
+    if (!notif.read) {
+      await markAsRead(notif.id)
+      setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)))
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    }
+    const route = getEntityRoute(notif.entityType, notif.entityId)
+    if (route) router.push(route)
   }
 
   async function handleMarkAllAsRead() {
@@ -137,7 +154,7 @@ export function NotificationsDropdown() {
           ) : (
             <DropdownMenuGroup>
               {notifications.map((notif) => {
-                const Icon = typeIcons[notif.type]
+                const { icon: Icon, color } = typeConfig[notif.type]
                 return (
                   <DropdownMenuItem
                     key={notif.id}
@@ -145,11 +162,11 @@ export function NotificationsDropdown() {
                       'flex items-start gap-3 px-3 py-2.5 cursor-pointer',
                       !notif.read && 'bg-muted/50',
                     )}
-                    onClick={() => handleMarkAsRead(notif.id)}
+                    onClick={() => handleClick(notif)}
                   >
                     <div className={cn(
                       'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-                      !notif.read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                      !notif.read ? color : 'bg-muted text-muted-foreground',
                     )}>
                       <Icon className="h-3.5 w-3.5" />
                     </div>
