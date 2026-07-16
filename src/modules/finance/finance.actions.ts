@@ -25,7 +25,6 @@ import {
   createSavingGoal,
   updateSavingGoal,
   deleteSavingGoal,
-  autoGenerateMonthlyIncome,
   autoGenerateRecurringExpenses,
   getDailySummary,
   getPeriodSummary,
@@ -185,7 +184,6 @@ export async function deleteTransactionAction(transactionId: string) {
 
 export async function getFinanceSummaryAction() {
   await requireAuth()
-  await autoGenerateMonthlyIncome()
   await autoGenerateRecurringExpenses()
   return await getFinanceSummary()
 }

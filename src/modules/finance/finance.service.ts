@@ -15,17 +15,25 @@ export function getWeekPeriod(date: Date = new Date()) {
 
 export async function getOrCreateActivePeriod() {
   const { startDate, endDate } = getWeekPeriod()
-  let period = await prisma.budgetPeriod.findFirst({
-    where: { status: 'ACTIVE' },
+
+  const existing = await prisma.budgetPeriod.findFirst({
+    where: {
+      status: 'ACTIVE',
+      startDate: { equals: startDate },
+    },
     include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
   })
-  if (!period) {
-    period = await prisma.budgetPeriod.create({
-      data: { startDate, endDate },
-      include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
-    })
-  }
-  return period
+  if (existing) return existing
+
+  await prisma.budgetPeriod.updateMany({
+    where: { status: 'ACTIVE' },
+    data: { status: 'CLOSED' },
+  })
+
+  return await prisma.budgetPeriod.create({
+    data: { startDate, endDate },
+    include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+  })
 }
 
 export async function getPeriodById(periodId: string) {
@@ -61,13 +69,24 @@ export async function getDailySummary(dateStr?: string): Promise<DailySummary> {
   const end = new Date(date)
   end.setHours(23, 59, 59, 999)
 
-  const transactions = await prisma.transaction.findMany({
-    where: { date: { gte: start, lte: end } },
-    include: { category: true },
-    orderBy: { date: 'desc' },
-  })
+  const [transactions, finishedRepairs] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { date: { gte: start, lte: end } },
+      include: { category: true },
+      orderBy: { date: 'desc' },
+    }),
+    prisma.repair.findMany({
+      where: {
+        status: 'DELIVERED',
+        dateDelivered: { gte: start, lte: end },
+      },
+      select: { laborCost: true, id: true, device: true },
+    }),
+  ])
 
-  const totalIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const repairIncome = finishedRepairs.reduce((s, r) => s + r.laborCost, 0)
+  const txIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const totalIncome = txIncome + repairIncome
   const totalExpenses = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
   const expenseByCategory = aggregateByCategory(transactions.filter((t) => t.type === 'EXPENSE'))
 
@@ -109,8 +128,18 @@ export async function getPeriodSummary(periodId?: string): Promise<PeriodSummary
   const period = periodId ? await getActivePeriodById(periodId) : await getOrCreateActivePeriod()
   const transactions = period.transactions
 
-  const totalIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const txIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
   const totalExpenses = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+
+  const finishedRepairs = await prisma.repair.findMany({
+    where: {
+      status: 'DELIVERED',
+      dateDelivered: { gte: period.startDate, lte: period.endDate },
+    },
+    select: { laborCost: true, dateDelivered: true },
+  })
+  const repairIncome = finishedRepairs.reduce((s, r) => s + r.laborCost, 0)
+  const totalIncome = txIncome + repairIncome
   const balance = totalIncome - totalExpenses
 
   const dailyMap = new Map<string, { income: number; expenses: number }>()
@@ -126,11 +155,22 @@ export async function getPeriodSummary(periodId?: string): Promise<PeriodSummary
       else entry.expenses += tx.amount
     }
   }
+  for (const r of finishedRepairs) {
+    if (!r.dateDelivered) continue
+    const key = r.dateDelivered.toISOString().split('T')[0]
+    const entry = dailyMap.get(key)
+    if (entry) entry.income += r.laborCost
+  }
   const dailyBreakdown = Array.from(dailyMap.entries()).map(([date, data]) => ({
     date,
     ...data,
     balance: data.income - data.expenses,
   }))
+
+  const allIncome = [...transactions.filter((t) => t.type === 'INCOME'), ...finishedRepairs.map((r) => ({
+    amount: r.laborCost,
+    category: { name: 'Trabajo Técnico', color: '#22c55e' },
+  }))]
 
   return {
     period,
@@ -140,7 +180,7 @@ export async function getPeriodSummary(periodId?: string): Promise<PeriodSummary
     netAfterSavings: balance - period.savingsAllocated,
     dailyBreakdown,
     expenseByCategory: aggregateByCategory(transactions.filter((t) => t.type === 'EXPENSE')),
-    incomeByCategory: aggregateByCategory(transactions.filter((t) => t.type === 'INCOME')),
+    incomeByCategory: aggregateByCategory(allIncome),
   }
 }
 
@@ -406,7 +446,7 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
   const startOfYear = new Date(now.getFullYear(), 0, 1)
   const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59)
 
-  const [dailySummary, periodSummary, monthlyAgg, recentTransactions, savingGoals] = await Promise.all([
+  const [dailySummary, periodSummary, monthlyAgg, recentTransactions, savingGoals, monthlyRepairs] = await Promise.all([
     getDailySummary(),
     getPeriodSummary().catch(() => null),
     prisma.transaction.groupBy({
@@ -420,14 +460,24 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
       orderBy: { date: 'desc' },
     }),
     getSavingGoals(),
+    prisma.repair.findMany({
+      where: {
+        status: 'DELIVERED',
+        dateDelivered: { gte: startOfMonth, lte: endOfMonth },
+      },
+      select: { laborCost: true, dateDelivered: true },
+    }),
   ])
 
-  const totalIncome = monthlyAgg
+  const repairIncomeTotal = monthlyRepairs.reduce((s, r) => s + r.laborCost, 0)
+
+  const txIncome = monthlyAgg
     .filter((g) => g.type === 'INCOME')
     .reduce((sum, g) => sum + (g._sum.amount || 0), 0)
   const totalExpenses = monthlyAgg
     .filter((g) => g.type === 'EXPENSE')
     .reduce((sum, g) => sum + (g._sum.amount || 0), 0)
+  const totalIncome = txIncome + repairIncomeTotal
 
   const categoryIds = monthlyAgg.map((g) => g.categoryId)
   const categories = categoryIds.length > 0
@@ -435,13 +485,22 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
     : []
   const categoryMap = new Map(categories.map((c) => [c.id, c]))
 
-  const incomeByCategory = monthlyAgg
-    .filter((g) => g.type === 'INCOME')
-    .map((g) => ({
-      category: categoryMap.get(g.categoryId)?.name || 'Sin categoría',
-      amount: g._sum.amount || 0,
-      color: categoryMap.get(g.categoryId)?.color || null,
-    }))
+  const incomeByCategory = [
+    ...monthlyAgg
+      .filter((g) => g.type === 'INCOME')
+      .map((g) => ({
+        category: categoryMap.get(g.categoryId)?.name || 'Sin categoría',
+        amount: g._sum.amount || 0,
+        color: categoryMap.get(g.categoryId)?.color || null,
+      })),
+  ]
+  if (repairIncomeTotal > 0) {
+    incomeByCategory.push({
+      category: 'Trabajo Técnico',
+      amount: repairIncomeTotal,
+      color: '#22c55e',
+    })
+  }
 
   const expenseByCategory = monthlyAgg
     .filter((g) => g.type === 'EXPENSE')
@@ -451,11 +510,20 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
       color: categoryMap.get(g.categoryId)?.color || null,
     }))
 
-  const monthlyTransactions = await prisma.transaction.findMany({
-    where: { date: { gte: startOfYear, lte: endOfYear } },
-    select: { type: true, amount: true, date: true },
-    orderBy: { date: 'asc' },
-  })
+  const [monthlyTransactions, yearlyRepairs] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { date: { gte: startOfYear, lte: endOfYear } },
+      select: { type: true, amount: true, date: true },
+      orderBy: { date: 'asc' },
+    }),
+    prisma.repair.findMany({
+      where: {
+        status: 'DELIVERED',
+        dateDelivered: { gte: startOfYear, lte: endOfYear },
+      },
+      select: { laborCost: true, dateDelivered: true },
+    }),
+  ])
 
   const monthlyMap = new Map<string, { income: number; expenses: number }>()
   for (let m = 0; m < 12; m++) {
@@ -469,6 +537,12 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
       if (tx.type === 'INCOME') entry.income += tx.amount
       else entry.expenses += tx.amount
     }
+  }
+  for (const r of yearlyRepairs) {
+    if (!r.dateDelivered) continue
+    const key = `${r.dateDelivered.getFullYear()}-${String(r.dateDelivered.getMonth() + 1).padStart(2, '0')}`
+    const entry = monthlyMap.get(key)
+    if (entry) entry.income += r.laborCost
   }
   const monthlyData = Array.from(monthlyMap.entries()).map(([month, data]) => ({ month, ...data }))
 
