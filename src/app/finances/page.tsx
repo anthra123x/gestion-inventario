@@ -84,10 +84,11 @@ export default function FinancesPage() {
     setLoading(true)
     setError(null)
     try {
+      const todayStr = new Date().toLocaleDateString('en-CA')
       const [s, d, p] = await Promise.all([
-        getFinanceSummaryAction(),
-        getDailySummaryAction(),
-        getPeriodSummaryAction(),
+        getFinanceSummaryAction(todayStr),
+        getDailySummaryAction(todayStr),
+        getPeriodSummaryAction(todayStr),
       ])
       setSummary(s)
       setDailySummary(d)

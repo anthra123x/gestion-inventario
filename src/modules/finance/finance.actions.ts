@@ -182,10 +182,10 @@ export async function deleteTransactionAction(transactionId: string) {
   }
 }
 
-export async function getFinanceSummaryAction() {
+export async function getFinanceSummaryAction(dateStr?: string) {
   await requireAuth()
   await autoGenerateRecurringExpenses()
-  return await getFinanceSummary()
+  return await getFinanceSummary(dateStr)
 }
 
 export async function getSavingGoalsAction() {
@@ -261,9 +261,9 @@ export async function getActivePeriodAction() {
   return await getOrCreateActivePeriod()
 }
 
-export async function getPeriodSummaryAction(periodId?: string) {
+export async function getPeriodSummaryAction(dateStr?: string, periodId?: string) {
   await requireAuth()
-  return await getPeriodSummary(periodId)
+  return await getPeriodSummary(dateStr, periodId)
 }
 
 export async function getDailySummaryAction(dateStr?: string) {

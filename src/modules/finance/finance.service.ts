@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
-export function getWeekPeriod(date: Date = new Date()) {
+export function getWeekPeriod(dateStr?: string) {
+  const date = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
   const day = date.getDay()
   const diffToMonday = day === 0 ? -6 : 1 - day
   const monday = new Date(date)
@@ -13,17 +14,25 @@ export function getWeekPeriod(date: Date = new Date()) {
   return { startDate: monday, endDate: sunday }
 }
 
-export async function getOrCreateActivePeriod() {
-  const { startDate, endDate } = getWeekPeriod()
+export async function getOrCreateActivePeriod(dateStr?: string) {
+  const { startDate, endDate } = getWeekPeriod(dateStr)
 
-  const existing = await prisma.budgetPeriod.findFirst({
-    where: {
-      status: 'ACTIVE',
-      startDate: { equals: startDate },
-    },
-    include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+  const activePeriod = await prisma.budgetPeriod.findFirst({
+    where: { status: 'ACTIVE' },
+    select: { id: true, startDate: true },
   })
-  if (existing) return existing
+
+  if (activePeriod) {
+    const activeStart = activePeriod.startDate.toISOString().split('T')[0]
+    const expectedStart = startDate.toISOString().split('T')[0]
+    if (activeStart === expectedStart) {
+      const existing = await prisma.budgetPeriod.findUnique({
+        where: { id: activePeriod.id },
+        include: { transactions: { include: { category: true }, orderBy: { date: 'desc' } } },
+      })
+      if (existing) return existing
+    }
+  }
 
   await prisma.budgetPeriod.updateMany({
     where: { status: 'ACTIVE' },
@@ -124,8 +133,8 @@ export type PeriodSummary = {
   incomeByCategory: { category: string; amount: number; color: string | null }[]
 }
 
-export async function getPeriodSummary(periodId?: string): Promise<PeriodSummary> {
-  const period = periodId ? await getActivePeriodById(periodId) : await getOrCreateActivePeriod()
+export async function getPeriodSummary(dateStr?: string, periodId?: string): Promise<PeriodSummary> {
+  const period = periodId ? await getActivePeriodById(periodId) : (await getOrCreateActivePeriod(dateStr))!
   const transactions = period.transactions
 
   const txIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
@@ -228,7 +237,8 @@ export async function closeCurrentPeriod(savingsTarget?: number) {
     }
   }
 
-  const { startDate, endDate } = getWeekPeriod(new Date(period.endDate.getTime() + 86400000))
+  const nextDay = new Date(period.endDate.getTime() + 86400000)
+  const { startDate, endDate } = getWeekPeriod(nextDay.toISOString().split('T')[0])
 
   await prisma.budgetPeriod.update({
     where: { id: period.id },
@@ -396,13 +406,15 @@ export async function createTransaction(data: {
   recurringDay?: number | null
   notes?: string | null
 }) {
-  const periodId = data.periodId || (await getOrCreateActivePeriod()).id
+  const txDate = data.date ? new Date(data.date) : new Date()
+  const dateStr = txDate.toISOString().split('T')[0]
+  const periodId = data.periodId || (await getOrCreateActivePeriod(dateStr)).id
   return await prisma.transaction.create({
     data: {
       type: data.type,
       amount: data.amount,
       description: data.description,
-      date: data.date ? new Date(data.date) : new Date(),
+      date: txDate,
       categoryId: data.categoryId,
       periodId,
       isRecurring: data.isRecurring ?? false,
@@ -439,16 +451,16 @@ export type FinanceSummary = {
   savingGoals: Awaited<ReturnType<typeof getSavingGoals>>
 }
 
-export async function getFinanceSummary(): Promise<FinanceSummary> {
-  const now = new Date()
+export async function getFinanceSummary(dateStr?: string): Promise<FinanceSummary> {
+  const now = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
   const startOfYear = new Date(now.getFullYear(), 0, 1)
   const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59)
 
   const [dailySummary, periodSummary, monthlyAgg, recentTransactions, savingGoals, monthlyRepairs] = await Promise.all([
-    getDailySummary(),
-    getPeriodSummary().catch(() => null),
+    getDailySummary(dateStr),
+    getPeriodSummary(dateStr).catch(() => null),
     prisma.transaction.groupBy({
       by: ['categoryId', 'type'],
       where: { date: { gte: startOfMonth, lte: endOfMonth } },
