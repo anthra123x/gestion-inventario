@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import type { ProductCategory, Supplier } from '@prisma/client'
@@ -51,6 +51,8 @@ export function ProductForm({
   const [error, setError] = useState<string | null>(null)
   const [categoryId, setCategoryId] = useState(product?.categoryId || '')
   const [supplierId, setSupplierId] = useState(product?.supplierId || '')
+  const [categoryName, setCategoryName] = useState(product?.category?.name || '')
+  const [supplierName, setSupplierName] = useState(product?.supplier?.name || '')
 
   const {
     register,
@@ -96,8 +98,8 @@ export function ProductForm({
         salePrice: Number(data.salePrice) || 0,
         stock: Number(data.stock) || 0,
         lowStockThreshold: Number(data.lowStockThreshold) || 5,
-        categoryId: categoryId || null,
-        supplierId: supplierId || null,
+        categoryId: categories.find(c => c.name === categoryName)?.id || null,
+        supplierId: suppliers.find(s => s.name === supplierName)?.id || null,
       }
 
       const formData = new FormData()
@@ -219,35 +221,37 @@ export function ProductForm({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Proveedor</Label>
-              <Select value={supplierId} onValueChange={(value) => setSupplierId(value ?? '')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar proveedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="supplier">Proveedor</Label>
+              <Input
+                id="supplier"
+                list="suppliers-list"
+                placeholder="Escribe o selecciona proveedor"
+                disabled={isSubmitting || isLoading}
+                value={supplierName}
+                onChange={(e) => setSupplierName(e.target.value)}
+              />
+              <datalist id="suppliers-list">
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.name} />
+                ))}
+              </datalist>
             </div>
 
             <div className="space-y-2">
-              <Label>Categoría</Label>
-              <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? '')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="category">Categoría</Label>
+              <Input
+                id="category"
+                list="categories-list"
+                placeholder="Escribe o selecciona categoría"
+                disabled={isSubmitting || isLoading}
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+              />
+              <datalist id="categories-list">
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name} />
+                ))}
+              </datalist>
             </div>
 
             <div className="space-y-2">
