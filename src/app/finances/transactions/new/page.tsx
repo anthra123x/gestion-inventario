@@ -8,9 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { createTransactionAction, getFinanceCategories } from '@/modules/finance/finance.actions'
@@ -95,7 +93,13 @@ export default function NewTransactionPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select value={type} onValueChange={(v) => { setType(v ?? 'EXPENSE'); setCategoryId('') }}>
+              <Select
+                value={type}
+                onValueChange={(v) => {
+                  setType(v ?? 'EXPENSE')
+                  setCategoryId('')
+                }}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -109,36 +113,17 @@ export default function NewTransactionPage() {
 
             <div className="space-y-2">
               <Label htmlFor="amount">Monto</Label>
-              <Input
-                id="amount"
-                name="amount"
-                type="number"
-                min={1}
-                step="0.01"
-                required
-                placeholder="0"
-              />
+              <Input id="amount" name="amount" type="number" min={1} step="0.01" required placeholder="0" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">Descripción</Label>
-              <Input
-                id="description"
-                name="description"
-                type="text"
-                required
-                placeholder="Ej: Compra de insumos"
-              />
+              <Input id="description" name="description" type="text" required placeholder="Ej: Compra de insumos" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="date">Fecha</Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                defaultValue={today}
-              />
+              <Input id="date" name="date" type="date" defaultValue={today} />
             </div>
 
             <div className="space-y-2">
@@ -149,7 +134,9 @@ export default function NewTransactionPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {filteredCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -164,7 +151,9 @@ export default function NewTransactionPage() {
                 checked={isRecurring}
                 onChange={(e) => setIsRecurring(e.target.checked)}
               />
-              <Label htmlFor="isRecurring" className="text-sm font-normal">Es recurrente</Label>
+              <Label htmlFor="isRecurring" className="text-sm font-normal">
+                Es recurrente
+              </Label>
               <input type="hidden" name="isRecurring" value={isRecurring ? 'true' : 'false'} />
             </div>
 
@@ -185,16 +174,13 @@ export default function NewTransactionPage() {
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notas</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                placeholder="Notas adicionales (opcional)"
-                rows={3}
-              />
+              <Textarea id="notes" name="notes" placeholder="Notas adicionales (opcional)" rows={3} />
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" type="button" render={<Link href="/finances/transactions" />}>Cancelar</Button>
+              <Button variant="outline" type="button" render={<Link href="/finances/transactions" />}>
+                Cancelar
+              </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Guardar Transacción

@@ -41,10 +41,13 @@ export class ConflictError extends AppError {
   }
 }
 
-export function parseError(error: unknown, fallbackMessage = 'Error desconocido'): { message: string; code?: string; meta?: Record<string, unknown> } {
+export function parseError(
+  error: unknown,
+  fallbackMessage = 'Error desconocido',
+): { message: string; code?: string; meta?: Record<string, unknown> } {
   if (error instanceof Error) {
     const prismaCode = 'code' in error ? String((error as { code: unknown }).code) : undefined
-    const meta = 'meta' in error ? (error as { meta: unknown }).meta as Record<string, unknown> : undefined
+    const meta = 'meta' in error ? ((error as { meta: unknown }).meta as Record<string, unknown>) : undefined
     return { message: error.message, code: prismaCode, meta }
   }
   if (error && typeof error === 'object') {

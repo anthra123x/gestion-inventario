@@ -26,17 +26,15 @@ const colorMap = {
 
 export function StatCard({ title, value, change, icon: Icon, color = 'default', className, href }: StatCardProps) {
   const content = (
-    <Card className={cn('stat-card', href && 'cursor-pointer card-hover', className)}>
+    <Card className={cn('stat-card transition-all duration-200 card-shadow hover:card-shadow-warm-md active:scale-[0.98]', href && 'cursor-pointer', className)}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-1.5">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <div className="text-2xl font-bold tracking-tight tabular-nums">{value}</div>
-            {change && <p className="text-xs text-muted-foreground/70">{change}</p>}
+            {change && <p className="text-xs text-muted-foreground/70 tabular-nums">{change}</p>}
           </div>
-          <div
-            className={cn('rounded-xl p-3 shrink-0', colorMap[color])}
-          >
+          <div className={cn('rounded-xl p-3 shrink-0 transition-transform duration-200', colorMap[color])}>
             <Icon className="h-5 w-5" />
           </div>
         </div>

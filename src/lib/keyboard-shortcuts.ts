@@ -35,12 +35,6 @@ export function useKeyboardShortcuts() {
         router.push('/sales')
       }
 
-      // Alt + R: Reparaciones
-      if (e.altKey && e.key === 'r') {
-        e.preventDefault()
-        router.push('/repairs')
-      }
-
       // Alt + P: Reportes
       if (e.altKey && e.key === 'p') {
         e.preventDefault()
@@ -51,12 +45,6 @@ export function useKeyboardShortcuts() {
       if (e.altKey && e.key === 'a') {
         e.preventDefault()
         router.push('/admin')
-      }
-
-      // Alt + N: Nueva venta (acceso rápido)
-      if (e.altKey && e.key === 'n') {
-        e.preventDefault()
-        router.push('/sales/new')
       }
 
       // Alt + Q: Búsqueda global (enfocar input de búsqueda)

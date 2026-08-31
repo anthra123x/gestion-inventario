@@ -2,15 +2,15 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAdmin } from '@/modules/auth/auth.actions'
+import { requireAuth } from '@/modules/auth/auth.actions'
 import * as XLSX from 'xlsx'
 
 export async function exportData() {
-  await requireAdmin()
+  await requireAuth()
   try {
-    const [parts, repairs, clients] = await Promise.all([
-      prisma.part.findMany({ where: { deletedAt: null } }),
-      prisma.repair.findMany({ include: { repairParts: { include: { part: true } }, client: true } }),
+    const [products, sales, clients] = await Promise.all([
+      prisma.product.findMany({ where: { deletedAt: null }, include: { category: true, supplier: true } }),
+      prisma.sale.findMany({ include: { items: { include: { product: true } }, client: true } }),
       prisma.client.findMany({ where: { deletedAt: null } }),
     ])
 
@@ -19,32 +19,36 @@ export async function exportData() {
     XLSX.utils.book_append_sheet(
       workbook,
       XLSX.utils.json_to_sheet(
-        parts.map((p) => ({
+        products.map((p) => ({
           ID: p.id,
           Nombre: p.name,
           Descripción: p.description || '',
-          Proveedor: p.supplier || '',
-          Precio: p.price,
+          Categoría: p.category?.name || '',
+          Proveedor: p.supplier?.name || '',
+          Costo: p.costPrice,
+          'Precio Venta': p.salePrice,
+          Stock: p.stock,
         })),
       ),
-      'Repuestos',
+      'Productos',
     )
 
     XLSX.utils.book_append_sheet(
       workbook,
       XLSX.utils.json_to_sheet(
-        repairs.map((r) => ({
-          ID: r.id,
-          Cliente: r.client?.name || 'Sin cliente',
-          Dispositivo: r.device,
-          Problema: r.problem,
-          Diagnóstico: r.diagnosis || '',
-          Estado: r.status,
-          ManoObra: r.laborCost,
-          Fecha: new Date(r.createdAt).toISOString(),
+        sales.map((s) => ({
+          ID: s.id,
+          'No. Factura': s.invoiceNumber,
+          Cliente: s.client?.name || 'Consumidor final',
+          Subtotal: s.subtotal,
+          Descuento: s.discount,
+          Total: s.total,
+          'Método de Pago': s.paymentMethod,
+          Estado: s.status,
+          Fecha: new Date(s.saleDate).toISOString(),
         })),
       ),
-      'Reparaciones',
+      'Ventas',
     )
 
     XLSX.utils.book_append_sheet(
@@ -71,36 +75,20 @@ export async function exportData() {
   }
 }
 
-export async function cleanupRepairs() {
-  await requireAdmin()
-  try {
-    await prisma.$transaction(async (tx) => {
-      await tx.repairPart.deleteMany({})
-      await tx.repair.deleteMany({})
-    })
-
-    revalidatePath('/repairs')
-    revalidatePath('/admin')
-
-    return { success: 'Limpieza de reparaciones completada.' }
-  } catch {
-    return { error: 'Error al limpiar reparaciones' }
-  }
-}
-
 export async function cleanupAll() {
-  await requireAdmin()
+  await requireAuth()
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.repairPart.deleteMany({})
-      await tx.repair.deleteMany({})
-      await tx.part.deleteMany({})
+      await tx.saleItem.deleteMany({})
+      await tx.sale.deleteMany({})
+      await tx.stockMovement.deleteMany({})
+      await tx.product.deleteMany({})
       await tx.client.deleteMany({})
     })
 
-    revalidatePath('/repairs')
     revalidatePath('/inventory')
     revalidatePath('/clients')
+    revalidatePath('/sales')
     revalidatePath('/admin')
     revalidatePath('/dashboard')
 

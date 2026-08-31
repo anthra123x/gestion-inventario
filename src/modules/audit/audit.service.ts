@@ -1,31 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/modules/auth/auth.actions'
 
-type AuditAction =
-  | 'CREATE'
-  | 'UPDATE'
-  | 'DELETE'
-  | 'CONFIRM'
-  | 'CANCEL'
-  | 'LOGIN'
-  | 'EXPORT'
-  | 'CLEANUP'
+type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'CONFIRM' | 'CANCEL' | 'LOGIN' | 'EXPORT' | 'CLEANUP'
 
-type AuditEntity =
-  | 'sale'
-  | 'product'
-  | 'repair'
-  | 'client'
-  | 'user'
-  | 'setting'
-  | 'inventory'
+type AuditEntity = 'sale' | 'product' | 'repair' | 'client' | 'user' | 'setting' | 'inventory'
 
-export async function logAudit(
-  action: AuditAction,
-  entity: AuditEntity,
-  entityId?: string,
-  details?: string,
-) {
+export async function logAudit(action: AuditAction, entity: AuditEntity, entityId?: string, details?: string) {
   try {
     const user = await getCurrentUser()
     await prisma.auditLog.create({

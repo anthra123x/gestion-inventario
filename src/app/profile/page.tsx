@@ -5,16 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Mail, Shield, Calendar, Loader2 } from 'lucide-react'
-import { getCurrentUser } from '@/modules/auth/auth.actions'
+import { User, Mail, Calendar, Loader2 } from 'lucide-react'
+import { getCurrentUser, updatePassword } from '@/modules/auth/auth.actions'
+import { ChangePasswordSchema } from '@/lib/validations'
 import { toast } from 'sonner'
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<{ email: string; name: string; role: string; createdAt: string } | null>(null)
+  const [user, setUser] = useState<{ email: string; name: string; createdAt: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -23,7 +28,6 @@ export default function ProfilePage() {
         setUser({
           email: result.email ?? '',
           name: result.name ?? '',
-          role: result.role ?? 'EMPLOYEE',
           createdAt: '',
         })
         setName(result.name ?? '')
@@ -41,6 +45,33 @@ export default function ProfilePage() {
     setIsEditing(false)
     setSaving(false)
     toast.success('Perfil actualizado')
+  }
+
+  async function handlePasswordChange() {
+    if (newPassword !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden')
+      return
+    }
+
+    const parsed = ChangePasswordSchema.safeParse({ password: newPassword })
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Contraseña inválida')
+      return
+    }
+
+    setPasswordSaving(true)
+    const result = await updatePassword(newPassword)
+    setPasswordSaving(false)
+
+    if (result?.error) {
+      toast.error(result.error)
+      return
+    }
+
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    toast.success('Contraseña actualizada exitosamente')
   }
 
   if (loading) {
@@ -97,8 +128,7 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label>Rol</Label>
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-gray-500" />
-                <p className="text-sm">{user.role === 'ADMIN' ? 'Administrador' : 'Empleado'}</p>
+                <p className="text-sm">Administrador</p>
               </div>
             </div>
 
@@ -144,20 +174,41 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Contraseña Actual</Label>
-              <Input id="currentPassword" type="password" autoComplete="current-password" />
+              <Input
+                id="currentPassword"
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="newPassword">Nueva Contraseña</Label>
-              <Input id="newPassword" type="password" autoComplete="new-password" />
+              <Input
+                id="newPassword"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
-              <Input id="confirmPassword" type="password" autoComplete="new-password" />
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
             </div>
 
-            <Button>Actualizar Contraseña</Button>
+            <Button onClick={handlePasswordChange} disabled={passwordSaving}>
+              {passwordSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Actualizar Contraseña
+            </Button>
           </CardContent>
         </Card>
       </div>

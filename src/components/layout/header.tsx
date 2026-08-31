@@ -19,7 +19,6 @@ interface HeaderProps {
   user: {
     name: string
     email: string
-    role: 'ADMIN' | 'EMPLOYEE'
   }
   onMenuClick?: () => void
 }
@@ -32,7 +31,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 lg:px-6 sticky top-0 z-30">
+    <header className="flex h-16 items-center justify-between border-b border-border bg-background/90 backdrop-blur-md px-4 lg:px-6 sticky top-0 z-30 shadow-sm shadow-primary/[0.03]">
       <div className="flex items-center gap-3 lg:gap-4">
         <Button variant="ghost" size="icon" onClick={onMenuClick} className="lg:hidden -ml-1.5">
           <Menu className="h-5 w-5" />
@@ -43,7 +42,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
             id="global-search"
             type="search"
             placeholder="Buscar... (Alt+Q)"
-            className="w-full pl-10 bg-muted/50 border-none focus-visible:bg-background"
+            className="w-full pl-10 bg-muted/40 border-border/60 focus-visible:bg-background transition-colors duration-200"
           />
         </div>
       </div>
@@ -52,10 +51,10 @@ export function Header({ user, onMenuClick }: HeaderProps) {
         <NotificationsDropdown />
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 lg:gap-3 cursor-pointer rounded-lg p-1.5 hover:bg-muted/70 transition-colors">
+          <DropdownMenuTrigger className="flex items-center gap-2 lg:gap-3 cursor-pointer rounded-lg p-1.5 hover:bg-muted/70 transition-all duration-200 active:scale-[0.98]">
             <div className="text-right hidden sm:block">
               <div className="text-sm font-medium leading-tight">{user.name}</div>
-              <div className="text-xs text-muted-foreground/70 capitalize">{user.role.toLowerCase()}</div>
+              <div className="text-xs text-muted-foreground/70">Administrador</div>
             </div>
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0">
               <span className="text-sm font-semibold text-primary-foreground">{user.name.charAt(0).toUpperCase()}</span>

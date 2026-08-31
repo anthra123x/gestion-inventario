@@ -93,7 +93,14 @@ export default function EditClientPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Teléfono *</Label>
-              <Input id="phone" name="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email (opcional)</Label>

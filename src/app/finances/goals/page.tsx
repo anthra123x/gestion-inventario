@@ -6,18 +6,24 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/ui/page-header'
 import { formatCurrency } from '@/lib/format'
 import {
-  getSavingGoalsAction, createSavingGoalAction, updateSavingGoalAction, deleteSavingGoalAction,
+  getSavingGoalsAction,
+  createSavingGoalAction,
+  updateSavingGoalAction,
+  deleteSavingGoalAction,
   getFinanceCategories,
 } from '@/modules/finance/finance.actions'
 import { toast } from 'sonner'
@@ -40,10 +46,7 @@ export default function GoalsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [goalsData, catsData] = await Promise.all([
-        getSavingGoalsAction(),
-        getFinanceCategories(),
-      ])
+      const [goalsData, catsData] = await Promise.all([getSavingGoalsAction(), getFinanceCategories()])
       setGoals(goalsData)
       setCategories(catsData as Category[])
     } catch {
@@ -53,7 +56,9 @@ export default function GoalsPage() {
     }
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const goalCategories = categories.filter((c) => c.type === 'SAVING_GOAL')
 
@@ -63,7 +68,10 @@ export default function GoalsPage() {
     try {
       const form = new FormData(e.currentTarget)
       const result = await createSavingGoalAction(form)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success)
       setCreateOpen(false)
       loadData()
@@ -81,7 +89,10 @@ export default function GoalsPage() {
     try {
       const form = new FormData(e.currentTarget)
       const result = await updateSavingGoalAction(editingGoal.id, form)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success)
       setEditOpen(false)
       setEditingGoal(null)
@@ -100,7 +111,10 @@ export default function GoalsPage() {
     try {
       const form = new FormData(e.currentTarget)
       const result = await updateSavingGoalAction(addingGoal.id, form)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success('Monto actualizado')
       setAddAmountOpen(false)
       setAddingGoal(null)
@@ -116,7 +130,10 @@ export default function GoalsPage() {
     if (!deletingGoal) return
     try {
       const result = await deleteSavingGoalAction(deletingGoal.id)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success)
       setDeleteOpen(false)
       setDeletingGoal(null)
@@ -131,7 +148,9 @@ export default function GoalsPage() {
       <div className="page-container py-6 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-44 rounded-xl" />
+          ))}
         </div>
       </div>
     )
@@ -164,9 +183,7 @@ export default function GoalsPage() {
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {goals.map((goal) => {
-            const progress = goal.targetAmount > 0
-              ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
-              : 0
+            const progress = goal.targetAmount > 0 ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100) : 0
             return (
               <Card key={goal.id} className="card-shadow border-border/60">
                 <CardHeader className="pb-3">
@@ -177,23 +194,27 @@ export default function GoalsPage() {
                       </div>
                       <div>
                         <CardTitle className="text-sm">{goal.name}</CardTitle>
-                        {goal.category && (
-                          <p className="text-xs text-muted-foreground">{goal.category.name}</p>
-                        )}
+                        {goal.category && <p className="text-xs text-muted-foreground">{goal.category.name}</p>}
                       </div>
                     </div>
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => { setEditingGoal(goal); setEditOpen(true) }}
+                        onClick={() => {
+                          setEditingGoal(goal)
+                          setEditOpen(true)
+                        }}
                       >
                         <Edit className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => { setDeletingGoal(goal); setDeleteOpen(true) }}
+                        onClick={() => {
+                          setDeletingGoal(goal)
+                          setDeleteOpen(true)
+                        }}
                       >
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
@@ -233,7 +254,10 @@ export default function GoalsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => { setAddingGoal(goal); setAddAmountOpen(true) }}
+                      onClick={() => {
+                        setAddingGoal(goal)
+                        setAddAmountOpen(true)
+                      }}
                     >
                       <Wallet className="h-3.5 w-3.5" />
                       Agregar
@@ -260,11 +284,26 @@ export default function GoalsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-targetAmount">Meta total</Label>
-              <Input id="create-targetAmount" name="targetAmount" type="number" min={1} step="0.01" required placeholder="0" />
+              <Input
+                id="create-targetAmount"
+                name="targetAmount"
+                type="number"
+                min={1}
+                step="0.01"
+                required
+                placeholder="0"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-currentAmount">Monto actual (opcional)</Label>
-              <Input id="create-currentAmount" name="currentAmount" type="number" min={0} step="0.01" defaultValue="0" />
+              <Input
+                id="create-currentAmount"
+                name="currentAmount"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue="0"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-deadline">Fecha límite (opcional)</Label>
@@ -279,14 +318,20 @@ export default function GoalsPage() {
                 <SelectContent>
                   <SelectItem value="">Sin categoría</SelectItem>
                   {goalCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={submitting}>Crear Meta</Button>
+              <Button variant="outline" type="button" onClick={() => setCreateOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                Crear Meta
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -307,11 +352,26 @@ export default function GoalsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-targetAmount">Meta total</Label>
-                <Input id="edit-targetAmount" name="targetAmount" type="number" min={1} step="0.01" defaultValue={editingGoal.targetAmount} required />
+                <Input
+                  id="edit-targetAmount"
+                  name="targetAmount"
+                  type="number"
+                  min={1}
+                  step="0.01"
+                  defaultValue={editingGoal.targetAmount}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-currentAmount">Monto actual</Label>
-                <Input id="edit-currentAmount" name="currentAmount" type="number" min={0} step="0.01" defaultValue={editingGoal.currentAmount} />
+                <Input
+                  id="edit-currentAmount"
+                  name="currentAmount"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={editingGoal.currentAmount}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-deadline">Fecha límite (opcional)</Label>
@@ -331,14 +391,20 @@ export default function GoalsPage() {
                   <SelectContent>
                     <SelectItem value="">Sin categoría</SelectItem>
                     {goalCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setEditOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={submitting}>Guardar</Button>
+                <Button variant="outline" type="button" onClick={() => setEditOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  Guardar
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -369,8 +435,12 @@ export default function GoalsPage() {
                 />
               </div>
               <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setAddAmountOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={submitting}>Actualizar</Button>
+                <Button variant="outline" type="button" onClick={() => setAddAmountOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  Actualizar
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -387,8 +457,12 @@ export default function GoalsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Eliminar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

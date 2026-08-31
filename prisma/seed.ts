@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const defaultCategories = [
-  { name: 'Trabajo Técnico', type: 'INCOME' as const, color: 'green', icon: 'wrench' },
+  { name: 'Ventas Tienda', type: 'INCOME' as const, color: 'green', icon: 'store' },
   { name: 'Arriendo', type: 'EXPENSE' as const, color: 'red', icon: 'home' },
   { name: 'Comida', type: 'EXPENSE' as const, color: 'orange', icon: 'utensils' },
   { name: 'Transporte', type: 'EXPENSE' as const, color: 'yellow', icon: 'car' },
@@ -11,7 +11,7 @@ const defaultCategories = [
   { name: 'Suscripciones', type: 'EXPENSE' as const, color: 'purple', icon: 'radio' },
   { name: 'Salud', type: 'EXPENSE' as const, color: 'pink', icon: 'heart-pulse' },
   { name: 'Ahorro', type: 'SAVING_GOAL' as const, color: 'teal', icon: 'piggy-bank' },
-  { name: 'Entretenimiento', type: 'EXPENSE' as const, color: 'indigo', icon: 'gamepad-2' },
+  { name: 'Compra de Mercancía', type: 'EXPENSE' as const, color: 'indigo', icon: 'package' },
   { name: 'Otros', type: 'EXPENSE' as const, color: 'gray', icon: 'more-horizontal' },
 ]
 

@@ -2,16 +2,26 @@ import { describe, it, expect } from 'vitest'
 import {
   CreateProductSchema,
   CreateClientSchema,
-  CreateRepairSchema,
-  RepairStatusSchema,
+  CreateProductCategorySchema,
+  CreateSupplierSchema,
+  CreateSaleSchema,
+  PaymentMethodSchema,
+  SaleStatusSchema,
+  StockMovementTypeSchema,
 } from './validations'
 
 describe('CreateProductSchema', () => {
-  it('validates a complete part', () => {
+  it('validates a complete product', () => {
     const result = CreateProductSchema.safeParse({
-      name: 'Cargador USB',
-      description: 'Cargador tipo C',
-      price: 15000,
+      name: 'Tenis Deportivo',
+      description: 'Tenis talla 40',
+      barcode: '123456789',
+      costPrice: 50000,
+      salePrice: 80000,
+      stock: 10,
+      lowStockThreshold: 5,
+      categoryId: 'c1',
+      supplierId: 's1',
     })
     expect(result.success).toBe(true)
   })
@@ -21,12 +31,17 @@ describe('CreateProductSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects negative price', () => {
-    const result = CreateProductSchema.safeParse({ name: 'Test', price: -1 })
+  it('rejects negative sale price', () => {
+    const result = CreateProductSchema.safeParse({ name: 'Test', salePrice: -1 })
     expect(result.success).toBe(false)
   })
 
-  it('allows optional description', () => {
+  it('rejects negative stock', () => {
+    const result = CreateProductSchema.safeParse({ name: 'Test', stock: -5 })
+    expect(result.success).toBe(false)
+  })
+
+  it('allows defaults when only name is provided', () => {
     const result = CreateProductSchema.safeParse({ name: 'Test' })
     expect(result.success).toBe(true)
   })
@@ -77,64 +92,104 @@ describe('CreateClientSchema', () => {
   })
 })
 
-describe('CreateRepairSchema', () => {
-  it('validates a complete repair', () => {
-    const result = CreateRepairSchema.safeParse({
-      clientId: 'c1',
-      device: 'iPhone 12',
-      problem: 'La pantalla no funciona después de una caída',
-      laborCost: 50000,
-      notes: 'Traer el lunes',
-      internalNotes: 'Revisar flex',
-      estimatedDate: '2026-06-01',
-      parts: [{ partId: 'p1', quantity: 1, unitCost: 15000 }],
-    })
+describe('CreateProductCategorySchema', () => {
+  it('validates a category with name only', () => {
+    const result = CreateProductCategorySchema.safeParse({ name: 'Ropa' })
     expect(result.success).toBe(true)
   })
 
-  it('rejects short device name', () => {
-    const result = CreateRepairSchema.safeParse({
-      clientId: 'c1',
-      device: 'X',
-      problem: 'Descripción suficientemente larga del problema',
-    })
+  it('validates a category with color', () => {
+    const result = CreateProductCategorySchema.safeParse({ name: 'Ropa', color: '#ff0000' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects short name', () => {
+    const result = CreateProductCategorySchema.safeParse({ name: 'R' })
     expect(result.success).toBe(false)
-  })
-
-  it('rejects short problem description', () => {
-    const result = CreateRepairSchema.safeParse({
-      clientId: 'c1',
-      device: 'iPhone',
-      problem: 'Cor',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('allows optional fields', () => {
-    const result = CreateRepairSchema.safeParse({
-      clientId: 'c1',
-      device: 'iPhone',
-      problem: 'Descripción suficientemente larga del problema',
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('allows empty parts', () => {
-    const result = CreateRepairSchema.safeParse({
-      clientId: 'c1',
-      device: 'iPhone',
-      problem: 'Descripción suficientemente larga del problema',
-      parts: [],
-    })
-    expect(result.success).toBe(true)
   })
 })
 
-describe('RepairStatusSchema', () => {
+describe('CreateSupplierSchema', () => {
+  it('validates a supplier', () => {
+    const result = CreateSupplierSchema.safeParse({
+      name: 'Distribuidora XYZ',
+      phone: '3001234567',
+      email: 'contacto@xyz.com',
+      address: 'Av 1',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('allows only name', () => {
+    const result = CreateSupplierSchema.safeParse({ name: 'Distribuidora XYZ' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects invalid email', () => {
+    const result = CreateSupplierSchema.safeParse({ name: 'Xyz', email: 'bad' })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('CreateSaleSchema', () => {
+  it('validates a sale with items', () => {
+    const result = CreateSaleSchema.safeParse({
+      paymentMethod: 'CASH',
+      items: [{ productId: 'p1', quantity: 2 }],
+      discount: 0,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty items', () => {
+    const result = CreateSaleSchema.safeParse({
+      paymentMethod: 'CASH',
+      items: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects negative discount', () => {
+    const result = CreateSaleSchema.safeParse({
+      paymentMethod: 'CASH',
+      items: [{ productId: 'p1', quantity: 1 }],
+      discount: -5,
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects invalid payment method', () => {
+    const result = CreateSaleSchema.safeParse({
+      paymentMethod: 'BITCOIN',
+      items: [{ productId: 'p1', quantity: 1 }],
+    })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('PaymentMethodSchema', () => {
+  it('accepts valid methods', () => {
+    const valid = ['CASH', 'CARD', 'TRANSFER']
+    for (const m of valid) {
+      expect(PaymentMethodSchema.safeParse(m).success).toBe(true)
+    }
+  })
+})
+
+describe('SaleStatusSchema', () => {
   it('accepts valid statuses', () => {
-    const valid = ['RECEIVED', 'IN_PROGRESS', 'READY', 'DELIVERED', 'CANCELLED']
+    const valid = ['COMPLETED', 'CANCELLED']
     for (const s of valid) {
-      expect(RepairStatusSchema.safeParse(s).success).toBe(true)
+      expect(SaleStatusSchema.safeParse(s).success).toBe(true)
+    }
+  })
+})
+
+describe('StockMovementTypeSchema', () => {
+  it('accepts valid movement types', () => {
+    const valid = ['PURCHASE', 'SALE', 'IN', 'OUT', 'ADJUST']
+    for (const t of valid) {
+      expect(StockMovementTypeSchema.safeParse(t).success).toBe(true)
     }
   })
 })

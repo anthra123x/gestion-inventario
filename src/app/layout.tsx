@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Gestión Reparaciones',
-  description: 'Sistema de gestión de inventario',
+  title: 'Cilmax',
+  description: 'Sistema de gestión de tienda',
 }
 
 export default function RootLayout({

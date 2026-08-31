@@ -31,7 +31,6 @@ export async function notifyUsers(
   try {
     const users = await prisma.user.findMany({
       select: { id: true },
-      where: { role: { in: ['ADMIN', 'EMPLOYEE'] } },
     })
 
     await prisma.notification.createMany({

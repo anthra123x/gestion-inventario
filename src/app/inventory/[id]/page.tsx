@@ -1,20 +1,30 @@
 import { ProductForm } from '@/components/forms/product-form'
 import { updateProduct, getProductById } from '@/modules/inventory/inventory.actions'
+import { getCategories } from '@/modules/inventory/categories.actions'
+import { getSuppliers } from '@/modules/suppliers/suppliers.actions'
 import { notFound } from 'next/navigation'
+import { PageHeader } from '@/components/ui/page-header'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
-interface PartPageProps {
+interface ProductPageProps {
   params: Promise<{
     id: string
   }>
 }
 
-export default async function PartPage({ params }: PartPageProps) {
-  const { id } = await params
-  const part = await getProductById(id)
+export const dynamic = 'force-dynamic'
 
-  if (!part) {
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params
+  const product = await getProductById(id)
+
+  if (!product) {
     notFound()
   }
+
+  const [categories, suppliersResult] = await Promise.all([getCategories(), getSuppliers()])
 
   async function handleSubmit(formData: FormData) {
     'use server'
@@ -29,8 +39,25 @@ export default async function PartPage({ params }: PartPageProps) {
   }
 
   return (
-    <div className="container mx-auto py-6 min-h-screen">
-      <ProductForm product={part} onSubmit={handleSubmit} />
+    <div className="page-container py-6 space-y-6">
+      <PageHeader
+        title="Editar Producto"
+        description={`Editando: ${product.name}`}
+        actions={
+          <Link href="/inventory">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver
+            </Button>
+          </Link>
+        }
+      />
+      <ProductForm
+        product={product}
+        onSubmit={handleSubmit}
+        categories={categories}
+        suppliers={suppliersResult.suppliers}
+      />
     </div>
   )
 }

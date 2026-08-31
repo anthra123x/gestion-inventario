@@ -6,19 +6,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/ui/page-header'
 import { formatCurrency } from '@/lib/format'
 import { getCategoryTypeLabel, getCategoryColor } from '@/lib/labels'
 import {
-  getFinanceCategories, createCategoryAction, updateCategoryAction, deleteCategoryAction,
+  getFinanceCategories,
+  createCategoryAction,
+  updateCategoryAction,
+  deleteCategoryAction,
 } from '@/modules/finance/finance.actions'
 import { toast } from 'sonner'
 
@@ -75,7 +81,9 @@ export default function CategoriesPage() {
     }
   }, [])
 
-  useEffect(() => { loadCategories() }, [loadCategories])
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -83,7 +91,10 @@ export default function CategoriesPage() {
     try {
       const form = new FormData(e.currentTarget)
       const result = await createCategoryAction(form)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success)
       setCreateOpen(false)
       loadCategories()
@@ -101,7 +112,10 @@ export default function CategoriesPage() {
     try {
       const form = new FormData(e.currentTarget)
       const result = await updateCategoryAction(editingCat.id, form)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success)
       setEditOpen(false)
       setEditingCat(null)
@@ -117,7 +131,10 @@ export default function CategoriesPage() {
     if (!deletingCat) return
     try {
       const result = await deleteCategoryAction(deletingCat.id)
-      if (result.error) { toast.error(result.error); return }
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
       toast.success(result.success)
       setDeleteOpen(false)
       setDeletingCat(null)
@@ -132,7 +149,9 @@ export default function CategoriesPage() {
       <div className="page-container py-6 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
+          ))}
         </div>
       </div>
     )
@@ -178,23 +197,27 @@ export default function CategoriesPage() {
                           <div className={`h-4 w-4 rounded-full ${getCategoryColor(cat.color)}`} />
                           <div>
                             <p className="font-semibold">{cat.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {getCategoryTypeLabel(cat.type)}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{getCategoryTypeLabel(cat.type)}</p>
                           </div>
                         </div>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => { setEditingCat(cat); setEditOpen(true) }}
+                            onClick={() => {
+                              setEditingCat(cat)
+                              setEditOpen(true)
+                            }}
                           >
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => { setDeletingCat(cat); setDeleteOpen(true) }}
+                            onClick={() => {
+                              setDeletingCat(cat)
+                              setDeleteOpen(true)
+                            }}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
@@ -263,8 +286,12 @@ export default function CategoriesPage() {
               <Input id="create-budget" name="budget" type="number" min={0} step="0.01" placeholder="0" />
             </div>
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={submitting}>Crear</Button>
+              <Button variant="outline" type="button" onClick={() => setCreateOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                Crear
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -326,8 +353,12 @@ export default function CategoriesPage() {
                 />
               </div>
               <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setEditOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={submitting}>Guardar</Button>
+                <Button variant="outline" type="button" onClick={() => setEditOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  Guardar
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -340,12 +371,17 @@ export default function CategoriesPage() {
           <DialogHeader>
             <DialogTitle>Eliminar Categoría</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de eliminar la categoría <strong>{deletingCat?.name}</strong>? Esta acción no se puede deshacer.
+              ¿Estás seguro de eliminar la categoría <strong>{deletingCat?.name}</strong>? Esta acción no se puede
+              deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Eliminar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

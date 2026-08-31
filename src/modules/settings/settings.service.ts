@@ -12,12 +12,8 @@ export type SettingsData = {
   companyPhone: string | null
   companyEmail: string | null
   currency: string
-  receiptTitle: string
-  receiptTagline: string | null
-  receiptFooter: string | null
-  warrantyText: string
   invoicePrefix: string
-  defaultWarrantyDays: number
+  invoiceFooter: string | null
   lowStockThreshold: number
 }
 

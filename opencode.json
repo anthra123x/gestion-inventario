@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "skills": {
+    "paths": [
+      ".agents/skills",
+      ".opencode/skills",
+      ".opencode/vendor/claude-skills/skills",
+      ".opencode/vendor/superpowers/skills"
+    ]
+  },
+  "mcp": {
+    "agent-browser": {
+      "type": "local",
+      "command": ["/home/anthra123x/software contable/node_modules/.bin/agent-browser", "mcp"]
+    }
+  }
+}

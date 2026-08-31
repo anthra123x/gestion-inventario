@@ -10,11 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Settings, Trash2, UserPlus, Database, Download, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { UserRole } from '@prisma/client'
-import { getUsers, updateUserRole, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
+import { getUsers, deleteUser, createUserByAdmin } from '@/modules/auth/auth.actions'
 import { getSystemSettings, updateSystemSettings } from '@/modules/settings/settings.actions'
-import { exportData, cleanupRepairs, cleanupAll } from '@/modules/cleanup/cleanup.actions'
-import { exportPartsToExcel, exportRepairsToExcel, exportClientsToExcel } from '@/modules/export/export.actions'
+import { exportData, cleanupAll } from '@/modules/cleanup/cleanup.actions'
+import {
+  exportProductsToExcel,
+  exportSalesToExcel,
+  exportClientsToExcel,
+  exportInventoryToExcel,
+} from '@/modules/export/export.actions'
 
 export default function AdminPage() {
   type UserRow = Awaited<ReturnType<typeof getUsers>>[number]
@@ -22,10 +26,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserName, setNewUserName] = useState('')
-  const [newUserRole, setNewUserRole] = useState('EMPLOYEE')
   const [newUserPassword, setNewUserPassword] = useState('')
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
-  const [cleanupType, setCleanupType] = useState<'repairs' | 'all' | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
   const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
@@ -61,14 +63,6 @@ export default function AdminPage() {
     loadSettings()
   }, [])
 
-  async function handleUpdateRole(userId: string, role: string) {
-    const result = await updateUserRole(userId, role as UserRole)
-    if (result.success) {
-      const updated = await getUsers()
-      setUsers(updated)
-    }
-  }
-
   async function handleDeleteUser(userId: string) {
     const result = await deleteUser(userId)
     if (result.success) {
@@ -85,7 +79,6 @@ export default function AdminPage() {
     const formData = new FormData()
     formData.append('email', newUserEmail)
     formData.append('name', newUserName)
-    formData.append('role', newUserRole)
     formData.append('password', newUserPassword)
 
     const result = await createUserByAdmin(formData)
@@ -94,7 +87,6 @@ export default function AdminPage() {
       toast.success(result.success)
       setNewUserEmail('')
       setNewUserName('')
-      setNewUserRole('EMPLOYEE')
       setNewUserPassword('')
       const updated = await getUsers()
       setUsers(updated)
@@ -112,7 +104,9 @@ export default function AdminPage() {
     formData.append('companyPhone', settings.companyPhone || '')
     formData.append('companyEmail', settings.companyEmail || '')
     formData.append('currency', settings.currency || 'COP')
-    formData.append('receiptFooter', settings.receiptFooter || '')
+    formData.append('invoicePrefix', settings.invoicePrefix || 'CIL-')
+    formData.append('invoiceFooter', settings.invoiceFooter || '')
+    formData.append('lowStockThreshold', String(settings.lowStockThreshold ?? 5))
 
     const result = await updateSystemSettings(formData)
 
@@ -156,14 +150,11 @@ export default function AdminPage() {
     }
   }
 
-  function openCleanupDialog(type: 'repairs' | 'all') {
-    setCleanupType(type)
+  function openCleanupDialog() {
     setCleanupDialogOpen(true)
   }
 
   async function handleCleanup() {
-    if (!cleanupType) return
-
     setCleanupLoading(true)
 
     try {
@@ -180,22 +171,11 @@ export default function AdminPage() {
         toast.warning('No se pudo generar el backup automático. La limpieza continuará de todos modos.')
       }
 
-      let result
-      switch (cleanupType) {
-        case 'repairs':
-          result = await cleanupRepairs()
-          break
-        case 'all':
-          result = await cleanupAll()
-          break
-        default:
-          result = { error: 'Tipo de limpieza no válido' }
-      }
+      const result = await cleanupAll()
 
       if (result.success) {
         toast.success(result.success)
         setCleanupDialogOpen(false)
-        setCleanupType(null)
       } else {
         toast.error(result.error)
       }
@@ -211,11 +191,14 @@ export default function AdminPage() {
     try {
       let result
       switch (type) {
-        case 'parts':
-          result = await exportPartsToExcel()
+        case 'products':
+          result = await exportProductsToExcel()
           break
-        case 'repairs':
-          result = await exportRepairsToExcel()
+        case 'sales':
+          result = await exportSalesToExcel()
+          break
+        case 'inventory':
+          result = await exportInventoryToExcel()
           break
         case 'clients':
           result = await exportClientsToExcel()
@@ -255,7 +238,7 @@ export default function AdminPage() {
               <Users className="h-5 w-5" />
               Gestión de Usuarios
             </CardTitle>
-            <CardDescription>Administrar usuarios y roles del sistema</CardDescription>
+            <CardDescription>Administrar usuarios del sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border">
@@ -264,7 +247,6 @@ export default function AdminPage() {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -273,17 +255,6 @@ export default function AdminPage() {
                     <TableRow key={user.id}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Select value={user.role} onValueChange={(value) => handleUpdateRole(user.id, value ?? '')}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                            <SelectItem value="EMPLOYEE">Empleado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
                       <TableCell>
                         <Button
                           variant="destructive"
@@ -329,19 +300,6 @@ export default function AdminPage() {
                   onChange={(e) => setNewUserEmail(e.target.value)}
                   required
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="newUserRole">Rol</Label>
-                <Select value={newUserRole} onValueChange={(value: string | null) => value && setNewUserRole(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
-                    <SelectItem value="EMPLOYEE">Empleado</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="space-y-2">
@@ -433,11 +391,30 @@ export default function AdminPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="receiptFooter">Pie de Página de Recibo</Label>
+                  <Label htmlFor="invoicePrefix">Prefijo de Factura</Label>
                   <Input
-                    id="receiptFooter"
-                    value={settings?.receiptFooter || ''}
-                    onChange={(e) => setSettings({ ...settings, receiptFooter: e.target.value })}
+                    id="invoicePrefix"
+                    value={settings?.invoicePrefix || 'CIL-'}
+                    onChange={(e) => setSettings({ ...settings, invoicePrefix: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="invoiceFooter">Pie de Página de Factura</Label>
+                  <Input
+                    id="invoiceFooter"
+                    value={settings?.invoiceFooter || ''}
+                    onChange={(e) => setSettings({ ...settings, invoiceFooter: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lowStockThreshold">Umbral de Stock Bajo</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    value={settings?.lowStockThreshold ?? 5}
+                    onChange={(e) => setSettings({ ...settings, lowStockThreshold: Number(e.target.value) })}
                   />
                 </div>
 
@@ -460,22 +437,31 @@ export default function AdminPage() {
           <CardContent>
             <div className="space-y-2">
               <Button
-                onClick={() => handleExportExcel('parts')}
+                onClick={() => handleExportExcel('products')}
                 variant="outline"
                 className="w-full"
                 disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {exportExcelLoading === 'parts' ? 'Exportando...' : 'Exportar Repuestos'}
+                {exportExcelLoading === 'products' ? 'Exportando...' : 'Exportar Productos'}
               </Button>
               <Button
-                onClick={() => handleExportExcel('repairs')}
+                onClick={() => handleExportExcel('sales')}
                 variant="outline"
                 className="w-full"
                 disabled={exportExcelLoading !== null}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {exportExcelLoading === 'repairs' ? 'Exportando...' : 'Exportar Reparaciones'}
+                {exportExcelLoading === 'sales' ? 'Exportando...' : 'Exportar Ventas'}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel('inventory')}
+                variant="outline"
+                className="w-full"
+                disabled={exportExcelLoading !== null}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exportExcelLoading === 'inventory' ? 'Exportando...' : 'Exportar Inventario'}
               </Button>
               <Button
                 onClick={() => handleExportExcel('clients')}
@@ -496,9 +482,7 @@ export default function AdminPage() {
               <Database className="h-5 w-5" />
               Zona Crítica - Sistema
             </CardTitle>
-            <CardDescription className="text-red-600">
-              Backup y limpieza del sistema (Solo Administradores)
-            </CardDescription>
+            <CardDescription className="text-red-600">Backup y limpieza del sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
@@ -522,17 +506,12 @@ export default function AdminPage() {
                   Limpieza del Sistema
                 </h4>
                 <p className="text-sm text-red-800 mb-3">
-                  Estas acciones eliminarán datos permanentemente. Se generará un backup automáticamente antes de
-                  ejecutar.
+                  Esta acción eliminará todos los datos del sistema permanentemente. Se generará un backup
+                  automáticamente antes de ejecutar.
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={() => openCleanupDialog('repairs')} variant="destructive" size="sm">
-                    Reparaciones
-                  </Button>
-                  <Button onClick={() => openCleanupDialog('all')} variant="destructive" size="sm">
-                    Todo
-                  </Button>
-                </div>
+                <Button onClick={openCleanupDialog} variant="destructive" className="w-full">
+                  Limpiar Todo el Sistema
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -575,11 +554,10 @@ export default function AdminPage() {
               Confirmar Limpieza
             </DialogTitle>
             <DialogDescription>
-              Esta acción generará un backup automático y luego eliminará los datos seleccionados.
+              Esta acción generará un backup automático y luego eliminará todos los datos del sistema.
               <br />
               <br />
-              <strong>Tipo de limpieza:</strong>{' '}
-              {cleanupType === 'repairs' ? 'Reparaciones' : 'TODO'}
+              <strong>Tipo de limpieza:</strong> TODO
               <br />
               <br />
               ¿Estás seguro de continuar?
@@ -590,7 +568,6 @@ export default function AdminPage() {
               variant="outline"
               onClick={() => {
                 setCleanupDialogOpen(false)
-                setCleanupType(null)
               }}
               disabled={cleanupLoading}
             >

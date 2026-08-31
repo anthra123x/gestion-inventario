@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase-server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { UserRole } from '@prisma/client'
 import { parseError } from '@/lib/errors'
 
 export async function ensureUserExists(email: string, name: string) {
@@ -15,7 +14,6 @@ export async function ensureUserExists(email: string, name: string) {
       create: {
         email,
         name,
-        role: 'EMPLOYEE' as UserRole,
       },
     })
 
@@ -68,7 +66,6 @@ export async function getCurrentUser() {
         id: true,
         email: true,
         name: true,
-        role: true,
       },
     })
 
@@ -92,24 +89,49 @@ export async function requireAuth() {
   return user
 }
 
-export async function requireAdmin() {
-  const user = await requireAuth()
+export async function updatePassword(newPassword: string) {
+  await requireAuth()
 
-  if (user.role !== 'ADMIN') {
-    redirect('/dashboard')
+  try {
+    const { cookies } = await import('next/headers')
+    const { createServerClient } = await import('@supabase/ssr')
+
+    const cookieStore = await cookies()
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          },
+        },
+      },
+    )
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (error) {
+      return { error: 'No se pudo actualizar la contraseña. Intenta iniciar sesión nuevamente.' }
+    }
+
+    return { success: true }
+  } catch (_error) {
+    return { error: 'Error inesperado al actualizar la contraseña' }
   }
-
-  return user
 }
 
 export async function getUsers() {
-  await requireAdmin()
+  await requireAuth()
   return await prisma.user.findMany({
     select: {
       id: true,
       email: true,
       name: true,
-      role: true,
       createdAt: true,
     },
     orderBy: {
@@ -118,28 +140,8 @@ export async function getUsers() {
   })
 }
 
-export async function updateUserRole(userId: string, role: UserRole) {
-  await requireAdmin()
-  try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role },
-    })
-
-    revalidatePath('/admin')
-    return {
-      success: 'Rol actualizado exitosamente',
-    }
-  } catch (error) {
-    if (parseError(error).code === 'P2025') {
-      return { error: 'Usuario no encontrado' }
-    }
-    return { error: 'Error al actualizar rol' }
-  }
-}
-
 export async function deleteUser(userId: string) {
-  await requireAdmin()
+  await requireAuth()
   try {
     await prisma.user.delete({
       where: { id: userId },
@@ -158,14 +160,13 @@ export async function deleteUser(userId: string) {
 }
 
 export async function createUserByAdmin(formData: FormData) {
-  await requireAdmin()
+  await requireAuth()
 
   const email = formData.get('email') as string
   const name = formData.get('name') as string
-  const role = formData.get('role') as UserRole
   const password = formData.get('password') as string | null
 
-  if (!email || !name || !role) {
+  if (!email || !name) {
     return { error: 'Todos los campos son requeridos' }
   }
 
@@ -176,7 +177,7 @@ export async function createUserByAdmin(formData: FormData) {
   try {
     try {
       await prisma.user.create({
-        data: { email, name, role },
+        data: { email, name },
       })
     } catch (error) {
       if (parseError(error).code === 'P2002') {

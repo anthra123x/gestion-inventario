@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -24,22 +25,29 @@ import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 import { getProducts, deleteProduct } from '@/modules/inventory/inventory.actions'
 
-interface Part {
+interface Product {
   id: string
   name: string
   description: string | null
-  supplier: string | null
-  price: number
+  barcode: string | null
+  costPrice: number
+  salePrice: number
+  stock: number
+  lowStockThreshold: number
+  categoryId: string | null
+  supplierId: string | null
   createdAt: Date
+  category: { id: string; name: string; color: string | null } | null
+  supplier: { id: string; name: string } | null
 }
 
-export default function PartsPage() {
-  const [parts, setParts] = useState<Part[]>([])
+export default function InventoryPage() {
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [partToDelete, setPartToDelete] = useState<Part | null>(null)
-  const [totalParts, setTotalParts] = useState(0)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -51,31 +59,27 @@ export default function PartsPage() {
   }, [search])
 
   useEffect(() => {
-    loadParts()
+    loadProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, page])
 
-  async function loadParts() {
+  async function loadProducts() {
     try {
       setLoading(true)
-      const result = await getProducts(
-        debouncedSearch || undefined,
-        page,
-        pageSize,
-      )
-      setParts(result.products)
-      setTotalParts(result.total)
+      const result = await getProducts(debouncedSearch || undefined, page, pageSize)
+      setProducts(result.products)
+      setTotalProducts(result.total)
       setTotalPages(result.totalPages)
     } catch (_error) {
-      console.error('Error loading parts:', _error)
+      console.error('Error loading products:', _error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleDeletePart(part: Part) {
+  async function handleDeleteProduct(product: Product) {
     try {
-      const result = await deleteProduct(part.id)
+      const result = await deleteProduct(product.id)
 
       if (result?.error) {
         toast.error(result.error)
@@ -83,17 +87,17 @@ export default function PartsPage() {
       }
 
       if (result?.success) {
-        toast.success('Repuesto eliminado')
-        await loadParts()
+        toast.success('Producto eliminado')
+        await loadProducts()
         setDeleteDialogOpen(false)
-        setPartToDelete(null)
+        setProductToDelete(null)
       }
     } catch {
-      toast.error('Error al eliminar el repuesto')
+      toast.error('Error al eliminar el producto')
     }
   }
 
-  if (loading && parts.length === 0) {
+  if (loading && products.length === 0) {
     return (
       <div className="page-container py-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -126,13 +130,13 @@ export default function PartsPage() {
   return (
     <div className="page-container py-6 space-y-6">
       <PageHeader
-        title="Repuestos"
-        description="Catálogo de repuestos"
+        title="Inventario"
+        description="Gestión de productos"
         actions={
           <Link href="/inventory/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo Repuesto
+              Nuevo Producto
             </Button>
           </Link>
         }
@@ -142,7 +146,7 @@ export default function PartsPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <SearchInput value={search} onChange={setSearch} placeholder="Buscar repuestos..." />
+              <SearchInput value={search} onChange={setSearch} placeholder="Buscar productos..." />
             </div>
           </div>
         </CardHeader>
@@ -151,32 +155,58 @@ export default function PartsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Repuesto</TableHead>
-                  <TableHead>Descripción</TableHead>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Categoría</TableHead>
                   <TableHead>Proveedor</TableHead>
-                  <TableHead className="text-right">Precio Ref.</TableHead>
+                  <TableHead className="text-right">Costo</TableHead>
+                  <TableHead className="text-right">Precio</TableHead>
+                  <TableHead className="text-right">Stock</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {parts.map((part) => (
-                  <TableRow key={part.id}>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
                     <TableCell>
-                      <div className="font-medium">{part.name}</div>
-                    </TableCell>
-                    <TableCell>
-                      {part.description && (
-                        <div className="text-xs text-muted-foreground truncate max-w-[300px]">
-                          {part.description}
+                      <div className="font-medium">{product.name}</div>
+                      {product.description && (
+                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {product.description}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{part.supplier || '—'}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(part.price)}</TableCell>
+                    <TableCell>
+                      {product.category ? (
+                        <Badge
+                          variant="outline"
+                          style={
+                            product.category.color
+                              ? { borderColor: product.category.color, color: product.category.color }
+                              : undefined
+                          }
+                        >
+                          {product.category.name}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{product.supplier?.name || '—'}</TableCell>
+                    <TableCell className="text-right text-sm">{formatCurrency(product.costPrice)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(product.salePrice)}</TableCell>
+                    <TableCell className="text-right">
+                      {product.stock <= product.lowStockThreshold ? (
+                        <Badge variant="destructive" className="text-xs">
+                          {product.stock}
+                        </Badge>
+                      ) : (
+                        <span className="text-sm">{product.stock}</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link href={`/inventory/${part.id}`}>
-                          <Button variant="ghost" size="icon-sm" aria-label="Editar repuesto">
+                        <Link href={`/inventory/${product.id}`}>
+                          <Button variant="ghost" size="icon-sm" aria-label="Editar producto">
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -184,9 +214,9 @@ export default function PartsPage() {
                           variant="ghost"
                           size="icon-sm"
                           className="text-destructive hover:text-destructive"
-                          aria-label="Eliminar repuesto"
+                          aria-label="Eliminar producto"
                           onClick={() => {
-                            setPartToDelete(part)
+                            setProductToDelete(product)
                             setDeleteDialogOpen(true)
                           }}
                         >
@@ -200,18 +230,14 @@ export default function PartsPage() {
             </Table>
           </div>
 
-          {parts.length === 0 && (
+          {products.length === 0 && (
             <EmptyState
               icon={Package}
-              title={search ? 'Sin resultados' : 'Sin repuestos'}
+              title={search ? 'Sin resultados' : 'Sin productos'}
               description={
-                search
-                  ? 'No hay repuestos que coincidan con tu búsqueda'
-                  : 'Crea tu primer repuesto para comenzar'
+                search ? 'No hay productos que coincidan con tu búsqueda' : 'Crea tu primer producto para comenzar'
               }
-              action={
-                search ? undefined : { label: 'Crear repuesto', href: '/inventory/new' }
-              }
+              action={search ? undefined : { label: 'Crear producto', href: '/inventory/new' }}
             />
           )}
 
@@ -219,8 +245,8 @@ export default function PartsPage() {
             <Pagination
               page={page}
               totalPages={totalPages}
-              total={totalParts}
-              entity="repuestos"
+              total={totalProducts}
+              entity="productos"
               onPageChange={(p) => setPage(p)}
             />
           )}
@@ -233,16 +259,17 @@ export default function PartsPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-2">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <DialogTitle className="text-center">¿Eliminar repuesto?</DialogTitle>
+            <DialogTitle className="text-center">¿Eliminar producto?</DialogTitle>
             <DialogDescription className="text-center">
-              ¿Estás seguro de que deseas eliminar &ldquo;{partToDelete?.name}&rdquo;? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar &ldquo;{productToDelete?.name}&rdquo;? Esta acción no se puede
+              deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={() => partToDelete && handleDeletePart(partToDelete)}>
+            <Button variant="destructive" onClick={() => productToDelete && handleDeleteProduct(productToDelete)}>
               <Trash2 className="mr-2 h-4 w-4" />
               Eliminar
             </Button>

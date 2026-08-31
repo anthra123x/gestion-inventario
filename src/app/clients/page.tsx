@@ -29,7 +29,7 @@ interface Client {
   email: string | null
   address: string | null
   createdAt: Date
-  _count: { repairs: number }
+  _count: { sales: number }
 }
 
 export default function ClientsPage() {
@@ -149,7 +149,7 @@ export default function ClientsPage() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead className="text-center">Reparaciones</TableHead>
+                  <TableHead className="text-center">Compras</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -161,7 +161,7 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell>{client.phone}</TableCell>
                     <TableCell className="text-muted-foreground">{client.email || '—'}</TableCell>
-                    <TableCell className="text-center">{client._count?.repairs || 0}</TableCell>
+                    <TableCell className="text-center">{client._count?.sales || 0}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/clients/${client.id}`}>
@@ -208,12 +208,7 @@ export default function ClientsPage() {
                 >
                   Anterior
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                   Siguiente
                 </Button>
               </div>
@@ -225,13 +220,9 @@ export default function ClientsPage() {
               icon={Users}
               title={search ? 'Sin resultados' : 'Sin clientes'}
               description={
-                search
-                  ? 'No hay clientes que coincidan con tu búsqueda'
-                  : 'Crea tu primer cliente para comenzar'
+                search ? 'No hay clientes que coincidan con tu búsqueda' : 'Crea tu primer cliente para comenzar'
               }
-              action={
-                search ? undefined : { label: 'Crear cliente', href: '/clients/new' }
-              }
+              action={search ? undefined : { label: 'Crear cliente', href: '/clients/new' }}
             />
           )}
         </CardContent>
@@ -245,7 +236,8 @@ export default function ClientsPage() {
             </div>
             <DialogTitle className="text-center">¿Eliminar cliente?</DialogTitle>
             <DialogDescription className="text-center">
-              ¿Estás seguro de que deseas eliminar &ldquo;{clientToDelete?.name}&rdquo;? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas eliminar &ldquo;{clientToDelete?.name}&rdquo;? Esta acción no se puede
+              deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

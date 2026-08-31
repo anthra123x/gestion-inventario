@@ -31,7 +31,6 @@ import {
   getOrCreateActivePeriod,
   closeCurrentPeriod,
   getClosedPeriods,
-  
 } from './finance.service'
 
 export async function getFinanceCategories(type?: string) {
@@ -44,8 +43,8 @@ export async function createCategoryAction(formData: FormData) {
   const raw = {
     name: formData.get('name') as string,
     type: formData.get('type') as string,
-    color: formData.get('color') as string || null,
-    icon: formData.get('icon') as string || null,
+    color: (formData.get('color') as string) || null,
+    icon: (formData.get('icon') as string) || null,
     budget: formData.get('budget') ? Number(formData.get('budget')) : null,
   }
   const parsed = CreateCategorySchema.safeParse(raw)
@@ -63,10 +62,10 @@ export async function createCategoryAction(formData: FormData) {
 export async function updateCategoryAction(categoryId: string, formData: FormData) {
   await requireAuth()
   const raw = {
-    name: formData.get('name') as string || undefined,
-    type: formData.get('type') as string || undefined,
-    color: formData.get('color') as string || null,
-    icon: formData.get('icon') as string || null,
+    name: (formData.get('name') as string) || undefined,
+    type: (formData.get('type') as string) || undefined,
+    color: (formData.get('color') as string) || null,
+    icon: (formData.get('icon') as string) || null,
     budget: formData.get('budget') ? Number(formData.get('budget')) : null,
   }
   const parsed = UpdateCategorySchema.safeParse(raw)
@@ -278,9 +277,7 @@ export async function getClosedPeriodsAction(limit = 10) {
 
 export async function closeWeekAction(formData: FormData) {
   await requireAuth()
-  const savingsTarget = formData.get('savingsTarget')
-    ? Number(formData.get('savingsTarget'))
-    : undefined
+  const savingsTarget = formData.get('savingsTarget') ? Number(formData.get('savingsTarget')) : undefined
   try {
     const result = await closeCurrentPeriod(savingsTarget)
     revalidatePath('/finances')

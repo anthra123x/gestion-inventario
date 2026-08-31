@@ -9,27 +9,27 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(cuid())
-  email     String  @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   name      String
-  role      UserRole @default(EMPLOYEE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  repairs   Repair[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sales     Sale[]
+  expenses  Expense[]
 
   @@map("users")
 }
 
 model Client {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
   phone     String?
   email     String?
   address   String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   deletedAt DateTime?
-  repairs   Repair[]
+  sales     Sale[]
 
   @@index([phone])
   @@index([name])
@@ -37,81 +37,164 @@ model Client {
   @@map("clients")
 }
 
-model Part {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  supplier    String?
-  price       Float     @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-  repairParts RepairPart[]
+model Product {
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
+  barcode          String?
+  costPrice        Float            @default(0)
+  salePrice        Float            @default(0)
+  stock            Int              @default(0)
+  lowStockThreshold Int             @default(5)
+  categoryId       String?
+  category         ProductCategory? @relation(fields: [categoryId], references: [id])
+  supplierId       String?
+  supplier         Supplier?        @relation(fields: [supplierId], references: [id])
+  deletedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  stockMovements   StockMovement[]
+  saleItems        SaleItem[]
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([deletedAt])
+  @@map("products")
+}
+
+model ProductCategory {
+  id        String    @id @default(cuid())
+  name      String
+  color     String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@index([deletedAt])
+  @@map("product_categories")
+}
+
+model Supplier {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
 
   @@index([name])
   @@index([deletedAt])
-  @@map("parts")
+  @@map("suppliers")
 }
 
-model Repair {
-  id            String       @id @default(cuid())
-  clientId      String
-  device        String
-  problem       String
-  diagnosis     String?
-  status        RepairStatus @default(RECEIVED)
-  laborCost     Float        @default(0)
-  notes         String?
-  internalNotes String?
-  dateReceived  DateTime     @default(now())
-  dateDelivered DateTime?
-  estimatedDate DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  userId        String?
-  repairParts   RepairPart[]
-  client        Client       @relation(fields: [clientId], references: [id])
-  user          User?        @relation(fields: [userId], references: [id])
-
-  @@index([clientId])
-  @@index([clientId, createdAt])
-  @@index([status])
-  @@index([createdAt])
-  @@index([status, createdAt])
-  @@map("repairs")
-}
-
-model RepairPart {
-  id        String @id @default(cuid())
-  repairId  String
-  partId    String
+model StockMovement {
+  id        String           @id @default(cuid())
+  productId String
+  type      StockMovementType
   quantity  Int
-  unitCost  Float
-  total     Float
-  part      Part   @relation(fields: [partId], references: [id])
-  repair    Repair @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  unitCost  Float?
+  reason    String?
+  reference String?
+  createdAt DateTime         @default(now())
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@index([partId])
-  @@index([repairId])
-  @@map("repair_parts")
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  clientId      String?
+  client        Client?       @relation(fields: [clientId], references: [id])
+  subtotal      Float
+  discount      Float         @default(0)
+  total         Float
+  paymentMethod PaymentMethod
+  status        SaleStatus    @default(COMPLETED)
+  saleDate      DateTime      @default(now())
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         SaleItem[]
+  invoice       Invoice?
+
+  @@index([invoiceNumber])
+  @@index([clientId])
+  @@index([saleDate])
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Float
+  total     Float
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  saleId         String   @unique
+  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  invoiceNumber  String
+  companyName    String
+  companyAddress String?
+  companyPhone   String?
+  companyEmail   String?
+  currency       String   @default("COP")
+  invoiceFooter  String?
+  createdAt      DateTime @default(now())
+
+  @@index([saleId])
+  @@map("invoices")
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  description String
+  amount      Float
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  expenseDate DateTime  @default(now())
+  notes       String?
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([expenseDate])
+  @@map("expenses")
 }
 
 model SystemSettings {
-  id              String   @id @default(cuid())
-  companyName     String   @default("Gestión Reparaciones")
-  companyAddress  String?
-  companyPhone    String?
-  companyEmail    String?
-  currency        String   @default("COP")
-  receiptTitle    String   @default("FICHA TÉCNICA")
-  receiptTagline  String?  @default("Centro de Servicio Técnico")
-  receiptFooter   String?
-  warrantyText    String   @default("Este servicio técnico cuenta con una garantía de 30 días en mano de obra a partir de la fecha de entrega. Los repuestos instalados cubren la garantía otorgada por el fabricante. La garantía no cubre daños por mal uso, golpes, humedad o manipulación por terceros no autorizados.")
-  invoicePrefix   String   @default("REP-")
-  defaultWarrantyDays Int  @default(30)
-  lowStockThreshold    Int  @default(5)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  companyName       String   @default("Cilmax")
+  companyAddress    String?
+  companyPhone      String?
+  companyEmail      String?
+  currency          String   @default("COP")
+  invoicePrefix     String   @default("CIL-")
+  invoiceFooter     String?
+  lowStockThreshold Int      @default(5)
+  nextInvoiceNumber Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@map("system_settings")
 }
@@ -149,26 +232,28 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-enum UserRole {
-  ADMIN
-  EMPLOYEE
+enum StockMovementType {
+  PURCHASE
+  SALE
+  IN
+  OUT
+  ADJUST
 }
 
-enum RepairStatus {
-  RECEIVED
-  IN_PROGRESS
-  READY
-  DELIVERED
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+enum SaleStatus {
+  COMPLETED
   CANCELLED
 }
 
 enum NotificationType {
-  REPAIR_READY
   SYSTEM
-  WEEK_CLOSED
-  SAVING_GOAL_REACHED
   LOW_STOCK
-  BUDGET_ALERT
 }
 
 enum CategoryType {
@@ -188,17 +273,18 @@ enum BudgetPeriodStatus {
 }
 
 model Category {
-  id        String        @id @default(cuid())
-  name      String
-  type      CategoryType
-  color     String?
-  icon      String?
-  budget    Float?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  deletedAt DateTime?
-  transactions Transaction[]
-  savingGoals  SavingGoal[]
+  id            String        @id @default(cuid())
+  name          String
+  type          CategoryType
+  color         String?
+  icon          String?
+  budget        Float?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  transactions  Transaction[]
+  savingGoals   SavingGoal[]
+  expenses      Expense[]
 
   @@index([type])
   @@index([deletedAt])
@@ -232,6 +318,8 @@ model Transaction {
   category     Category        @relation(fields: [categoryId], references: [id])
   periodId     String?
   period       BudgetPeriod?   @relation(fields: [periodId], references: [id])
+  saleId       String?
+  expenseId    String?
   isRecurring  Boolean         @default(false)
   recurringDay Int?
   notes        String?
@@ -242,7 +330,8 @@ model Transaction {
   @@index([type])
   @@index([categoryId])
   @@index([periodId])
-  @@index([isRecurring])
+  @@index([saleId])
+  @@index([expenseId])
   @@map("transactions")
 }
 

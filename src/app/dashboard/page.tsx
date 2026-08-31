@@ -5,22 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency, formatNumber } from '@/lib/format'
-import {
-  Wrench,
-  Users,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  Activity,
-  BarChart3,
-} from 'lucide-react'
+import { Store, Users, ShoppingCart, AlertTriangle, ArrowRight, Package, DollarSign } from 'lucide-react'
 import { getDashboardStats } from '@/modules/dashboard/dashboard.actions'
 import Link from 'next/link'
-import { StatusDonut, MonthlyBar, TopDevicesBar, TopPartsBar } from './charts'
+import { PaymentDonut, SalesMonthlyBar, TopProductsBar, LowStockList } from './charts'
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardStats>>
+
+const paymentLabel: Record<string, string> = {
+  CASH: 'Efectivo',
+  CARD: 'Tarjeta',
+  TRANSFER: 'Transferencia',
+}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null)
@@ -112,42 +109,44 @@ export default function DashboardPage() {
     )
   }
 
-  const recentRepairs = stats.recentRepairs || []
+  const recentSales = stats.recentSales || []
+  const lowStock = stats.lowStockProducts || []
 
   return (
     <div className="page-container py-6 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-primary/10 p-2.5">
-          <Activity className="h-5 w-5 text-primary" />
+        <div className="rounded-xl bg-primary/10 p-2.5 shadow-sm shadow-primary/10">
+          <Store className="h-5 w-5 text-primary" />
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Resumen del taller</p>
+          <p className="text-sm text-muted-foreground">Resumen de la tienda</p>
         </div>
       </div>
 
       <StatCardGrid>
         <StatCard
-          title="Reparaciones Activas"
-          value={stats.repairStats?.activeRepairs?.toString() || '0'}
-          change={`${stats.repairStats?.totalRepairs || 0} reparaciones totales`}
-          icon={Wrench}
+          title="Ventas Hoy"
+          value={formatNumber(stats.salesToday?.count || 0)}
+          change={`${formatCurrency(stats.salesToday?.total || 0)} en ventas`}
+          icon={ShoppingCart}
+          color="success"
+          href="/sales"
+        />
+        <StatCard
+          title="Ingresos Hoy"
+          value={formatCurrency(stats.incomeToday || 0)}
+          change="Ingresos registrados hoy"
+          icon={DollarSign}
           color="warning"
         />
         <StatCard
-          title="Reparaciones Listas"
-          value={formatNumber(stats.repairsReady || 0)}
-          change="Listas para entregar"
-          icon={CheckCircle2}
-          color="success"
-          href="/repairs?filter=ready"
-        />
-        <StatCard
-          title="Total Reparaciones"
-          value={stats.repairStats?.totalRepairs?.toString() || '0'}
-          change={`${formatCurrency(stats.repairStats?.totalLabor || 0)} facturado`}
-          icon={BarChart3}
+          title="Productos"
+          value={formatNumber(stats.totalProducts || 0)}
+          change={`${lowStock.length} con stock bajo`}
+          icon={Package}
           color="default"
+          href="/inventory"
         />
         <StatCard
           title="Clientes Totales"
@@ -155,91 +154,69 @@ export default function DashboardPage() {
           change={`+${stats.clientStats?.newClientsThisMonth || 0} nuevos este mes`}
           icon={Users}
           color="purple"
+          href="/clients"
         />
       </StatCardGrid>
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
         <div className="xl:col-span-1">
-          <StatusDonut data={stats.repairsByStatus || []} />
+          <PaymentDonut data={stats.salesByPayment || []} />
         </div>
         <div className="xl:col-span-1">
-          <MonthlyBar data={stats.repairsByMonth || []} />
+          <SalesMonthlyBar data={stats.salesByMonth || []} />
         </div>
         <div className="xl:col-span-1">
-          <TopDevicesBar data={stats.repairsByDevice || []} />
+          <TopProductsBar data={stats.topProducts || []} />
         </div>
         <div className="xl:col-span-1">
-          <TopPartsBar data={stats.topParts || []} />
+          <LowStockList data={lowStock} />
         </div>
       </div>
 
-      <Card className="card-shadow border-border/60">
+      <Card className="card-shadow-warm border-border/60 hover:card-shadow-warm-md transition-shadow duration-300">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <div className="rounded-lg bg-primary/10 p-1.5">
-                  <Wrench className="h-4 w-4 text-primary" />
+                <div className="rounded-lg bg-primary/10 p-1.5 shadow-sm shadow-primary/10">
+                  <ShoppingCart className="h-4 w-4 text-primary" />
                 </div>
-                Reparaciones Recientes
+                <span>Ventas Recientes</span>
               </CardTitle>
-              <CardDescription>Últimas reparaciones registradas</CardDescription>
+              <CardDescription>Últimas ventas registradas</CardDescription>
             </div>
             <Link
-              href="/repairs"
-              className="text-xs font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+              href="/sales/history"
+              className="text-xs font-medium text-primary hover:text-primary/80 transition-colors duration-200 flex items-center gap-1"
             >
               Ver todas <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </CardHeader>
         <CardContent>
-          {recentRepairs.length === 0 ? (
+          {recentSales.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-8 flex flex-col items-center gap-2">
-              <Wrench className="h-8 w-8 text-muted-foreground/40" />
-              <p>No hay reparaciones registradas</p>
-              <Link
-                href="/repairs/new"
-                className="text-primary hover:underline text-xs font-medium"
-              >
-                Crear primera reparación
+              <ShoppingCart className="h-8 w-8 text-muted-foreground/40" />
+              <p>No hay ventas registradas</p>
+              <Link href="/sales" className="text-primary hover:underline text-xs font-medium transition-colors duration-200">
+                Registrar primera venta
               </Link>
             </div>
           ) : (
             <div className="divide-y divide-border/50 -mx-6">
-              {recentRepairs.map((repair) => (
+              {recentSales.map((sale) => (
                 <Link
-                  key={repair.id}
-                  href={`/repairs/${repair.id}`}
-                  className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors duration-150"
+                  key={sale.id}
+                  href={`/sales/${sale.id}`}
+                  className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors duration-200"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{repair.client?.name || 'Cliente'}</p>
-                    <p className="text-xs text-muted-foreground truncate">{repair.device}</p>
+                    <p className="text-sm font-medium truncate">{sale.client?.name || 'Cliente mostrador'}</p>
+                    <p className="text-xs text-muted-foreground truncate font-mono tabular-nums">
+                      {sale.invoiceNumber} · {paymentLabel[sale.paymentMethod] || sale.paymentMethod}
+                    </p>
                   </div>
-                  <StatusBadge
-                    variant={
-                      repair.status === 'READY'
-                        ? 'success'
-                        : repair.status === 'IN_PROGRESS'
-                          ? 'info'
-                          : repair.status === 'DELIVERED'
-                            ? 'purple'
-                            : 'neutral'
-                    }
-                    dot
-                    pulse={repair.status === 'IN_PROGRESS'}
-                  >
-                    {repair.status === 'READY'
-                      ? 'Listo'
-                      : repair.status === 'IN_PROGRESS'
-                        ? 'En progreso'
-                        : repair.status === 'RECEIVED'
-                          ? 'Recibido'
-                          : repair.status === 'DELIVERED'
-                            ? 'Entregado'
-                            : repair.status}
-                  </StatusBadge>
+                  <span className="text-sm font-semibold tabular-nums">{formatCurrency(sale.total)}</span>
                 </Link>
               ))}
             </div>

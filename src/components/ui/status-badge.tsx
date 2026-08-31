@@ -30,7 +30,13 @@ const dotClasses: Record<StatusVariant, string> = {
   purple: 'bg-purple-500',
 }
 
-export function StatusBadge({ variant = 'neutral', children, className, dot = false, pulse = false }: StatusBadgeProps) {
+export function StatusBadge({
+  variant = 'neutral',
+  children,
+  className,
+  dot = false,
+  pulse = false,
+}: StatusBadgeProps) {
   return (
     <span
       className={cn(
@@ -39,15 +45,7 @@ export function StatusBadge({ variant = 'neutral', children, className, dot = fa
         className,
       )}
     >
-      {dot && (
-        <span
-          className={cn(
-            'h-1.5 w-1.5 rounded-full',
-            dotClasses[variant],
-            pulse && 'animate-pulse',
-          )}
-        />
-      )}
+      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', dotClasses[variant], pulse && 'animate-pulse')} />}
       {children}
     </span>
   )

@@ -4,15 +4,22 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Pencil, Phone, Mail, MapPin, Wrench } from 'lucide-react'
+import { ArrowLeft, Pencil, Phone, Mail, MapPin, ShoppingCart, Receipt } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
-import { getRepairStatusLabel, getRepairStatusColor } from '@/lib/labels'
 
 interface ClientPageProps {
   params: Promise<{
     id: string
   }>
 }
+
+const paymentLabel: Record<string, string> = {
+  CASH: 'Efectivo',
+  CARD: 'Tarjeta',
+  TRANSFER: 'Transferencia',
+}
+
+export const dynamic = 'force-dynamic'
 
 export default async function ClientPage({ params }: ClientPageProps) {
   const { id } = await params
@@ -69,52 +76,52 @@ export default async function ClientPage({ params }: ClientPageProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Wrench className="h-5 w-5" />
-            Historial de Reparaciones
+            <ShoppingCart className="h-5 w-5" />
+            Historial de Compras
           </CardTitle>
-          <CardDescription>{client.repairs.length} reparaciones registradas</CardDescription>
+          <CardDescription>{client.sales.length} ventas registradas</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          {client.repairs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Este cliente no tiene reparaciones registradas
-            </div>
+          {client.sales.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Este cliente no tiene compras registradas</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="text-left px-4 py-3 font-medium">#</th>
-                    <th className="text-left px-4 py-3 font-medium">Dispositivo</th>
-                    <th className="text-left px-4 py-3 font-medium">Estado</th>
+                    <th className="text-left px-4 py-3 font-medium">Factura</th>
+                    <th className="text-left px-4 py-3 font-medium">Productos</th>
+                    <th className="text-left px-4 py-3 font-medium">Método</th>
                     <th className="text-right px-4 py-3 font-medium">Total</th>
                     <th className="text-right px-4 py-3 font-medium">Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {client.repairs.map((repair) => {
-                    const partsTotal = repair.repairParts.reduce((sum, p) => sum + p.total, 0)
-                    const totalCost = repair.laborCost + partsTotal
-                    return (
-                      <tr key={repair.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-4 py-3 font-mono text-xs">
-                          <Link href={`/repairs/${repair.id}`} className="text-primary hover:underline">
-                            #{repair.id.slice(-6).toUpperCase()}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 font-medium">{repair.device}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className={getRepairStatusColor(repair.status)}>
-                            {getRepairStatusLabel(repair.status)}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold">{formatCurrency(totalCost)}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">
-                          {new Date(repair.createdAt).toLocaleDateString('es-CO')}
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {client.sales.map((sale) => (
+                    <tr key={sale.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <td className="px-4 py-3 font-mono text-xs">
+                        <Link
+                          href={`/sales/${sale.id}`}
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <Receipt className="h-3 w-3" />
+                          {sale.invoiceNumber}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {sale.items.map((item) => `${item.quantity}× ${item.product.name}`).join(', ')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-xs">
+                          {paymentLabel[sale.paymentMethod] || sale.paymentMethod}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold">{formatCurrency(sale.total)}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">
+                        {new Date(sale.saleDate).toLocaleDateString('es-CO')}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

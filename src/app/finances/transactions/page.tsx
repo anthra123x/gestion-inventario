@@ -6,15 +6,18 @@ import { Plus, Trash2, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
@@ -60,10 +63,12 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter, categoryFilter, startDate, endDate, page])
 
-  useEffect(() => { loadTransactions() }, [loadTransactions])
+  useEffect(() => {
+    loadTransactions()
+  }, [loadTransactions])
 
   useEffect(() => {
     async function loadCategories() {
@@ -117,7 +122,13 @@ export default function TransactionsPage() {
           <div className="flex flex-wrap gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Tipo</Label>
-              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v ?? 'ALL'); setPage(1) }}>
+              <Select
+                value={typeFilter}
+                onValueChange={(v) => {
+                  setTypeFilter(v ?? 'ALL')
+                  setPage(1)
+                }}
+              >
                 <SelectTrigger className="w-36">
                   <SelectValue />
                 </SelectTrigger>
@@ -130,25 +141,49 @@ export default function TransactionsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Categoría</Label>
-              <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v ?? 'ALL'); setPage(1) }}>
+              <Select
+                value={categoryFilter}
+                onValueChange={(v) => {
+                  setCategoryFilter(v ?? 'ALL')
+                  setPage(1)
+                }}
+              >
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todas</SelectItem>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Desde</Label>
-              <Input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1) }} className="w-40" />
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value)
+                  setPage(1)
+                }}
+                className="w-40"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Hasta</Label>
-              <Input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1) }} className="w-40" />
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value)
+                  setPage(1)
+                }}
+                className="w-40"
+              />
             </div>
           </div>
         </CardContent>
@@ -189,22 +224,28 @@ export default function TransactionsPage() {
                         {new Date(tx.date).toLocaleDateString('es-CO')}
                       </TableCell>
                       <TableCell className="font-medium">{tx.description}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {tx.category?.name || 'Sin categoría'}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{tx.category?.name || 'Sin categoría'}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getTransactionTypeColor(tx.type)}`}>
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getTransactionTypeColor(tx.type)}`}
+                        >
                           {getTransactionTypeLabel(tx.type)}
                         </span>
                       </TableCell>
-                      <TableCell className={`text-right font-bold tabular-nums ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                        {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
+                      <TableCell
+                        className={`text-right font-bold tabular-nums ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {tx.type === 'INCOME' ? '+' : '-'}
+                        {formatCurrency(tx.amount)}
                       </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => { setTxToDelete(tx); setDeleteOpen(true) }}
+                          onClick={() => {
+                            setTxToDelete(tx)
+                            setDeleteOpen(true)
+                          }}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -234,8 +275,12 @@ export default function TransactionsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Eliminar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

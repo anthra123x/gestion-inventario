@@ -27,20 +27,20 @@ export async function getClients(search?: string, page = 1, take = 20) {
       skip: (page - 1) * take,
       take,
       include: {
-        repairs: {
+        sales: {
           take: 5,
           orderBy: { createdAt: 'desc' },
           select: {
             id: true,
-            device: true,
+            invoiceNumber: true,
+            total: true,
             status: true,
-            laborCost: true,
             createdAt: true,
           },
         },
         _count: {
           select: {
-            repairs: true,
+            sales: true,
           },
         },
       },
@@ -81,12 +81,12 @@ export async function getClientById(id: string) {
   return await prisma.client.findFirst({
     where: { id, deletedAt: null },
     include: {
-      repairs: {
-        orderBy: { createdAt: 'desc' },
+      sales: {
+        orderBy: { saleDate: 'desc' },
         include: {
-          repairParts: {
+          items: {
             include: {
-              part: true,
+              product: true,
             },
           },
         },
@@ -210,19 +210,20 @@ export async function getClientStats() {
       where: { deletedAt: null },
       take: 10,
       orderBy: {
-        repairs: {
+        sales: {
           _count: 'desc',
         },
       },
       include: {
         _count: {
           select: {
-            repairs: true,
+            sales: true,
           },
         },
-        repairs: {
+        sales: {
+          where: { status: 'COMPLETED' },
           select: {
-            laborCost: true,
+            total: true,
           },
         },
       },
@@ -231,7 +232,7 @@ export async function getClientStats() {
 
   const topClientsWithSpending = topClients.map((client) => ({
     ...client,
-    totalLabor: client.repairs.reduce((sum, r) => sum + r.laborCost, 0),
+    totalSpent: client.sales.reduce((sum, s) => sum + s.total, 0),
   }))
 
   return {
