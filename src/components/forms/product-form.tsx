@@ -154,7 +154,7 @@ export function ProductForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="barcode">Código de barras</Label>
+              <Label htmlFor="barcode">Código de barras (opcional)</Label>
               <Input
                 id="barcode"
                 {...register('barcode')}
@@ -165,7 +165,7 @@ export function ProductForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">Descripción (opcional)</Label>
             <Textarea
               id="description"
               {...register('description')}
