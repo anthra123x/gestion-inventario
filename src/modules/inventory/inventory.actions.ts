@@ -6,6 +6,12 @@ import { CreateProductSchema, UpdateProductSchema } from '@/lib/validations'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
 
+function toNullableId(value: FormDataEntryValue | null): string | null {
+  const raw = typeof value === 'string' ? value : ''
+  if (!raw || raw === 'null' || raw === 'undefined') return null
+  return raw
+}
+
 export async function getProducts(search?: string, page = 1, take = 20, categoryId?: string) {
   await requireAuth()
   const where = {
@@ -75,8 +81,8 @@ export async function createProduct(formData: FormData) {
     salePrice: formData.get('salePrice') ? parseFloat(formData.get('salePrice') as string) : 0,
     stock: formData.get('stock') ? parseInt(formData.get('stock') as string) : 0,
     lowStockThreshold: formData.get('lowStockThreshold') ? parseInt(formData.get('lowStockThreshold') as string) : 5,
-    categoryId: formData.get('categoryId') || null,
-    supplierId: formData.get('supplierId') || null,
+    categoryId: toNullableId(formData.get('categoryId')),
+    supplierId: toNullableId(formData.get('supplierId')),
   })
 
   if (!validatedFields.success) {
@@ -113,8 +119,8 @@ export async function updateProduct(id: string, formData: FormData) {
     lowStockThreshold: formData.get('lowStockThreshold')
       ? parseInt(formData.get('lowStockThreshold') as string)
       : undefined,
-    categoryId: formData.get('categoryId') || null,
-    supplierId: formData.get('supplierId') || null,
+    categoryId: toNullableId(formData.get('categoryId')),
+    supplierId: toNullableId(formData.get('supplierId')),
   })
 
   if (!validatedFields.success) {

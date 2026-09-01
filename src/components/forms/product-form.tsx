@@ -102,7 +102,11 @@ export function ProductForm({
 
       const formData = new FormData()
       Object.entries(normalizedData).forEach(([key, value]) => {
-        formData.append(key, String(value))
+        if (value === null || value === undefined) {
+          formData.append(key, '')
+        } else {
+          formData.append(key, String(value))
+        }
       })
 
       const result = await onSubmit(formData)
