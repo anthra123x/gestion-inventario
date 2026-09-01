@@ -1,13 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatCard, StatCardGrid } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/format'
 import { getBusinessFinanceReportAction } from '@/modules/finance/finance.actions'
 import {
@@ -377,10 +375,6 @@ export default function FinancesPage() {
             <p className="text-sm text-muted-foreground">Reporte financiero del negocio</p>
           </div>
         </div>
-        <Button variant="outline" render={<Link href="/finances/expenses" />}>
-          <Receipt className="h-4 w-4" />
-          Gastos
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FinancePeriodKind)}>
