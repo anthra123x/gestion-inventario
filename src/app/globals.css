@@ -298,3 +298,54 @@
     transform: none !important;
   }
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .fixed,
+  header,
+  aside,
+  [class*='sidebar'],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Neutralize the dashboard layout so only the invoice content prints */
+  .h-dvh {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .overflow-hidden,
+  .overflow-y-auto {
+    overflow: visible !important;
+  }
+
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .invoice-sheet {
+    max-width: 100% !important;
+    margin: 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
