@@ -49,8 +49,6 @@ export function ProductForm({
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [categoryId, setCategoryId] = useState(product?.categoryId || '')
-  const [supplierId, setSupplierId] = useState(product?.supplierId || '')
   const [categoryName, setCategoryName] = useState(product?.category?.name || '')
   const [supplierName, setSupplierName] = useState(product?.supplier?.name || '')
 

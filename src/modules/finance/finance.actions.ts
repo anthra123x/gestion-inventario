@@ -31,6 +31,7 @@ import {
   getOrCreateActivePeriod,
   closeCurrentPeriod,
   getClosedPeriods,
+  getBusinessFinanceReport,
 } from './finance.service'
 
 export async function getFinanceCategories(type?: string) {
@@ -185,6 +186,14 @@ export async function getFinanceSummaryAction(dateStr?: string) {
   await requireAuth()
   await autoGenerateRecurringExpenses()
   return await getFinanceSummary(dateStr)
+}
+
+export async function getBusinessFinanceReportAction(
+  kind: 'day' | 'week' | 'month',
+  dateStr?: string,
+) {
+  await requireAuth()
+  return await getBusinessFinanceReport(kind, dateStr)
 }
 
 export async function getSavingGoalsAction() {

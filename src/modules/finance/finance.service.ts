@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
+import type { PaymentMethod } from '@prisma/client'
 
 export function getWeekPeriod(dateStr?: string) {
   const date = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
@@ -546,6 +547,194 @@ export async function updateSavingGoal(id: string, data: Record<string, unknown>
 
 export async function deleteSavingGoal(id: string) {
   return await prisma.savingGoal.delete({ where: { id } })
+}
+
+// ─── Reporte financiero real del negocio (Ventas + Gastos) ───
+
+export type FinancePeriodKind = 'day' | 'week' | 'month'
+
+export function getFinancePeriodRange(kind: FinancePeriodKind, date?: Date): { startDate: Date; endDate: Date } {
+  const ref = date ? new Date(date) : new Date()
+  ref.setHours(0, 0, 0, 0)
+
+  if (kind === 'day') {
+    const end = new Date(ref)
+    end.setHours(23, 59, 59, 999)
+    return { startDate: ref, endDate: end }
+  }
+
+  if (kind === 'week') {
+    const day = ref.getDay()
+    const diffToMonday = day === 0 ? -6 : 1 - day
+    const monday = new Date(ref)
+    monday.setDate(monday.getDate() + diffToMonday)
+    monday.setHours(0, 0, 0, 0)
+    const sunday = new Date(monday)
+    sunday.setDate(sunday.getDate() + 6)
+    sunday.setHours(23, 59, 59, 999)
+    return { startDate: monday, endDate: sunday }
+  }
+
+  const start = new Date(ref.getFullYear(), ref.getMonth(), 1)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999)
+  return { startDate: start, endDate: end }
+}
+
+export type BusinessFinanceReport = {
+  kind: FinancePeriodKind
+  startDate: Date
+  endDate: Date
+  sales: {
+    count: number
+    total: number
+    cogs: number
+    grossProfit: number
+    grossMargin: number
+  }
+  expenses: {
+    total: number
+    count: number
+    byCategory: { id: string; category: string; amount: number; color: string | null }[]
+  }
+  summary: {
+    netProfit: number
+    balance: number
+    cashIn: number
+    cashOut: number
+  }
+  byDay: { date: string; sales: number; cogs: number; grossProfit: number; expenses: number; netProfit: number }[]
+  paymentMethods: { method: PaymentMethod; total: number; count: number }[]
+}
+
+export async function getBusinessFinanceReport(
+  kind: FinancePeriodKind,
+  dateStr?: string,
+): Promise<BusinessFinanceReport> {
+  const ref = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
+  const { startDate, endDate } = getFinancePeriodRange(kind, ref)
+
+  const [sales, saleItems, expenses] = await Promise.all([
+    prisma.sale.findMany({
+      where: { status: 'COMPLETED', saleDate: { gte: startDate, lte: endDate } },
+      select: { id: true, total: true, paymentMethod: true, saleDate: true },
+    }),
+    prisma.saleItem.findMany({
+      where: { sale: { status: 'COMPLETED', saleDate: { gte: startDate, lte: endDate } } },
+      select: { quantity: true, total: true, saleId: true, product: { select: { costPrice: true } } },
+    }),
+    prisma.expense.findMany({
+      where: { expenseDate: { gte: startDate, lte: endDate } },
+      select: { id: true, amount: true, expenseDate: true, category: { select: { id: true, name: true, color: true } } },
+    }),
+  ])
+
+  const salesTotal = sales.reduce((s, x) => s + x.total, 0)
+  const cogs = saleItems.reduce((s, x) => s + x.quantity * x.product.costPrice, 0)
+  const grossProfit = salesTotal - cogs
+  const grossMargin = salesTotal > 0 ? (grossProfit / salesTotal) * 100 : 0
+
+  const expensesTotal = expenses.reduce((s, x) => s + x.amount, 0)
+
+  const byCategory = new Map<string, { id: string; category: string; amount: number; color: string | null }>()
+  for (const ex of expenses) {
+    const key = ex.category.id
+    const existing = byCategory.get(key)
+    if (existing) existing.amount += ex.amount
+    else {
+      byCategory.set(key, {
+        id: key,
+        category: ex.category.name,
+        amount: ex.amount,
+        color: ex.category.color,
+      })
+    }
+  }
+  const expenseByCategory = Array.from(byCategory.values()).sort((a, b) => b.amount - a.amount)
+
+  // Desglose diario dentro del rango
+  const dayMap = new Map<string, { sales: number; cogs: number; expenses: number }>()
+  const daysInRange = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1
+  for (let i = 0; i < daysInRange; i++) {
+    const d = new Date(startDate)
+    d.setDate(d.getDate() + i)
+    dayMap.set(d.toISOString().split('T')[0], { sales: 0, cogs: 0, expenses: 0 })
+  }
+
+  const saleCogsByDay = new Map<string, number>()
+  for (const item of saleItems) {
+    const sale = sales.find((s) => s.id === item.saleId)
+    if (sale) {
+      const key = sale.saleDate.toISOString().split('T')[0]
+      saleCogsByDay.set(key, (saleCogsByDay.get(key) || 0) + item.quantity * item.product.costPrice)
+    }
+  }
+
+  for (const s of sales) {
+    const key = s.saleDate.toISOString().split('T')[0]
+    const entry = dayMap.get(key)
+    if (entry) {
+      entry.sales += s.total
+      entry.cogs += saleCogsByDay.get(key) ?? 0
+    }
+  }
+  for (const ex of expenses) {
+    const key = ex.expenseDate.toISOString().split('T')[0]
+    const entry = dayMap.get(key)
+    if (entry) entry.expenses += ex.amount
+  }
+
+  const byDay = Array.from(dayMap.entries())
+    .map(([date, d]) => {
+      const grossP = d.sales - d.cogs
+      return {
+        date,
+        sales: d.sales,
+        cogs: d.cogs,
+        grossProfit: grossP,
+        expenses: d.expenses,
+        netProfit: grossP - d.expenses,
+      }
+    })
+    .filter((d) => d.sales !== 0 || d.expenses !== 0)
+
+  const paymentMethodMap = new Map<PaymentMethod, { method: PaymentMethod; total: number; count: number }>()
+  for (const s of sales) {
+    const existing = paymentMethodMap.get(s.paymentMethod)
+    if (existing) {
+      existing.total += s.total
+      existing.count += 1
+    } else {
+      paymentMethodMap.set(s.paymentMethod, { method: s.paymentMethod, total: s.total, count: 1 })
+    }
+  }
+  const paymentMethods = Array.from(paymentMethodMap.values()).sort((a, b) => b.total - a.total)
+
+  return {
+    kind,
+    startDate,
+    endDate,
+    sales: {
+      count: sales.length,
+      total: salesTotal,
+      cogs,
+      grossProfit,
+      grossMargin,
+    },
+    expenses: {
+      total: expensesTotal,
+      count: expenses.length,
+      byCategory: expenseByCategory,
+    },
+    summary: {
+      netProfit: grossProfit - expensesTotal,
+      balance: salesTotal - expensesTotal,
+      cashIn: salesTotal,
+      cashOut: expensesTotal,
+    },
+    byDay,
+    paymentMethods,
+  }
 }
 
 export async function autoGenerateRecurringExpenses() {
