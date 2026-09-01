@@ -119,7 +119,7 @@ export default function SalesHistoryPage() {
         title="Historial de Ventas"
         description="Consulta y gestiona las ventas realizadas"
         actions={
-          <Link href="/sales">
+          <Link href="/sales/new">
             <Button>Nueva Venta</Button>
           </Link>
         }

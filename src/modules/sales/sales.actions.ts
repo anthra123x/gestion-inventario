@@ -8,7 +8,7 @@ import { parseError } from '@/lib/errors'
 
 export async function createSale(data: {
   clientId?: string | null
-  items: Array<{ productId: string; quantity: number }>
+  items: Array<{ productId: string; quantity: number; unitPrice?: number }>
   discount?: number
   paymentMethod: 'CASH' | 'CARD' | 'TRANSFER'
 }) {
@@ -59,7 +59,8 @@ export async function createSale(data: {
       let subtotal = 0
       const saleItemsData = items.map((item) => {
         const product = productMap.get(item.productId)!
-        const unitPrice = product.salePrice
+        const unitPrice =
+          item.unitPrice !== undefined && item.unitPrice >= 0 ? item.unitPrice : product.salePrice
         const total = unitPrice * item.quantity
         subtotal += total
         return {

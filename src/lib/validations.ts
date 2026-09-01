@@ -55,6 +55,7 @@ export const SaleStatusSchema = z.enum(['COMPLETED', 'CANCELLED'])
 export const CreateSaleItemSchema = z.object({
   productId: z.string().min(1, 'El producto es requerido'),
   quantity: z.coerce.number().int().min(1, 'La cantidad debe ser al menos 1'),
+  unitPrice: z.coerce.number().min(0, 'El precio unitario no puede ser negativo').optional(),
 })
 
 export const CreateSaleSchema = z.object({
