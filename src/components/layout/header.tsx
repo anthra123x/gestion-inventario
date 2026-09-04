@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+import Link from 'next/link'
 import { Search, LogOut, User, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,6 +35,16 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-background/90 backdrop-blur-md px-4 lg:px-6 sticky top-0 z-30 shadow-sm shadow-primary/[0.03]">
       <div className="flex items-center gap-3 lg:gap-4">
+        <Link href="/" className="shrink-0 leading-none" aria-label="Ir al inicio">
+          <Image
+            src="/logo cilmax.png"
+            alt="Cilmax"
+            width={200}
+            height={40}
+            priority
+            className="h-9 w-auto object-contain lg:h-10"
+          />
+        </Link>
         <Button variant="ghost" size="icon" onClick={onMenuClick} className="lg:hidden -ml-1.5">
           <Menu className="h-5 w-5" />
         </Button>

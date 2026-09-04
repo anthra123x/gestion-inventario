@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, Download, MapPin, Mail, Phone, Hash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getSaleById } from '@/modules/sales/sales.actions'
 import { formatCurrency } from '@/lib/format'
 import { PrintInvoiceButton } from './print-button'
-import { CilmaxLogo } from './logo'
 
 interface InvoicePageProps {
   params: Promise<{ id: string }>
@@ -77,7 +77,16 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-6 px-8 pt-8">
           <div className="flex items-center gap-4">
-            <CilmaxLogo />
+            <div className="shrink-0">
+              <Image
+                src="/logo cilmax.png"
+                alt="Cilmax"
+                width={320}
+                height={64}
+                priority
+                className="h-14 w-auto object-contain"
+              />
+            </div>
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">{companyName}</h2>
               <p className="mt-0.5 text-sm font-medium text-teal-700">FACTURA DE VENTA</p>
