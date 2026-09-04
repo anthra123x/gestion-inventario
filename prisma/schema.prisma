@@ -153,7 +153,9 @@ model Invoice {
   sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
   invoiceNumber  String
   companyName    String
+  companyNit     String?
   companyAddress String?
+  companyCity    String?
   companyPhone   String?
   companyEmail   String?
   currency       String   @default("COP")
@@ -185,7 +187,9 @@ model Expense {
 model SystemSettings {
   id                String   @id @default(cuid())
   companyName       String   @default("Cilmax")
+  companyNit        String?
   companyAddress    String?
+  companyCity       String?
   companyPhone      String?
   companyEmail      String?
   currency          String   @default("COP")

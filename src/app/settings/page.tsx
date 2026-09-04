@@ -13,7 +13,9 @@ import { getSystemSettings, updateSystemSettings } from '@/modules/settings/sett
 
 interface Settings {
   companyName: string
+  companyNit: string | null
   companyAddress: string | null
+  companyCity: string | null
   companyPhone: string | null
   companyEmail: string | null
   currency: string
@@ -24,7 +26,9 @@ interface Settings {
 
 const defaultSettings: Settings = {
   companyName: 'Cilmax',
+  companyNit: '',
   companyAddress: '',
+  companyCity: '',
   companyPhone: '',
   companyEmail: '',
   currency: 'COP',
@@ -66,7 +70,9 @@ export default function SettingsPage() {
     try {
       const formData = new FormData()
       formData.append('companyName', settings.companyName)
+      formData.append('companyNit', settings.companyNit || '')
       formData.append('companyAddress', settings.companyAddress || '')
+      formData.append('companyCity', settings.companyCity || '')
       formData.append('companyPhone', settings.companyPhone || '')
       formData.append('companyEmail', settings.companyEmail || '')
       formData.append('currency', settings.currency)
@@ -138,6 +144,26 @@ export default function SettingsPage() {
                     onChange={(e) => update('companyName', e.target.value)}
                   />
                 </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyNit">NIT / Cédula</Label>
+                    <Input
+                      id="companyNit"
+                      value={settings.companyNit || ''}
+                      onChange={(e) => update('companyNit', e.target.value)}
+                      placeholder="Ej: 901234567-8"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyCity">Ciudad</Label>
+                    <Input
+                      id="companyCity"
+                      value={settings.companyCity || ''}
+                      onChange={(e) => update('companyCity', e.target.value)}
+                      placeholder="Ej: Cali"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="companyAddress">Dirección</Label>
                   <Input
@@ -148,7 +174,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="companyPhone">Teléfono</Label>
+                    <Label htmlFor="companyPhone">Teléfono / WhatsApp</Label>
                     <Input
                       id="companyPhone"
                       value={settings.companyPhone || ''}

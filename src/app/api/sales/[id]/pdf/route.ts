@@ -38,7 +38,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     settings
       ? {
           companyName: settings.companyName,
+          companyNit: settings.companyNit,
           companyAddress: settings.companyAddress,
+          companyCity: settings.companyCity,
           companyPhone: settings.companyPhone,
           companyEmail: settings.companyEmail,
           invoicePrefix: settings.invoicePrefix,

@@ -11,7 +11,9 @@ import { getOrCreateSettings, updateSettings } from './settings.service'
 
 const UpdateSettingsSchema = z.object({
   companyName: z.string().min(1, 'Nombre de empresa requerido'),
+  companyNit: z.string().optional().default(''),
   companyAddress: z.string().optional().default(''),
+  companyCity: z.string().optional().default(''),
   companyPhone: z.string().optional().default(''),
   companyEmail: z.string().email('Email inválido').optional().or(z.literal('')),
   currency: z.enum(['COP', 'USD', 'EUR']).default('COP'),
@@ -30,7 +32,9 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
 
   const raw = {
     companyName: getString(formData, 'companyName') || '',
+    companyNit: getString(formData, 'companyNit'),
     companyAddress: getString(formData, 'companyAddress'),
+    companyCity: getString(formData, 'companyCity'),
     companyPhone: getString(formData, 'companyPhone'),
     companyEmail: getString(formData, 'companyEmail'),
     currency: getString(formData, 'currency') || 'COP',
@@ -50,7 +54,9 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
     () =>
       updateSettings({
         companyName: data.companyName,
+        companyNit: data.companyNit || null,
         companyAddress: data.companyAddress || null,
+        companyCity: data.companyCity || null,
         companyPhone: data.companyPhone || null,
         companyEmail: data.companyEmail || null,
         currency: data.currency,

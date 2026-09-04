@@ -8,7 +8,9 @@ export async function getOrCreateSettings() {
 
 export type SettingsData = {
   companyName: string
+  companyNit: string | null
   companyAddress: string | null
+  companyCity: string | null
   companyPhone: string | null
   companyEmail: string | null
   currency: string

@@ -3,7 +3,9 @@ import autoTable from 'jspdf-autotable'
 
 export interface PDFSettings {
   companyName: string
+  companyNit: string | null
   companyAddress: string | null
+  companyCity: string | null
   companyPhone: string | null
   companyEmail: string | null
   invoicePrefix: string
@@ -13,7 +15,9 @@ export interface PDFSettings {
 
 const defaultPDFSettings: PDFSettings = {
   companyName: 'Cilmax',
+  companyNit: null,
   companyAddress: null,
+  companyCity: null,
   companyPhone: null,
   companyEmail: null,
   invoicePrefix: 'CIL-',
@@ -34,6 +38,9 @@ const COL = {
   text: [60, 60, 60] as [number, number, number],
   muted: [150, 150, 150] as [number, number, number],
   tableBg: [248, 248, 248] as [number, number, number],
+  teal: [13, 148, 136] as [number, number, number],
+  tealLight: [240, 253, 250] as [number, number, number],
+  gold: [245, 158, 11] as [number, number, number],
 }
 
 interface PDFSaleItem {
@@ -61,7 +68,9 @@ interface PDFSale {
   user?: { name: string } | null
   invoice?: {
     companyName: string
+    companyNit: string | null
     companyAddress: string | null
+    companyCity: string | null
     companyPhone: string | null
     companyEmail: string | null
     currency: string
@@ -98,8 +107,10 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
   }
 
   // Company header
-  doc.setFillColor(...COL.black)
-  doc.roundedRect(m, y - 6, 8, 8, 1.5, 1.5, 'F')
+  doc.setFillColor(...COL.teal)
+  doc.circle(m + 4, y - 2, 5, 'F')
+  doc.setFillColor(...COL.gold)
+  doc.circle(m + 4, y - 2, 2.2, 'F')
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(20)
@@ -111,8 +122,11 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
   doc.setFontSize(8)
   doc.setTextColor(...COL.muted)
   const companyDetails: string[] = []
-  if (company?.companyAddress || s.companyAddress)
-    companyDetails.push(company?.companyAddress || s.companyAddress || '')
+  if (company?.companyNit || s.companyNit) companyDetails.push(`NIT: ${company?.companyNit || s.companyNit}`)
+  const location = [company?.companyAddress || s.companyAddress, company?.companyCity || s.companyCity]
+    .filter(Boolean)
+    .join(', ')
+  if (location) companyDetails.push(location)
   if (company?.companyPhone || s.companyPhone) companyDetails.push(`Tel: ${company?.companyPhone || s.companyPhone}`)
   if (company?.companyEmail || s.companyEmail) companyDetails.push(`Email: ${company?.companyEmail || s.companyEmail}`)
   if (companyDetails.length > 0) {
@@ -203,7 +217,7 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
     margin: { left: m, right: m },
     tableWidth: cw,
     styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [...COL.black], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+    headStyles: { fillColor: [...COL.teal], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
     alternateRowStyles: { fillColor: [...COL.tableBg] },
     columnStyles: {
       0: { cellWidth: 'auto' },
@@ -243,7 +257,7 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
-  doc.setTextColor(...COL.black)
+  doc.setTextColor(...COL.teal)
   doc.text('TOTAL', m, y)
   doc.text(`$${fmt(sale.total)}`, pw - m, y, { align: 'right' })
   y += 8
@@ -254,8 +268,13 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
     company?.invoiceFooter || s.invoiceFooter || `${company?.companyName || s.companyName} — Gracias por su compra`
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
-  doc.setTextColor(...COL.black)
-  doc.text(footerText, pw / 2, y, { align: 'center' })
+  doc.setTextColor(...COL.teal)
+  doc.text(footerText, pw / 2, y - 4, { align: 'center' })
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(150, 150, 150)
+  doc.text('Conserve esta factura para efectos de garantía del producto.', pw / 2, y, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
