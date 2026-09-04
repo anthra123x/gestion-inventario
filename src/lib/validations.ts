@@ -66,11 +66,17 @@ export const CreateSaleSchema = z.object({
 })
 
 // Client schemas
+const optionalText = (schema: z.ZodType<string>) =>
+  z.preprocess(
+    (value) => (value === null || value === undefined || value === '' ? undefined : value),
+    schema.optional(),
+  )
+
 export const CreateClientSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   phone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
-  email: z.string().email('Email inválido').optional(),
-  address: z.string().optional(),
+  email: optionalText(z.string().email('Email inválido')),
+  address: optionalText(z.string()),
 })
 
 export const UpdateClientSchema = CreateClientSchema.partial()
