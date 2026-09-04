@@ -1,5 +1,22 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+let cachedLogo: string | null = null
+
+// Returns the official Cilmax logo as a base64 data URL, cached across calls.
+function getLogoDataUrl(): string {
+  if (cachedLogo) return cachedLogo
+  try {
+    const filePath = join(process.cwd(), 'public', 'logo cilmax.png')
+    const base64 = readFileSync(filePath).toString('base64')
+    cachedLogo = `data:image/png;base64,${base64}`
+  } catch {
+    cachedLogo = ''
+  }
+  return cachedLogo
+}
 
 export interface PDFSettings {
   companyName: string
@@ -106,21 +123,22 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
     y += 6
   }
 
-  // Company header
-  doc.setFillColor(...COL.teal)
-  doc.circle(m + 4, y - 2, 5, 'F')
-  doc.setFillColor(...COL.gold)
-  doc.circle(m + 4, y - 2, 2.2, 'F')
+  // Company header (official Cilmax logo)
+  const logoDataUrl = getLogoDataUrl()
+  const logoAspect = 1536 / 1024 // original width / height
+  const logoH = 11
+  const logoW = logoH * logoAspect
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', m, y - logoH - 2, logoW, logoH)
+  } else {
+    doc.setFillColor(...COL.teal)
+    doc.circle(m + 4, y - 2, 5, 'F')
+    doc.setFillColor(...COL.gold)
+    doc.circle(m + 4, y - 2, 2.2, 'F')
+  }
+  const logoEndX = m + Math.max(logoW, 14) + 6
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(20)
-  doc.setTextColor(...COL.black)
-  doc.text(company?.companyName || s.companyName, m + 14, y + 1)
-
-  // Company details
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(...COL.muted)
+  const companyNameText = company?.companyName || s.companyName
   const companyDetails: string[] = []
   if (company?.companyNit || s.companyNit) companyDetails.push(`NIT: ${company?.companyNit || s.companyNit}`)
   const location = [company?.companyAddress || s.companyAddress, company?.companyCity || s.companyCity]
@@ -129,8 +147,17 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
   if (location) companyDetails.push(location)
   if (company?.companyPhone || s.companyPhone) companyDetails.push(`Tel: ${company?.companyPhone || s.companyPhone}`)
   if (company?.companyEmail || s.companyEmail) companyDetails.push(`Email: ${company?.companyEmail || s.companyEmail}`)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(...COL.black)
+  doc.text(companyNameText, logoEndX, y - 1)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...COL.muted)
   if (companyDetails.length > 0) {
-    doc.text(companyDetails.join(' | '), m + 14, y + 6)
+    doc.text(companyDetails.join(' | '), logoEndX, y + 3)
   }
 
   // Invoice badge

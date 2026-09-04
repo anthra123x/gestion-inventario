@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClientSupabase } from '@/lib/supabase'
 import { ensureUserExists } from '@/modules/auth/auth.actions'
-import { LogIn, AlertCircle, Loader2, Store } from 'lucide-react'
+import { LogIn, AlertCircle, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -57,10 +58,15 @@ export default function LoginPage() {
 
       <main className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 py-8 font-sans">
         <div className="mb-8 flex flex-col items-center gap-4 text-center animate-fade-up" style={{ animationDelay: '0ms' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/25">
-              <Store className="h-5 w-5 text-primary-foreground" />
-            </div>
+          <div className="flex items-center gap-4">
+            <Image
+              src="/logo cilmax.png"
+              alt="Cilmax"
+              width={240}
+              height={48}
+              priority
+              className="h-14 w-auto object-contain"
+            />
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Cilmax</h1>
           </div>
           <p className="text-sm text-gray-600">El sistema de tu tienda, simple y a tu medida.</p>

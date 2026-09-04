@@ -14,7 +14,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
-import { getSales, cancelSale } from '@/modules/sales/sales.actions'
+import { getSales, deleteSale } from '@/modules/sales/sales.actions'
 import {
   Dialog,
   DialogContent,
@@ -74,12 +74,12 @@ export default function SalesPage() {
     }
   }
 
-  async function handleCancelSale(sale: Sale) {
-    const result = await cancelSale(sale.id)
+  async function handleDeleteSale(sale: Sale) {
+    const result = await deleteSale(sale.id)
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success('Venta anulada')
+      toast.success('Venta eliminada')
       await loadSales()
     }
     setCancelDialogOpen(false)
@@ -256,17 +256,18 @@ export default function SalesPage() {
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Anular venta?</DialogTitle>
+            <DialogTitle>¿Eliminar venta?</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas anular la venta {saleToCancel?.invoiceNumber}? Se devolverá el stock.
+              ¿Estás seguro de que deseas eliminar la venta {saleToCancel?.invoiceNumber}? Se devolverá el stock y ya no
+              se contará en las ventas del día.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={() => saleToCancel && handleCancelSale(saleToCancel)}>
-              Anular Venta
+            <Button variant="destructive" onClick={() => saleToCancel && handleDeleteSale(saleToCancel)}>
+              Eliminar Venta
             </Button>
           </DialogFooter>
         </DialogContent>

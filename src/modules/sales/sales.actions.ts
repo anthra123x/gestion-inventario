@@ -159,7 +159,7 @@ export async function createSale(data: {
   }
 }
 
-export async function cancelSale(saleId: string) {
+export async function deleteSale(saleId: string) {
   await requireAuth()
 
   try {
@@ -170,7 +170,6 @@ export async function cancelSale(saleId: string) {
       })
 
       if (!sale) throw new Error('Venta no encontrada')
-      if (sale.status === 'CANCELLED') throw new Error('La venta ya está cancelada')
 
       // Restore stock
       for (const item of sale.items) {
@@ -184,21 +183,19 @@ export async function cancelSale(saleId: string) {
             productId: item.productId,
             type: 'OUT',
             quantity: item.quantity,
-            reference: `Anulación ${sale.invoiceNumber}`,
+            reference: `Eliminación ${sale.invoiceNumber}`,
           },
         })
       }
 
-      // Update sale status
-      await tx.sale.update({
-        where: { id: saleId },
-        data: { status: 'CANCELLED' },
+      // Delete linked income transaction so it no longer counts in finance/dashboard
+      await tx.transaction.deleteMany({
+        where: { saleId: saleId },
       })
 
-      // Reverse income transaction
-      await tx.transaction.updateMany({
-        where: { saleId: saleId },
-        data: { description: `[ANULADA] ${sale.invoiceNumber}` },
+      // Delete the sale (SaleItems and Invoice cascade via onDelete: Cascade)
+      await tx.sale.delete({
+        where: { id: saleId },
       })
     })
 
@@ -206,7 +203,7 @@ export async function cancelSale(saleId: string) {
     revalidatePath('/inventory')
     revalidatePath('/finances')
     revalidatePath('/dashboard')
-    return { success: 'Venta anulada exitosamente' }
+    return { success: 'Venta eliminada exitosamente' }
   } catch (error) {
     return { error: parseError(error).message }
   }
