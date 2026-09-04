@@ -365,7 +365,7 @@ export default function NewSalePage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-xs font-medium text-muted-foreground">
-                Cliente (opcional) — escribe el nombre para autocompletar o agrega uno nuevo
+                Opcional — deja en blanco para vender sin cliente. Escribe el nombre para autocompletar o crea uno nuevo.
               </div>
 
               <div ref={clientRef} className="relative">
@@ -444,7 +444,7 @@ export default function NewSalePage() {
                       setClientPhone(e.target.value)
                       setSelectedClientId(null)
                     }}
-                    placeholder="Teléfono (requerido si es cliente nuevo)"
+                    placeholder="Teléfono (solo si es cliente nuevo)"
                     disabled={saving}
                   />
                 </div>
