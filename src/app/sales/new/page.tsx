@@ -51,6 +51,7 @@ interface CartItem {
 interface ProductOption {
   id: string
   name: string
+  barcode: string | null
   salePrice: number
   stock: number
   category: { name: string } | null
@@ -76,14 +77,30 @@ export default function NewSalePage() {
   const [activeIndex, setActiveIndex] = useState(-1)
   const clientRef = useRef<HTMLDivElement>(null)
   const searchClientDebounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const searchProductDebounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const initialLoadDone = useRef(false)
 
   useEffect(() => {
     loadProducts()
   }, [])
 
-  async function loadProducts() {
+  useEffect(() => {
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true
+      return
+    }
+    if (searchProductDebounce.current) clearTimeout(searchProductDebounce.current)
+    searchProductDebounce.current = setTimeout(() => {
+      loadProducts(search)
+    }, 300)
+    return () => {
+      if (searchProductDebounce.current) clearTimeout(searchProductDebounce.current)
+    }
+  }, [search])
+
+  async function loadProducts(query = '') {
     try {
-      const result = await getProducts(undefined, 1, 100)
+      const result = await getProducts(query || undefined, 1, 100)
       setProducts(result.products.map((p) => ({ ...p, salePrice: Number(p.salePrice) })))
     } catch {
       toast.error('Error al cargar productos')
@@ -170,6 +187,7 @@ export default function NewSalePage() {
         (p) =>
           !q ||
           p.name.toLowerCase().includes(q) ||
+          (p.barcode?.toLowerCase().includes(q) ?? false) ||
           (p.category?.name.toLowerCase().includes(q) ?? false),
       )
   }, [products, search, cart])
