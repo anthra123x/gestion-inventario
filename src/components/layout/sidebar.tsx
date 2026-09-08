@@ -11,7 +11,6 @@ import {
   Keyboard,
   Users,
   Package,
-  Sliders,
   DollarSign,
   ShoppingCart,
 } from 'lucide-react'
@@ -99,29 +98,6 @@ export function Sidebar() {
             />
             <span className="flex-1">Administración</span>
             {pathname === '/admin' && (
-              <span className="h-1.5 w-1.5 rounded-full bg-sidebar-primary animate-pulse" />
-            )}
-          </Link>
-          <Link
-            href="/settings"
-            className={cn(
-              'group relative flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-              pathname === '/settings'
-                ? 'bg-sidebar-primary/15 text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/10'
-                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground/90',
-            )}
-          >
-            {pathname === '/settings' && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-sidebar-primary" />
-            )}
-            <Sliders
-              className={cn(
-                'mr-3 h-4 w-4 shrink-0 transition-all duration-200',
-                pathname === '/settings' ? 'text-sidebar-primary opacity-100' : 'opacity-70 group-hover:opacity-100',
-              )}
-            />
-            <span className="flex-1">Configuración</span>
-            {pathname === '/settings' && (
               <span className="h-1.5 w-1.5 rounded-full bg-sidebar-primary animate-pulse" />
             )}
           </Link>

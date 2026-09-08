@@ -68,7 +68,6 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
   )
 
   if (result.success) {
-    revalidatePath('/settings')
     revalidatePath('/admin')
     return success(undefined)
   }

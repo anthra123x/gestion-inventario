@@ -100,7 +100,9 @@ export default function AdminPage() {
 
     const formData = new FormData()
     formData.append('companyName', settings.companyName || '')
+    formData.append('companyNit', settings.companyNit || '')
     formData.append('companyAddress', settings.companyAddress || '')
+    formData.append('companyCity', settings.companyCity || '')
     formData.append('companyPhone', settings.companyPhone || '')
     formData.append('companyEmail', settings.companyEmail || '')
     formData.append('currency', settings.currency || 'COP')
@@ -345,6 +347,27 @@ export default function AdminPage() {
                   />
                 </div>
 
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyNit">NIT / Cédula</Label>
+                    <Input
+                      id="companyNit"
+                      value={settings?.companyNit || ''}
+                      onChange={(e) => setSettings({ ...settings, companyNit: e.target.value })}
+                      placeholder="Ej: 901234567-8"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyCity">Ciudad</Label>
+                    <Input
+                      id="companyCity"
+                      value={settings?.companyCity || ''}
+                      onChange={(e) => setSettings({ ...settings, companyCity: e.target.value })}
+                      placeholder="Ej: Cali"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="companyAddress">Dirección</Label>
                   <Input
@@ -354,23 +377,24 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="companyPhone">Teléfono</Label>
-                  <Input
-                    id="companyPhone"
-                    value={settings?.companyPhone || ''}
-                    onChange={(e) => setSettings({ ...settings, companyPhone: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="companyEmail">Email</Label>
-                  <Input
-                    id="companyEmail"
-                    type="email"
-                    value={settings?.companyEmail || ''}
-                    onChange={(e) => setSettings({ ...settings, companyEmail: e.target.value })}
-                  />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyPhone">Teléfono / WhatsApp</Label>
+                    <Input
+                      id="companyPhone"
+                      value={settings?.companyPhone || ''}
+                      onChange={(e) => setSettings({ ...settings, companyPhone: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyEmail">Email</Label>
+                    <Input
+                      id="companyEmail"
+                      type="email"
+                      value={settings?.companyEmail || ''}
+                      onChange={(e) => setSettings({ ...settings, companyEmail: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
