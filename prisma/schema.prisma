@@ -42,6 +42,7 @@ model Product {
   name             String
   description      String?
   barcode          String?
+  imageUrl         String?
   costPrice        Float            @default(0)
   salePrice        Float            @default(0)
   stock            Int              @default(0)

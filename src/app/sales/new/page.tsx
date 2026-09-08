@@ -52,6 +52,7 @@ interface ProductOption {
   id: string
   name: string
   barcode: string | null
+  imageUrl: string | null
   salePrice: number
   stock: number
   category: { name: string } | null
@@ -345,10 +346,26 @@ export default function NewSalePage() {
                     disabled={product.stock <= 0}
                     className="p-3 border rounded-lg text-left hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="font-medium text-sm truncate">{product.name}</div>
-                    {product.category && (
-                      <div className="text-xs text-muted-foreground mt-1">{product.category.name}</div>
-                    )}
+                    <div className="flex items-center gap-2.5">
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={product.imageUrl}
+                          alt=""
+                          className="h-12 w-12 rounded-md object-cover border border-border/60 shrink-0"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-md bg-muted/40 border border-border/60 flex items-center justify-center shrink-0">
+                          <ShoppingCart className="h-5 w-5 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{product.name}</div>
+                        {product.category && (
+                          <div className="text-xs text-muted-foreground mt-0.5 truncate">{product.category.name}</div>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between mt-2">
                       <span className="font-bold text-sm">{formatCurrency(product.salePrice)}</span>
                       <Badge variant={product.stock <= 5 ? 'destructive' : 'secondary'} className="text-xs">

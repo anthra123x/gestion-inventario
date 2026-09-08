@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Loader2, Upload, Trash2, Image as ImageIcon } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
@@ -19,6 +20,7 @@ interface ProductData {
   name: string
   description: string | null
   barcode: string | null
+  imageUrl: string | null
   costPrice: number
   salePrice: number
   stock: number
@@ -51,6 +53,68 @@ export function ProductForm({
   const [error, setError] = useState<string | null>(null)
   const [categoryName, setCategoryName] = useState(product?.category?.name || '')
   const [supplierName, setSupplierName] = useState(product?.supplier?.name || '')
+  const [imageUrl, setImageUrl] = useState<string | null>(product?.imageUrl || null)
+  const [imageLoading, setImageLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const img = new Image()
+        img.onload = () => {
+          const MAX = 800
+          let width = img.naturalWidth
+          let height = img.naturalHeight
+          if (width > MAX || height > MAX) {
+            const scale = MAX / Math.max(width, height)
+            width = Math.round(width * scale)
+            height = Math.round(height * scale)
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            resolve(reader.result as string)
+            return
+          }
+          ctx.drawImage(img, 0, 0, width, height)
+          resolve(canvas.toDataURL('image/jpeg', 0.8))
+        }
+        img.onerror = () => reject(new Error('Archivo de imagen inválido'))
+        img.src = reader.result as string
+      }
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Formato no válido', { description: 'Selecciona un archivo de imagen (JPG, PNG, WebP).' })
+      e.target.value = ''
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagen demasiado grande', { description: 'El máximo permitido es 5 MB.' })
+      e.target.value = ''
+      return
+    }
+    setImageLoading(true)
+    try {
+      const url = await fileToDataUrl(file)
+      setImageUrl(url)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al procesar la imagen'
+      toast.error('Error al cargar imagen', { description: message })
+    } finally {
+      setImageLoading(false)
+      e.target.value = ''
+    }
+  }
 
   const {
     register,
@@ -98,6 +162,7 @@ export function ProductForm({
         lowStockThreshold: Number(data.lowStockThreshold) || 5,
         categoryId: categories.find(c => c.name === categoryName)?.id || null,
         supplierId: suppliers.find(s => s.name === supplierName)?.id || null,
+        imageUrl: imageUrl || null,
       }
 
       const formData = new FormData()
@@ -176,6 +241,57 @@ export function ProductForm({
               placeholder="Descripción del producto..."
               disabled={isSubmitting || isLoading}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Imagen del producto (opcional)</Label>
+            <div className="flex items-center gap-4">
+              <div className="h-24 w-24 rounded-lg border border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt="Vista previa del producto" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isSubmitting || isLoading || imageLoading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {imageLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    {imageUrl ? 'Cambiar imagen' : 'Subir imagen'}
+                  </Button>
+                  {imageUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isSubmitting || isLoading || imageLoading}
+                      onClick={() => setImageUrl(null)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Quitar
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  JPG, PNG o WebP, máximo 5 MB. Se comprime automáticamente al guardar.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

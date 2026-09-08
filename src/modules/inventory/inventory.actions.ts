@@ -12,6 +12,12 @@ function toNullableId(value: FormDataEntryValue | null): string | null {
   return raw
 }
 
+function toNullableImage(value: FormDataEntryValue | null): string | null {
+  const raw = typeof value === 'string' ? value : ''
+  if (!raw.startsWith('data:image/')) return null
+  return raw
+}
+
 export async function getProducts(search?: string, page = 1, take = 20, categoryId?: string) {
   await requireAuth()
   const where = {
@@ -37,6 +43,7 @@ export async function getProducts(search?: string, page = 1, take = 20, category
         name: true,
         description: true,
         barcode: true,
+        imageUrl: true,
         costPrice: true,
         salePrice: true,
         stock: true,
@@ -93,7 +100,10 @@ export async function createProduct(formData: FormData) {
 
   try {
     const product = await prisma.product.create({
-      data: validatedFields.data,
+      data: {
+        ...validatedFields.data,
+        imageUrl: toNullableImage(formData.get('imageUrl')),
+      },
     })
 
     revalidatePath('/inventory')
@@ -132,7 +142,10 @@ export async function updateProduct(id: string, formData: FormData) {
   try {
     const product = await prisma.product.update({
       where: { id },
-      data: validatedFields.data,
+      data: {
+        ...validatedFields.data,
+        imageUrl: toNullableImage(formData.get('imageUrl')),
+      },
     })
 
     revalidatePath('/inventory')

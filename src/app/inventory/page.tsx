@@ -30,6 +30,7 @@ interface Product {
   name: string
   description: string | null
   barcode: string | null
+  imageUrl: string | null
   costPrice: number
   salePrice: number
   stock: number
@@ -168,12 +169,28 @@ export default function InventoryPage() {
                 {products.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <div className="font-medium">{product.name}</div>
-                      {product.description && (
-                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {product.description}
+                      <div className="flex items-center gap-3">
+                        {product.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={product.imageUrl}
+                            alt=""
+                            className="h-10 w-10 rounded-md object-cover border border-border/60 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-md bg-muted/40 border border-border/60 flex items-center justify-center shrink-0">
+                            <Package className="h-5 w-5 text-muted-foreground/50" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          {product.description && (
+                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              {product.description}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {product.category ? (
