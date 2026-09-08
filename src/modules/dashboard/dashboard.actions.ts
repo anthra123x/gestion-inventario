@@ -47,7 +47,7 @@ async function getSalesToday() {
   const end = new Date()
   end.setHours(23, 59, 59, 999)
 
-  const [sales, transactions] = await Promise.all([
+  const [count, sales] = await Promise.all([
     prisma.sale.count({
       where: { status: 'COMPLETED', saleDate: { gte: start, lte: end } },
     }),
@@ -57,9 +57,9 @@ async function getSalesToday() {
     }),
   ])
 
-  const total = transactions.reduce((sum, s) => sum + s.total, 0)
+  const total = sales.reduce((sum, s) => sum + s.total, 0)
 
-  return { count: sales, total }
+  return { count, total }
 }
 
 async function getIncomeToday() {
@@ -68,12 +68,12 @@ async function getIncomeToday() {
   const end = new Date()
   end.setHours(23, 59, 59, 999)
 
-  const income = await prisma.transaction.aggregate({
-    where: { type: 'INCOME', date: { gte: start, lte: end } },
-    _sum: { amount: true },
+  const sales = await prisma.sale.findMany({
+    where: { status: 'COMPLETED', saleDate: { gte: start, lte: end } },
+    select: { total: true },
   })
 
-  return income._sum.amount ?? 0
+  return sales.reduce((sum, s) => sum + s.total, 0)
 }
 
 async function getLowStockProducts() {

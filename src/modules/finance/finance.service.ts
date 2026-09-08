@@ -662,11 +662,14 @@ export async function getBusinessFinanceReport(
   }
 
   const saleCogsByDay = new Map<string, number>()
+  const saleCogsBySale = new Map<string, number>()
   for (const item of saleItems) {
     const sale = sales.find((s) => s.id === item.saleId)
     if (sale) {
+      const itemCogs = item.quantity * item.product.costPrice
+      saleCogsBySale.set(item.saleId, (saleCogsBySale.get(item.saleId) || 0) + itemCogs)
       const key = sale.saleDate.toISOString().split('T')[0]
-      saleCogsByDay.set(key, (saleCogsByDay.get(key) || 0) + item.quantity * item.product.costPrice)
+      saleCogsByDay.set(key, (saleCogsByDay.get(key) || 0) + itemCogs)
     }
   }
 
@@ -675,7 +678,7 @@ export async function getBusinessFinanceReport(
     const entry = dayMap.get(key)
     if (entry) {
       entry.sales += s.total
-      entry.cogs += saleCogsByDay.get(key) ?? 0
+      entry.cogs += saleCogsBySale.get(s.id) ?? 0
     }
   }
   for (const ex of expenses) {
