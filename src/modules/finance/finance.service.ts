@@ -605,6 +605,14 @@ export type BusinessFinanceReport = {
   }
   byDay: { date: string; sales: number; cogs: number; grossProfit: number; expenses: number; netProfit: number }[]
   paymentMethods: { method: PaymentMethod; total: number; count: number }[]
+  credit: {
+    sold: number
+    collected: number
+    pending: number
+    overdue: number
+    overdueCount: number
+    count: number
+  }
 }
 
 export async function getBusinessFinanceReport(
@@ -614,10 +622,10 @@ export async function getBusinessFinanceReport(
   const ref = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
   const { startDate, endDate } = getFinancePeriodRange(kind, ref)
 
-  const [sales, saleItems, expenses] = await Promise.all([
+  const [sales, saleItems, expenses, paymentsInPeriod] = await Promise.all([
     prisma.sale.findMany({
       where: { status: 'COMPLETED', saleDate: { gte: startDate, lte: endDate } },
-      select: { id: true, total: true, paymentMethod: true, saleDate: true },
+      select: { id: true, total: true, paymentMethod: true, saleDate: true, dueDate: true },
     }),
     prisma.saleItem.findMany({
       where: { sale: { status: 'COMPLETED', saleDate: { gte: startDate, lte: endDate } } },
@@ -626,6 +634,10 @@ export async function getBusinessFinanceReport(
     prisma.expense.findMany({
       where: { expenseDate: { gte: startDate, lte: endDate } },
       select: { id: true, amount: true, expenseDate: true, category: { select: { id: true, name: true, color: true } } },
+    }),
+    prisma.payment.findMany({
+      where: { paymentDate: { gte: startDate, lte: endDate } },
+      select: { id: true, amount: true, saleId: true, paymentDate: true },
     }),
   ])
 
@@ -713,6 +725,47 @@ export async function getBusinessFinanceReport(
   }
   const paymentMethods = Array.from(paymentMethodMap.values()).sort((a, b) => b.total - a.total)
 
+  // Flujo de caja (cash-basis): contado del periodo + abonos cobrados en el periodo
+  const cashSalesTotal = sales
+    .filter((s) => s.paymentMethod !== 'CREDITO')
+    .reduce((s, x) => s + x.total, 0)
+  const cashIn = cashSalesTotal + paymentsInPeriod.reduce((s, x) => s + x.amount, 0)
+
+  // Cartera de crédito del periodo
+  const creditSales = sales.filter((s) => s.paymentMethod === 'CREDITO')
+  const creditIds = creditSales.map((s) => s.id)
+  const creditPaymentsAll =
+    creditIds.length > 0
+      ? await prisma.payment.findMany({
+          where: { saleId: { in: creditIds } },
+          select: { saleId: true, amount: true },
+        })
+      : []
+
+  const paymentBySale = new Map<string, number>()
+  for (const p of creditPaymentsAll) {
+    paymentBySale.set(p.saleId, (paymentBySale.get(p.saleId) || 0) + p.amount)
+  }
+  const creditSold = creditSales.reduce((s, x) => s + x.total, 0)
+  const creditCollected = creditSales.reduce(
+    (s, x) => s + (paymentBySale.get(x.id) || 0),
+    0,
+  )
+  const creditPending = creditSales.reduce(
+    (s, x) => s + Math.max(0, x.total - (paymentBySale.get(x.id) || 0)),
+    0,
+  )
+  const now = new Date()
+  let creditOverdue = 0
+  let creditOverdueCount = 0
+  for (const s of creditSales) {
+    const rest = Math.max(0, s.total - (paymentBySale.get(s.id) || 0))
+    if (s.dueDate && rest > 0 && s.dueDate.getTime() < now.getTime()) {
+      creditOverdue += rest
+      creditOverdueCount++
+    }
+  }
+
   return {
     kind,
     startDate,
@@ -731,12 +784,20 @@ export async function getBusinessFinanceReport(
     },
     summary: {
       netProfit: grossProfit - expensesTotal,
-      balance: salesTotal - expensesTotal,
-      cashIn: salesTotal,
+      balance: cashIn - expensesTotal,
+      cashIn,
       cashOut: expensesTotal,
     },
     byDay,
     paymentMethods,
+    credit: {
+      sold: creditSold,
+      collected: creditCollected,
+      pending: creditPending,
+      overdue: creditOverdue,
+      overdueCount: creditOverdueCount,
+      count: creditSales.length,
+    },
   }
 }
 

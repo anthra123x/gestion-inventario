@@ -9,6 +9,7 @@ export async function getDashboardStats() {
   const [
     salesToday,
     incomeToday,
+    pendingCredit,
     lowStockProducts,
     clientStats,
     recentSales,
@@ -19,6 +20,7 @@ export async function getDashboardStats() {
   ] = await Promise.all([
     getSalesToday(),
     getIncomeToday(),
+    getPendingCreditTotal(),
     getLowStockProducts(),
     getClientStats(),
     getRecentSales(),
@@ -31,6 +33,7 @@ export async function getDashboardStats() {
   return {
     salesToday,
     incomeToday,
+    pendingCredit,
     lowStockProducts,
     clientStats,
     recentSales,
@@ -68,12 +71,34 @@ async function getIncomeToday() {
   const end = new Date()
   end.setHours(23, 59, 59, 999)
 
+  const [sales, payments] = await Promise.all([
+    prisma.sale.findMany({
+      where: {
+        status: 'COMPLETED',
+        saleDate: { gte: start, lte: end },
+        paymentMethod: { not: 'CREDITO' },
+      },
+      select: { total: true },
+    }),
+    prisma.payment.aggregate({
+      where: { paymentDate: { gte: start, lte: end } },
+      _sum: { amount: true },
+    }),
+  ])
+
+  return sales.reduce((sum, s) => sum + s.total, 0) + (payments._sum.amount || 0)
+}
+
+async function getPendingCreditTotal() {
   const sales = await prisma.sale.findMany({
-    where: { status: 'COMPLETED', saleDate: { gte: start, lte: end } },
-    select: { total: true },
+    where: { paymentMethod: 'CREDITO', status: 'COMPLETED' },
+    select: { total: true, payments: { select: { amount: true } } },
   })
 
-  return sales.reduce((sum, s) => sum + s.total, 0)
+  return sales.reduce(
+    (sum, s) => sum + (s.total - s.payments.reduce((p, x) => p + x.amount, 0)),
+    0,
+  )
 }
 
 async function getLowStockProducts() {

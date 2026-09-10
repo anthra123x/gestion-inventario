@@ -49,7 +49,8 @@ export const CreateStockMovementSchema = z.object({
 })
 
 // Sale schemas
-export const PaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER'])
+export const PaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER', 'CREDITO'])
+export const CashPaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER'])
 export const SaleStatusSchema = z.enum(['COMPLETED', 'CANCELLED'])
 
 export const CreateSaleItemSchema = z.object({
@@ -58,11 +59,46 @@ export const CreateSaleItemSchema = z.object({
   unitPrice: z.coerce.number().min(0, 'El precio unitario no puede ser negativo').optional(),
 })
 
-export const CreateSaleSchema = z.object({
-  clientId: z.string().optional().nullable(),
-  items: z.array(CreateSaleItemSchema).min(1, 'Debe agregar al menos un producto'),
-  discount: z.coerce.number().min(0, 'El descuento no puede ser negativo').default(0),
-  paymentMethod: PaymentMethodSchema,
+export const CreditInstallmentSchema = z.object({
+  amount: z.coerce.number().min(0.01, 'El monto de la cuota debe ser mayor a 0'),
+  dueDate: z.string().min(1, 'La fecha de la cuota es requerida'),
+})
+
+export const CreateSaleSchema = z
+  .object({
+    clientId: z.string().optional().nullable(),
+    items: z.array(CreateSaleItemSchema).min(1, 'Debe agregar al menos un producto'),
+    discount: z.coerce.number().min(0, 'El descuento no puede ser negativo').default(0),
+    paymentMethod: PaymentMethodSchema,
+    initialPayment: z.coerce.number().min(0, 'El abono inicial no puede ser negativo').default(0),
+    initialPaymentMethod: CashPaymentMethodSchema.optional().default('CASH'),
+    dueDate: z.string().optional().nullable(),
+    installments: z.array(CreditInstallmentSchema).max(36).optional().default([]),
+  })
+  .superRefine((data, ctx) => {
+    if (data.paymentMethod === 'CREDITO' && !data.clientId) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'El cliente es requerido para ventas a crédito',
+        path: ['clientId'],
+      })
+    }
+    if (data.paymentMethod !== 'CREDITO' && (data.initialPayment > 0 || data.installments.length > 0)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Anticipo y cuotas solo aplican para ventas a crédito',
+        path: ['paymentMethod'],
+      })
+    }
+  })
+
+// Credit payments (abonos)
+export const RegisterPaymentSchema = z.object({
+  saleId: z.string().min(1, 'La venta es requerida'),
+  amount: z.coerce.number().positive('El monto debe ser mayor a 0'),
+  paymentMethod: CashPaymentMethodSchema,
+  paymentDate: z.string().optional().nullable(),
+  notes: z.string().max(300, 'La nota es demasiado larga').optional().nullable(),
 })
 
 // Client schemas

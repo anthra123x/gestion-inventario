@@ -5,6 +5,7 @@ import { ArrowLeft, Download, MapPin, Mail, Phone, Hash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getSaleById } from '@/modules/sales/sales.actions'
 import { formatCurrency } from '@/lib/format'
+import { getPaymentMethodLabel } from '@/lib/labels'
 import { PrintInvoiceButton } from './print-button'
 
 interface InvoicePageProps {
@@ -18,19 +19,6 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
   const sale = await getSaleById(id)
 
   if (!sale) notFound()
-
-  const paymentMethodLabel = (method: string) => {
-    switch (method) {
-      case 'CASH':
-        return 'Efectivo'
-      case 'CARD':
-        return 'Tarjeta'
-      case 'TRANSFER':
-        return 'Transferencia'
-      default:
-        return method
-    }
-  }
 
   const companyName = sale.invoice?.companyName || 'Cilmax'
   const companyNit = sale.invoice?.companyNit || null
@@ -149,7 +137,38 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
           </div>
           <div className="sm:text-right">
             <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">Método de pago</p>
-            <p className="mt-1.5 font-semibold text-slate-900">{paymentMethodLabel(sale.paymentMethod)}</p>
+            <p className="mt-1.5 font-semibold text-slate-900">{getPaymentMethodLabel(sale.paymentMethod)}</p>
+            {sale.paymentMethod === 'CREDITO' && (
+              <div className="mt-2 space-y-1 text-sm text-slate-600">
+                {sale.dueDate && (
+                  <p>
+                    Vencimiento:{' '}
+                    <span className="font-medium text-slate-900">
+                      {new Date(sale.dueDate).toLocaleDateString('es-CO', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </p>
+                )}
+                <p>
+                  Abonado:{' '}
+                  <span className="font-medium text-emerald-700">
+                    {formatCurrency((sale.payments ?? []).reduce((s, p) => s + p.amount, 0), currency)}
+                  </span>
+                </p>
+                <p>
+                  Saldo pendiente:{' '}
+                  <span className="font-medium text-red-700">
+                    {formatCurrency(
+                      sale.total - (sale.payments ?? []).reduce((s, p) => s + p.amount, 0),
+                      currency,
+                    )}
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -200,6 +219,36 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
             </div>
           </div>
         </div>
+
+        {sale.paymentMethod === 'CREDITO' && sale.installments && sale.installments.length > 0 && (
+          <div className="mt-8 px-8">
+            <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">Plan de cuotas</p>
+            <table className="mt-2 w-full">
+              <thead>
+                <tr className="bg-teal-50 text-left text-[11px] font-semibold tracking-wide text-teal-800 uppercase">
+                  <th className="rounded-l-md px-3 py-2.5">Vencimiento</th>
+                  <th className="rounded-r-md px-3 py-2.5 text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sale.installments.map((inst) => (
+                  <tr key={inst.id} className="border-b border-gray-100">
+                    <td className="px-3 py-2.5 text-sm text-slate-600">
+                      {new Date(inst.dueDate).toLocaleDateString('es-CO', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-sm font-semibold text-slate-900">
+                      {formatCurrency(inst.amount, currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Notes / warranty */}
         <div className="mt-8 px-8">

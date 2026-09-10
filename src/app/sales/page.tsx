@@ -13,6 +13,12 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
 import { formatCurrency } from '@/lib/format'
+import {
+  getCreditStatus,
+  getCreditStatusColor,
+  getCreditStatusLabel,
+  getPaymentMethodLabel,
+} from '@/lib/labels'
 import { toast } from 'sonner'
 import { getSales, deleteSale } from '@/modules/sales/sales.actions'
 import {
@@ -34,8 +40,10 @@ interface Sale {
   paymentMethod: string
   status: string
   saleDate: Date
+  dueDate: Date | null
   client: { id: string; name: string; phone: string | null } | null
   items: Array<{ id: string; quantity: number; total: number; product: { name: string } }>
+  payments: Array<{ amount: number }>
 }
 
 export default function SalesPage() {
@@ -84,19 +92,6 @@ export default function SalesPage() {
     }
     setCancelDialogOpen(false)
     setSaleToCancel(null)
-  }
-
-  const paymentMethodLabel = (method: string) => {
-    switch (method) {
-      case 'CASH':
-        return 'Efectivo'
-      case 'CARD':
-        return 'Tarjeta'
-      case 'TRANSFER':
-        return 'Transferencia'
-      default:
-        return method
-    }
   }
 
   if (loading && sales.length === 0) {
@@ -182,17 +177,27 @@ export default function SalesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{paymentMethodLabel(sale.paymentMethod)}</Badge>
+                      <Badge variant="outline">{getPaymentMethodLabel(sale.paymentMethod)}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">{formatCurrency(sale.total)}</TableCell>
                     <TableCell>
-                      {sale.status === 'COMPLETED' ? (
-                        <Badge variant="default" className="bg-green-500">
-                          Completada
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive">Anulada</Badge>
-                      )}
+                      <div className="flex flex-col items-start gap-1">
+                        {sale.status === 'COMPLETED' ? (
+                          <Badge variant="default" className="bg-green-500">
+                            Completada
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">Anulada</Badge>
+                        )}
+                        {(() => {
+                          const cs = getCreditStatus(sale)
+                          return cs ? (
+                            <Badge variant="outline" className={getCreditStatusColor(cs)}>
+                              {getCreditStatusLabel(cs)}
+                            </Badge>
+                          ) : null
+                        })()}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(sale.saleDate).toLocaleDateString('es-CO')}

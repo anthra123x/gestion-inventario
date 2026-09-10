@@ -12,6 +12,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       items: { include: { product: true } },
       invoice: true,
       user: { select: { id: true, name: true, email: true } },
+      payments: { select: { amount: true }, orderBy: { paymentDate: 'asc' } },
+      installments: { select: { amount: true, dueDate: true }, orderBy: { dueDate: 'asc' } },
     },
   })
 
@@ -30,6 +32,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       total: sale.total,
       paymentMethod: sale.paymentMethod,
       saleDate: sale.saleDate,
+      dueDate: sale.dueDate,
+      payments: sale.payments,
+      installments: sale.installments,
       client: sale.client,
       items: sale.items,
       user: sale.user,

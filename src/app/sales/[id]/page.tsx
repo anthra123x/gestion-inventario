@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/format'
+import { getPaymentMethodLabel } from '@/lib/labels'
+import { SaleCreditPanel } from '@/components/sales/sale-credit-panel'
 
 interface SaleDetailPageProps {
   params: Promise<{ id: string }>
@@ -19,19 +21,6 @@ export default async function SaleDetailPage({ params }: SaleDetailPageProps) {
   const sale = await getSaleById(id)
 
   if (!sale) notFound()
-
-  const paymentMethodLabel = (method: string) => {
-    switch (method) {
-      case 'CASH':
-        return 'Efectivo'
-      case 'CARD':
-        return 'Tarjeta'
-      case 'TRANSFER':
-        return 'Transferencia'
-      default:
-        return method
-    }
-  }
 
   return (
     <div className="page-container py-6 space-y-6">
@@ -75,7 +64,7 @@ export default async function SaleDetailPage({ params }: SaleDetailPageProps) {
             </div>
             <div>
               <span className="text-xs text-muted-foreground">Método de pago</span>
-              <p className="text-sm font-medium">{paymentMethodLabel(sale.paymentMethod)}</p>
+              <p className="text-sm font-medium">{getPaymentMethodLabel(sale.paymentMethod)}</p>
             </div>
             <div>
               <span className="text-xs text-muted-foreground">Atendido por</span>
@@ -126,6 +115,30 @@ export default async function SaleDetailPage({ params }: SaleDetailPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {sale.paymentMethod === 'CREDITO' && (
+        <SaleCreditPanel
+          sale={{
+            id: sale.id,
+            invoiceNumber: sale.invoiceNumber,
+            total: sale.total,
+            dueDate: sale.dueDate,
+            paymentMethod: sale.paymentMethod,
+            status: sale.status,
+            payments:
+              sale.payments?.map((p) => ({
+                id: p.id,
+                amount: p.amount,
+                paymentMethod: p.paymentMethod,
+                paymentDate: p.paymentDate,
+                notes: p.notes,
+                user: p.user,
+              })) ?? [],
+            installments:
+              sale.installments?.map((i) => ({ id: i.id, amount: i.amount, dueDate: i.dueDate })) ?? [],
+          }}
+        />
+      )}
 
       {/* Productos */}
       <Card>

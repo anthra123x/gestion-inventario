@@ -75,6 +75,9 @@ interface PDFSale {
   total: number
   paymentMethod: string
   saleDate: Date | string
+  dueDate?: Date | string | null
+  payments?: Array<{ amount: number }>
+  installments?: Array<{ amount: number; dueDate: Date | string }>
   client?: {
     name: string
     phone: string | null
@@ -189,6 +192,7 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
     CASH: 'Efectivo',
     CARD: 'Tarjeta',
     TRANSFER: 'Transferencia',
+    CREDITO: 'Crédito',
   }
 
   doc.setFont('helvetica', 'normal')
@@ -197,6 +201,23 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
   doc.text(`Fecha: ${dateStr} ${timeStr}`, m, y)
   doc.text(`Pago: ${paymentLabels[sale.paymentMethod] || sale.paymentMethod}`, pw - m, y, { align: 'right' })
   y += 6
+
+  if (sale.paymentMethod === 'CREDITO') {
+    const paid = (sale.payments ?? []).reduce((s, p) => s + p.amount, 0)
+    const saldo = Math.max(0, sale.total - paid)
+    if (sale.dueDate) {
+      const due = new Date(sale.dueDate)
+      doc.text(
+        `Vencimiento: ${due.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+        m,
+        y,
+      )
+      y += 5
+    }
+    doc.text(`Abonado: $${fmt(paid)}`, m, y)
+    doc.text(`Saldo pendiente: $${fmt(saldo)}`, pw - m, y, { align: 'right' })
+    y += 5
+  }
 
   // Client
   if (sale.client) {
@@ -288,6 +309,30 @@ export function generateSaleInvoicePdf(sale: PDFSale, pdfSettings?: PDFSettings)
   doc.text('TOTAL', m, y)
   doc.text(`$${fmt(sale.total)}`, pw - m, y, { align: 'right' })
   y += 8
+
+  if (sale.paymentMethod === 'CREDITO' && sale.installments && sale.installments.length > 0) {
+    sectionHdr('Plan de cuotas')
+    const cuotaRows = sale.installments.map((inst) => [
+      new Date(inst.dueDate).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
+      `$${fmt(inst.amount)}`,
+    ])
+    autoTable(doc, {
+      startY: y + 2,
+      head: [['Vencimiento', 'Monto']],
+      body: cuotaRows,
+      margin: { left: m, right: m },
+      tableWidth: cw,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 116, 139], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { cellWidth: 40, halign: 'right' },
+      },
+      didDrawPage: (data) => {
+        y = (data.cursor?.y ?? y) + 8
+      },
+    })
+  }
 
   // Footer
   divider()

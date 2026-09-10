@@ -5,12 +5,17 @@ import { revalidatePath } from 'next/cache'
 import { CreateSaleSchema } from '@/lib/validations'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { parseError } from '@/lib/errors'
+import { parseDateInput } from '@/lib/labels'
 
 export async function createSale(data: {
   clientId?: string | null
   items: Array<{ productId: string; quantity: number; unitPrice?: number }>
   discount?: number
-  paymentMethod: 'CASH' | 'CARD' | 'TRANSFER'
+  paymentMethod: 'CASH' | 'CARD' | 'TRANSFER' | 'CREDITO'
+  initialPayment?: number
+  initialPaymentMethod?: 'CASH' | 'CARD' | 'TRANSFER'
+  dueDate?: string | null
+  installments?: Array<{ amount: number; dueDate: string }>
 }) {
   const user = await requireAuth()
 
@@ -19,6 +24,10 @@ export async function createSale(data: {
     items: data.items,
     discount: data.discount || 0,
     paymentMethod: data.paymentMethod,
+    initialPayment: data.initialPayment || 0,
+    initialPaymentMethod: data.initialPaymentMethod || 'CASH',
+    dueDate: data.dueDate || null,
+    installments: data.installments || [],
   })
 
   if (!validatedFields.success) {
@@ -29,7 +38,16 @@ export async function createSale(data: {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const { items, clientId, discount, paymentMethod } = validatedFields.data
+      const {
+        items,
+        clientId,
+        discount,
+        paymentMethod,
+        initialPayment,
+        initialPaymentMethod,
+        dueDate,
+        installments,
+      } = validatedFields.data
 
       // Validate stock for all items
       const productIds = items.map((i) => i.productId)
@@ -73,6 +91,20 @@ export async function createSale(data: {
 
       const total = subtotal - (discount || 0)
 
+      // Validaciones para ventas a crédito
+      if (paymentMethod === 'CREDITO') {
+        if (initialPayment > total) {
+          throw new Error('El abono inicial no puede superar el total de la venta')
+        }
+        const rest = total - initialPayment
+        const installmentsSum = installments.reduce((s, i) => s + i.amount, 0)
+        if (installmentsSum > rest + 0.005) {
+          throw new Error(
+            `Las cuotas (${installmentsSum.toFixed(2)}) superan el saldo restante de la venta (${rest.toFixed(2)})`,
+          )
+        }
+      }
+
       // Create sale
       const sale = await tx.sale.create({
         data: {
@@ -82,6 +114,7 @@ export async function createSale(data: {
           discount: discount || 0,
           total,
           paymentMethod,
+          dueDate: paymentMethod === 'CREDITO' ? parseDateInput(dueDate || '') : null,
           userId: user.id,
           items: {
             create: saleItemsData,
@@ -124,21 +157,60 @@ export async function createSale(data: {
         })
       }
 
-      // Create income transaction
-      await tx.transaction.create({
-        data: {
-          type: 'INCOME',
-          amount: total,
-          description: `Venta ${invoiceNumber}`,
-          categoryId:
-            (
-              await tx.category.findFirst({
-                where: { type: 'INCOME', name: { contains: 'Venta', mode: 'insensitive' } },
-              })
-            )?.id || '',
-          saleId: sale.id,
-        },
-      })
+      // Categoría de ingreso para transacciones de venta
+      const incomeCategory =
+        (
+          await tx.category.findFirst({
+            where: { type: 'INCOME', name: { contains: 'Venta', mode: 'insensitive' } },
+          })
+        )?.id || ''
+
+      // Ingreso contable: contado → total de la venta; crédito → solo abono inicial
+      if (paymentMethod === 'CREDITO') {
+        if (initialPayment > 0) {
+          const payment = await tx.payment.create({
+            data: {
+              saleId: sale.id,
+              amount: initialPayment,
+              paymentMethod: initialPaymentMethod,
+              notes: 'Abono inicial',
+              userId: user.id,
+            },
+          })
+          await tx.transaction.create({
+            data: {
+              type: 'INCOME',
+              amount: initialPayment,
+              description: `Abono inicial Venta ${invoiceNumber}`,
+              categoryId: incomeCategory,
+              saleId: sale.id,
+              paymentId: payment.id,
+            },
+          })
+        }
+
+        for (const inst of installments) {
+          const due = parseDateInput(inst.dueDate)
+          if (!due) throw new Error(`Fecha de vencimiento inválida para la cuota de ${inst.amount}`)
+          await tx.creditInstallment.create({
+            data: {
+              saleId: sale.id,
+              amount: inst.amount,
+              dueDate: due,
+            },
+          })
+        }
+      } else {
+        await tx.transaction.create({
+          data: {
+            type: 'INCOME',
+            amount: total,
+            description: `Venta ${invoiceNumber}`,
+            categoryId: incomeCategory,
+            saleId: sale.id,
+          },
+        })
+      }
 
       // Increment invoice number
       await tx.systemSettings.update({
@@ -150,6 +222,7 @@ export async function createSale(data: {
     })
 
     revalidatePath('/sales')
+    revalidatePath('/sales/credits')
     revalidatePath('/inventory')
     revalidatePath('/finances')
     revalidatePath('/dashboard')
@@ -189,7 +262,11 @@ export async function deleteSale(saleId: string) {
       }
 
       // Delete linked income transaction so it no longer counts in finance/dashboard
+      // (covers the full-invoice transaction for cash sales AND any abono transactions via paymentId)
       await tx.transaction.deleteMany({
+        where: { OR: [{ saleId: saleId }, { payment: { saleId: saleId } }] },
+      })
+      await tx.payment.deleteMany({
         where: { saleId: saleId },
       })
 
@@ -200,6 +277,7 @@ export async function deleteSale(saleId: string) {
     })
 
     revalidatePath('/sales')
+    revalidatePath('/sales/credits')
     revalidatePath('/inventory')
     revalidatePath('/finances')
     revalidatePath('/dashboard')
@@ -233,6 +311,7 @@ export async function getSales(search?: string, page = 1, take = 20) {
         items: {
           include: { product: { select: { id: true, name: true } } },
         },
+        payments: { select: { amount: true } },
       },
     }),
     prisma.sale.count({ where }),
@@ -256,6 +335,13 @@ export async function getSaleById(id: string) {
         include: { product: true },
       },
       invoice: true,
+      payments: {
+        orderBy: { paymentDate: 'desc' },
+        include: { user: { select: { id: true, name: true, email: true } } },
+      },
+      installments: {
+        orderBy: { dueDate: 'asc' },
+      },
       user: { select: { id: true, name: true, email: true } },
     },
   })

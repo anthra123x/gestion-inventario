@@ -13,14 +13,9 @@ import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/format'
 import { generateReportData } from '@/modules/reports/reports.actions'
 import { exportSalesToExcel, exportInventoryToExcel, exportClientsToExcel } from '@/modules/export/export.actions'
+import { getPaymentMethodLabel } from '@/lib/labels'
 
 type SortDir = 'asc' | 'desc'
-
-const paymentLabel: Record<string, string> = {
-  CASH: 'Efectivo',
-  CARD: 'Tarjeta',
-  TRANSFER: 'Transferencia',
-}
 
 function sortData<T>(data: T[], sortKey: string, sortDir: SortDir, fn: (item: T) => number | string): T[] {
   if (!sortKey) return data
@@ -439,7 +434,7 @@ function SalesDetails({
                 </td>
                 <td className="px-3 py-2.5">
                   <Badge variant="outline" className="text-xs">
-                    {paymentLabel[sale.paymentMethod as string] || (sale.paymentMethod as string)}
+                    {getPaymentMethodLabel(sale.paymentMethod as string)}
                   </Badge>
                 </td>
                 <td className="px-3 py-2.5 text-right font-semibold">{formatCurrency(sale.total as number)}</td>

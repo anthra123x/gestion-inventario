@@ -16,6 +16,7 @@ import {
   Loader2,
   UserPlus,
   CheckCircle2,
+  HandCoins,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -66,7 +67,12 @@ export default function NewSalePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [discount, setDiscount] = useState(0)
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER'>('CASH')
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'CREDITO'>('CASH')
+  const [initialPayment, setInitialPayment] = useState(0)
+  const [initialPaymentMethod, setInitialPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER'>('CASH')
+  const [dueDate, setDueDate] = useState('')
+  const [useInstallments, setUseInstallments] = useState(false)
+  const [installments, setInstallments] = useState<Array<{ amount: number; dueDate: string }>>([])
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [clientEmail, setClientEmail] = useState('')
@@ -238,6 +244,9 @@ export default function NewSalePage() {
 
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0), [cart])
   const total = subtotal - discount
+  const isCredit = paymentMethod === 'CREDITO'
+  const installmentsSum = installments.reduce((s, i) => s + (i.amount || 0), 0)
+  const remainingAfterPlan = total - initialPayment - installmentsSum
 
   function serializeClientForm() {
     const fd = new FormData()
@@ -255,6 +264,10 @@ export default function NewSalePage() {
     }
     if (discount < 0) {
       toast.error('El descuento no puede ser negativo')
+      return
+    }
+    if (isCredit && !selectedClientId && clientName.trim().length === 0) {
+      toast.error('El cliente es requerido para ventas a crédito')
       return
     }
 
@@ -284,6 +297,10 @@ export default function NewSalePage() {
         })),
         discount,
         paymentMethod,
+        initialPayment: isCredit ? initialPayment : undefined,
+        initialPaymentMethod: isCredit ? initialPaymentMethod : undefined,
+        dueDate: isCredit && dueDate ? dueDate : undefined,
+        installments: isCredit && useInstallments ? installments : undefined,
       })
 
       if (result.error) {
@@ -635,7 +652,7 @@ export default function NewSalePage() {
                   <label className="text-xs font-medium">Método de pago</label>
                   <Select
                     value={paymentMethod}
-                    onValueChange={(v) => setPaymentMethod(v as 'CASH' | 'CARD' | 'TRANSFER')}
+                    onValueChange={(v) => setPaymentMethod(v as 'CASH' | 'CARD' | 'TRANSFER' | 'CREDITO')}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -659,10 +676,122 @@ export default function NewSalePage() {
                           Transferencia
                         </span>
                       </SelectItem>
+                      <SelectItem value="CREDITO">
+                        <span className="flex items-center gap-2">
+                          <HandCoins className="h-4 w-4" />
+                          Crédito
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {isCredit && (
+                <div className="space-y-4 pt-2 border-t">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium">Abono inicial (opcional)</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="100"
+                        value={initialPayment}
+                        onChange={(e) => setInitialPayment(Number(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium">Método del abono</label>
+                      <Select
+                        value={initialPaymentMethod}
+                        onValueChange={(v) => setInitialPaymentMethod(v as 'CASH' | 'CARD' | 'TRANSFER')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CASH">Efectivo</SelectItem>
+                          <SelectItem value="CARD">Tarjeta</SelectItem>
+                          <SelectItem value="TRANSFER">Transferencia</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium">Fecha de vencimiento (opcional)</label>
+                      <Input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        disabled={saving}
+                      />
+                    </div>
+                    <div className="flex items-end pb-1">
+                      <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useInstallments}
+                          onChange={(e) => setUseInstallments(e.target.checked)}
+                          className="accent-primary"
+                        />
+                        Plan de cuotas
+                      </label>
+                    </div>
+                  </div>
+
+                  {useInstallments && (
+                    <div className="space-y-2">
+                      {installments.map((inst, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Valor cuota"
+                            value={inst.amount}
+                            onChange={(e) => {
+                              const next = [...installments]
+                              next[idx] = { ...next[idx], amount: Number(e.target.value) || 0 }
+                              setInstallments(next)
+                            }}
+                          />
+                          <Input
+                            type="date"
+                            value={inst.dueDate}
+                            onChange={(e) => {
+                              const next = [...installments]
+                              next[idx] = { ...next[idx], dueDate: e.target.value }
+                              setInstallments(next)
+                            }}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive"
+                            onClick={() => setInstallments((prev) => prev.filter((_, i) => i !== idx))}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => setInstallments((prev) => [...prev, { amount: 0, dueDate: '' }])}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Agregar cuota
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Saldo: {formatCurrency(Math.max(0, remainingAfterPlan))}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2 pt-2 border-t">
                 <div className="flex justify-between text-sm">

@@ -35,16 +35,11 @@ import {
   Pie,
 } from 'recharts'
 import type { BusinessFinanceReport, FinancePeriodKind } from '@/modules/finance/finance.service'
+import { getPaymentMethodLabel } from '@/lib/labels'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const DAY_LABELS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
-
-const PAYMENT_LABELS: Record<string, string> = {
-  CASH: 'Efectivo',
-  CARD: 'Tarjeta',
-  TRANSFER: 'Transferencia',
-}
 
 function getDayLabel(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00')
@@ -265,7 +260,7 @@ function ReportSection({ report }: { report: BusinessFinanceReport }) {
                 {paymentMethods.map((pm) => (
                   <div key={pm.method}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-medium">{PAYMENT_LABELS[pm.method] || pm.method}</span>
+                      <span className="font-medium">{getPaymentMethodLabel(pm.method)}</span>
                       <span className="text-muted-foreground">
                         {pm.count} venta{pm.count !== 1 ? 's' : ''} · {formatCurrency(pm.total)}
                       </span>

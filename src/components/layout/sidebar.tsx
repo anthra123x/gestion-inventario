@@ -13,11 +13,13 @@ import {
   Package,
   DollarSign,
   ShoppingCart,
+  HandCoins,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Ventas', href: '/sales', icon: ShoppingCart },
+  { name: 'Créditos', href: '/sales/credits', icon: HandCoins },
   { name: 'Inventario', href: '/inventory', icon: Package },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Finanzas', href: '/finances', icon: DollarSign },

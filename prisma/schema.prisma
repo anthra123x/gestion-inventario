@@ -16,6 +16,7 @@ model User {
   updatedAt DateTime  @updatedAt
   sales     Sale[]
   expenses  Expense[]
+  payments  Payment[]
 
   @@map("users")
 }
@@ -120,16 +121,20 @@ model Sale {
   paymentMethod PaymentMethod
   status        SaleStatus    @default(COMPLETED)
   saleDate      DateTime      @default(now())
+  dueDate       DateTime?
   userId        String?
   user          User?         @relation(fields: [userId], references: [id])
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   items         SaleItem[]
   invoice       Invoice?
+  payments      Payment[]
+  installments  CreditInstallment[]
 
   @@index([invoiceNumber])
   @@index([clientId])
   @@index([saleDate])
+  @@index([dueDate])
   @@map("sales")
 }
 
@@ -146,6 +151,39 @@ model SaleItem {
   @@index([saleId])
   @@index([productId])
   @@map("sale_items")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  saleId        String
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentMethod PaymentMethod @default(CASH)
+  paymentDate   DateTime      @default(now())
+  notes         String?
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  transaction   Transaction?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([saleId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+model CreditInstallment {
+  id        String   @id @default(cuid())
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  amount    Float
+  dueDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([saleId])
+  @@index([dueDate])
+  @@map("credit_installments")
 }
 
 model Invoice {
@@ -249,6 +287,7 @@ enum PaymentMethod {
   CASH
   CARD
   TRANSFER
+  CREDITO
 }
 
 enum SaleStatus {
@@ -325,7 +364,9 @@ model Transaction {
   period       BudgetPeriod?   @relation(fields: [periodId], references: [id])
   saleId       String?
   expenseId    String?
-  isRecurring  Boolean         @default(false)
+  paymentId    String?         @unique
+  payment      Payment?        @relation(fields: [paymentId], references: [id])
+  isRecurring  Boolean        @default(false)
   recurringDay Int?
   notes        String?
   createdAt    DateTime        @default(now())
@@ -337,6 +378,7 @@ model Transaction {
   @@index([periodId])
   @@index([saleId])
   @@index([expenseId])
+  @@index([paymentId])
   @@map("transactions")
 }
 

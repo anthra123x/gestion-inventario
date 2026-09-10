@@ -89,6 +89,9 @@ export async function getClientById(id: string) {
               product: true,
             },
           },
+          payments: {
+            select: { amount: true },
+          },
         },
       },
     },
