@@ -20,6 +20,7 @@ import {
   CreditCard,
   Receipt,
   ShoppingCart,
+  HandCoins,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -167,12 +168,48 @@ function PeriodStats({ report }: { report: BusinessFinanceReport }) {
   )
 }
 
+function CreditStats({ report }: { report: BusinessFinanceReport }) {
+  const { credit } = report
+  if (!credit || (credit.count === 0 && credit.sold === 0)) return null
+  return (
+    <StatCardGrid>
+      <StatCard
+        title="Vendido a crédito"
+        value={formatCurrency(credit.sold)}
+        change={`${credit.count} facturas`}
+        icon={HandCoins}
+        color="info"
+      />
+      <StatCard
+        title="Abonado"
+        value={formatCurrency(credit.collected)}
+        icon={HandCoins}
+        color="success"
+      />
+      <StatCard
+        title="Saldo pendiente"
+        value={formatCurrency(credit.pending)}
+        icon={HandCoins}
+        color="warning"
+      />
+      <StatCard
+        title="Vencido"
+        value={formatCurrency(credit.overdue)}
+        change={`${credit.overdueCount} facturas`}
+        icon={HandCoins}
+        color="danger"
+      />
+    </StatCardGrid>
+  )
+}
+
 function ReportSection({ report }: { report: BusinessFinanceReport }) {
   const { sales, expenses, summary, byDay, paymentMethods } = report
 
   return (
     <div className="space-y-6">
       <PeriodStats report={report} />
+      <CreditStats report={report} />
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card className="card-shadow border-border/60">
