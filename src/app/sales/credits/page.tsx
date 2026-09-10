@@ -107,11 +107,7 @@ export default async function CreditsPage({
           </div>
 
           {credits.length === 0 ? (
-            <EmptyState
-              icon={HandCoins}
-              title="Sin ventas a crédito"
-              description="No hay ventas a crédito que coincidan"
-            />
+            <EmptyState title="Sin ventas a crédito" description="No hay ventas a crédito que coincidan" />
           ) : (
             <div className="overflow-x-auto">
               <Table>
