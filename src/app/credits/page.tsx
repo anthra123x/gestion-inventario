@@ -38,9 +38,9 @@ export default async function CreditsPage({
   const { credits, totalPages } = await getCreditSales(search || undefined, estado, page, pageSize)
 
   const estadoHref = (e: string) =>
-    `/sales/credits?${new URLSearchParams({ ...(search && { search }), estado: e }).toString()}`
+    `/credits?${new URLSearchParams({ ...(search && { search }), estado: e }).toString()}`
   const pageHref = (p: number) =>
-    `/sales/credits?${new URLSearchParams({ ...(search && { search }), estado, page: String(p) }).toString()}`
+    `/credits?${new URLSearchParams({ ...(search && { search }), estado, page: String(p) }).toString()}`
 
   return (
     <div className="page-container py-6 space-y-6">
@@ -48,10 +48,10 @@ export default async function CreditsPage({
         title="Cartera de Créditos"
         description="Ventas a crédito, abonos y saldos pendientes"
         actions={
-          <Link href="/sales/new">
+          <Link href="/credits/new">
             <Button>
               <HandCoins className="h-4 w-4" />
-              Nueva Venta
+              Nueva Venta a Crédito
             </Button>
           </Link>
         }
@@ -146,7 +146,7 @@ export default async function CreditsPage({
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             {status !== 'PAID' && <RegistrarAbonoDialog saleId={s.id} invoiceNumber={s.invoiceNumber} saldo={saldo} />}
-                            <Link href={`/sales/${s.id}`}>
+                            <Link href={`/credits/${s.id}`}>
                               <Button variant="outline" size="icon-sm">
                                 <Eye className="h-4 w-4" />
                               </Button>

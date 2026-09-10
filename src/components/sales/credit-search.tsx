@@ -16,7 +16,7 @@ export function CreditSearch({ initialSearch, estado }: { initialSearch: string;
     const timer = setTimeout(() => {
       const params = new URLSearchParams({ estado })
       if (value.trim()) params.set('search', value.trim())
-      router.replace(`/sales/credits?${params.toString()}`)
+      router.replace(`/credits?${params.toString()}`)
     }, 350)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps

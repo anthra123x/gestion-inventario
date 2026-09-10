@@ -19,7 +19,7 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Ventas', href: '/sales', icon: ShoppingCart },
-  { name: 'Créditos', href: '/sales/credits', icon: HandCoins },
+  { name: 'Créditos', href: '/credits', icon: HandCoins },
   { name: 'Inventario', href: '/inventory', icon: Package },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Finanzas', href: '/finances', icon: DollarSign },
@@ -30,8 +30,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   function isActive(href: string) {
-    if (href === '/dashboard') return pathname === href
-    return pathname.startsWith(href)
+    return pathname === href || pathname.startsWith(href + '/')
   }
 
   return (

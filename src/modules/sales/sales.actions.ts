@@ -222,7 +222,7 @@ export async function createSale(data: {
     })
 
     revalidatePath('/sales')
-    revalidatePath('/sales/credits')
+    revalidatePath('/credits')
     revalidatePath('/inventory')
     revalidatePath('/finances')
     revalidatePath('/dashboard')
@@ -277,7 +277,7 @@ export async function deleteSale(saleId: string) {
     })
 
     revalidatePath('/sales')
-    revalidatePath('/sales/credits')
+    revalidatePath('/credits')
     revalidatePath('/inventory')
     revalidatePath('/finances')
     revalidatePath('/dashboard')

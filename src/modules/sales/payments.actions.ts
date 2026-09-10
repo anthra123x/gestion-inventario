@@ -91,7 +91,7 @@ export async function registerPayment(input: {
     })
 
     revalidatePath('/sales')
-    revalidatePath('/sales/credits')
+    revalidatePath('/credits')
     revalidatePath('/finances')
     revalidatePath('/dashboard')
     return { success: 'Abono registrado exitosamente', payment: result }
@@ -120,7 +120,7 @@ export async function deletePayment(paymentId: string) {
     })
 
     revalidatePath('/sales')
-    revalidatePath('/sales/credits')
+    revalidatePath('/credits')
     revalidatePath('/finances')
     revalidatePath('/dashboard')
     return { success: 'Abono eliminado exitosamente' }
