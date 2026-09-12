@@ -18,7 +18,7 @@ function toNullableImage(value: FormDataEntryValue | null): string | null {
   return raw
 }
 
-const MAX_IMAGE_LENGTH = 400_000
+const MAX_IMAGE_LENGTH = 500_000
 
 export async function getProducts(search?: string, page = 1, take = 20, categoryId?: string) {
   await requireAuth()

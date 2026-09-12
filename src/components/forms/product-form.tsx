@@ -15,8 +15,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner'
 import type { ProductCategory, Supplier } from '@prisma/client'
 
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
-const MAX_IMAGE_DATA_URL = 400_000
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_IMAGE_DATA_URL = 500_000
 
 interface ProductData {
   id: string
@@ -102,7 +102,7 @@ export function ProductForm({
       return
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error('Imagen demasiado grande', { description: 'El máximo permitido es 2 MB.' })
+      toast.error('Imagen demasiado grande', { description: 'El máximo permitido es 5 MB.' })
       e.target.value = ''
       return
     }
@@ -162,7 +162,7 @@ export function ProductForm({
 
     try {
       if (imageUrl && imageUrl.length > MAX_IMAGE_DATA_URL) {
-        setError('La imagen es demasiado pesada. Elige una imagen más pequeña (máx. 2 MB, se comprime a 400px).')
+        setError('La imagen es demasiado pesada. Elige una imagen más pequeña (máx. 5 MB, se comprime a 400px).')
         toast.error('Imagen demasiado pesada')
         return
       }
