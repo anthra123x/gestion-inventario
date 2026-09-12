@@ -22,9 +22,11 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
-  // For protected routes with session cookie, create server client to refresh
-  // cookies and pass updated values to both browser and server components
-  if (isProtectedRoute && hasSessionCookie) {
+  // For protected routes with session cookie on GET navigations, create server
+  // client to refresh cookies and pass updated values to both browser and server
+  // components. Server Actions and API writes authenticate on their own, so we
+  // skip this to avoid an extra Supabase roundtrip on every POST.
+  if (isProtectedRoute && hasSessionCookie && req.method === 'GET') {
     const res = NextResponse.next({ request: req })
 
     const supabase = createServerClient(

@@ -15,6 +15,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner'
 import type { ProductCategory, Supplier } from '@prisma/client'
 
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
+const MAX_IMAGE_DATA_URL = 400_000
+
 interface ProductData {
   id: string
   name: string
@@ -63,7 +66,7 @@ export function ProductForm({
       reader.onload = () => {
         const img = new Image()
         img.onload = () => {
-          const MAX = 800
+          const MAX = 400
           let width = img.naturalWidth
           let height = img.naturalHeight
           if (width > MAX || height > MAX) {
@@ -80,7 +83,7 @@ export function ProductForm({
             return
           }
           ctx.drawImage(img, 0, 0, width, height)
-          resolve(canvas.toDataURL('image/jpeg', 0.8))
+          resolve(canvas.toDataURL('image/jpeg', 0.7))
         }
         img.onerror = () => reject(new Error('Archivo de imagen inválido'))
         img.src = reader.result as string
@@ -98,14 +101,20 @@ export function ProductForm({
       e.target.value = ''
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Imagen demasiado grande', { description: 'El máximo permitido es 5 MB.' })
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error('Imagen demasiado grande', { description: 'El máximo permitido es 2 MB.' })
       e.target.value = ''
       return
     }
     setImageLoading(true)
     try {
       const url = await fileToDataUrl(file)
+      if (url.length > MAX_IMAGE_DATA_URL) {
+        toast.error('Imagen demasiado pesada', {
+          description: 'La imagen comprimida aún es muy pesada. Elige una foto más pequeña o un JPG.',
+        })
+        return
+      }
       setImageUrl(url)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al procesar la imagen'
@@ -152,6 +161,12 @@ export function ProductForm({
     setError(null)
 
     try {
+      if (imageUrl && imageUrl.length > MAX_IMAGE_DATA_URL) {
+        setError('La imagen es demasiado pesada. Elige una imagen más pequeña (máx. 2 MB, se comprime a 400px).')
+        toast.error('Imagen demasiado pesada')
+        return
+      }
+
       const normalizedData = {
         ...data,
         description: data.description || null,

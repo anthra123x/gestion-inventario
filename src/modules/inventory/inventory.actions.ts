@@ -18,6 +18,8 @@ function toNullableImage(value: FormDataEntryValue | null): string | null {
   return raw
 }
 
+const MAX_IMAGE_LENGTH = 400_000
+
 export async function getProducts(search?: string, page = 1, take = 20, categoryId?: string) {
   await requireAuth()
   const where = {
@@ -99,17 +101,22 @@ export async function createProduct(formData: FormData) {
   }
 
   try {
+    const imageUrl = toNullableImage(formData.get('imageUrl'))
+    if (imageUrl && imageUrl.length > MAX_IMAGE_LENGTH) {
+      return { error: 'La imagen es demasiado pesada. Usa una imagen más pequeña (se comprime a 400px).' }
+    }
+
     const product = await prisma.product.create({
       data: {
         ...validatedFields.data,
-        imageUrl: toNullableImage(formData.get('imageUrl')),
+        imageUrl,
       },
     })
 
     revalidatePath('/inventory')
     return {
       success: 'Producto creado exitosamente',
-      product,
+      id: product.id,
     }
   } catch (error) {
     return { error: parseError(error).message }
@@ -140,11 +147,16 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   try {
+    const imageUrl = toNullableImage(formData.get('imageUrl'))
+    if (imageUrl && imageUrl.length > MAX_IMAGE_LENGTH) {
+      return { error: 'La imagen es demasiado pesada. Usa una imagen más pequeña (se comprime a 400px).' }
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
         ...validatedFields.data,
-        imageUrl: toNullableImage(formData.get('imageUrl')),
+        imageUrl,
       },
     })
 
@@ -152,7 +164,7 @@ export async function updateProduct(id: string, formData: FormData) {
     revalidatePath(`/inventory/${id}`)
     return {
       success: 'Producto actualizado exitosamente',
-      product,
+      id: product.id,
     }
   } catch (error) {
     return { error: parseError(error).message }
